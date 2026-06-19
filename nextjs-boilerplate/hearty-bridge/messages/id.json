@@ -1,0 +1,737 @@
+{
+  "common": {
+    "appName": "Hearty Bridge",
+    "getStarted": "Mulai Sekarang",
+    "learnMore": "Pelajari Lebih Lanjut",
+    "contactUs": "Hubungi Kami",
+    "signIn": "Masuk",
+    "signOut": "Keluar",
+    "register": "Daftar",
+    "createAccount": "Buat Akun",
+    "save": "Simpan",
+    "saveChanges": "Simpan Perubahan",
+    "saving": "Menyimpan...",
+    "cancel": "Batal",
+    "edit": "Edit",
+    "delete": "Hapus",
+    "view": "Lihat",
+    "viewDetails": "Lihat Detail",
+    "download": "Unduh",
+    "search": "Cari",
+    "filter": "Filter",
+    "add": "Tambah",
+    "back": "Kembali",
+    "next": "Selanjutnya",
+    "loading": "Memuat...",
+    "notFound": "Tidak Ditemukan",
+    "accessDenied": "Akses Ditolak",
+    "noPermission": "Anda tidak memiliki izin untuk melihat konten ini",
+    "readyToStart": "Siap Untuk Mulai?",
+    "termsOfService": "Syarat & Ketentuan",
+    "privacyPolicy": "Kebijakan Privasi",
+    "status": {
+      "active": "Aktif",
+      "inactive": "Tidak Aktif",
+      "pending": "Tertunda",
+      "completed": "Selesai",
+      "scheduled": "Dijadwalkan",
+      "cancelled": "Dibatalkan",
+      "draft": "Draf",
+      "reviewed": "Ditinjau",
+      "noShow": "Tidak Hadir",
+      "onLeave": "Cuti",
+      "inProgress": "Sedang Berlangsung"
+    },
+    "roles": {
+      "admin": "Admin",
+      "therapist": "Terapis",
+      "parent": "Orang Tua"
+    }
+  },
+  "nav": {
+    "home": "Beranda",
+    "about": "Tentang Kami",
+    "services": "Layanan",
+    "contact": "Kontak",
+    "dashboard": "Dashboard",
+    "login": "Masuk",
+    "register": "Daftar",
+    "logout": "Keluar"
+  },
+  "footer": {
+    "tagline": "Menghubungkan anak dan terapis dengan penuh kasih. Kami menyediakan platform terpercaya bagi orang tua untuk menemukan terapis berkualitas dan bagi terapis untuk menjangkau keluarga yang membutuhkan keahlian mereka.",
+    "available": "Tersedia secara nasional",
+    "quickLinks": "Tautan Cepat",
+    "support": "Dukungan",
+    "links": {
+      "about": "Tentang Kami",
+      "services": "Layanan",
+      "contact": "Kontak",
+      "privacy": "Kebijakan Privasi",
+      "terms": "Syarat & Ketentuan",
+      "help": "Pusat Bantuan",
+      "safety": "Keamanan & Kepercayaan",
+      "guidelines": "Panduan Komunitas",
+      "accessibility": "Aksesibilitas"
+    },
+    "copyright": "© 2024 Hearty Bridge. Hak cipta dilindungi.",
+    "hipaa": "Platform teknologi kesehatan • Sesuai HIPAA • Aman & terpercaya"
+  },
+  "home": {
+    "hero": {
+      "title": "Menghubungkan Anak dan",
+      "titleHighlight": "Terapis",
+      "titleEnd": "dengan Penuh Kasih",
+      "subtitle": "Platform terpercaya tempat orang tua menemukan terapis berkualitas untuk kebutuhan layanan kesehatan anak mereka, dan terapis terhubung dengan keluarga yang menghargai keahlian mereka.",
+      "cta": "Mulai Sekarang",
+      "learnMore": "Pelajari Lebih Lanjut"
+    },
+    "features": {
+      "title": "Mengapa Memilih Hearty Bridge?",
+      "subtitle": "Kami berdedikasi untuk membuat layanan kesehatan berkualitas dapat diakses dan terpercaya",
+      "trusted": {
+        "title": "Terpercaya & Aman",
+        "description": "Platform yang sesuai HIPAA dengan kredensial terapis terverifikasi dan saluran komunikasi yang aman."
+      },
+      "network": {
+        "title": "Jaringan Ahli",
+        "description": "Akses ke terapis berlisensi yang mengkhususkan diri dalam perawatan anak, terapi wicara, terapi perilaku, dan lainnya."
+      },
+      "care": {
+        "title": "Berpusat pada Perawatan",
+        "description": "Dirancang dengan mempertimbangkan anak dan keluarga, mengutamakan kenyamanan, aksesibilitas, dan hasil yang positif."
+      }
+    },
+    "howItWorks": {
+      "title": "Cara Kerjanya",
+      "forParents": {
+        "title": "Untuk Orang Tua",
+        "step1": "Buat akun dan tambahkan informasi anak Anda",
+        "step2": "Cari dan telusuri terapis berkualifikasi di area Anda",
+        "step3": "Tinjau profil, spesialisasi, dan ketersediaan",
+        "step4": "Terhubung dengan aman dan jadwalkan janji temu",
+        "step5": "Pantau perkembangan dan kelola catatan perawatan",
+        "cta": "Mulai sebagai Orang Tua"
+      },
+      "forTherapists": {
+        "title": "Untuk Terapis",
+        "step1": "Daftar dengan kredensial profesional Anda",
+        "step2": "Buat profil komprehensif dengan spesialisasi",
+        "step3": "Atur ketersediaan dan preferensi layanan Anda",
+        "step4": "Terhubung dengan keluarga yang mencari keahlian Anda",
+        "step5": "Kelola janji temu dan komunikasi pasien",
+        "cta": "Bergabung sebagai Terapis"
+      }
+    },
+    "cta": {
+      "title": "Siap Untuk Mulai?",
+      "subtitle": "Bergabunglah dengan ribuan keluarga dan terapis yang mempercayai Hearty Bridge",
+      "createAccount": "Buat Akun",
+      "signIn": "Masuk"
+    }
+  },
+  "about": {
+    "hero": {
+      "title": "Tentang Hearty Bridge",
+      "subtitle": "Kami berdedikasi untuk menghubungkan anak-anak dengan terapis berkualitas, membuat layanan kesehatan berkualitas dapat diakses dan terjangkau oleh setiap keluarga."
+    },
+    "mission": {
+      "title": "Misi Kami",
+      "p1": "Setiap anak berhak mendapatkan akses ke perawatan terapeutik berkualitas. Hearty Bridge menjembatani kesenjangan antara keluarga yang mencari bantuan dan terapis berkualitas yang siap memberikan perawatan luar biasa.",
+      "p2": "Kami percaya bahwa dengan menciptakan platform yang terpercaya dan aman, kami dapat memudahkan orang tua untuk menemukan dukungan terapeutik yang tepat untuk kebutuhan unik anak mereka.",
+      "cta": "Mulai Sekarang"
+    },
+    "stats": {
+      "families": "Keluarga Terbantu",
+      "therapists": "Terapis Berkualifikasi",
+      "successRate": "Tingkat Keberhasilan",
+      "avgRating": "Penilaian Rata-rata"
+    },
+    "values": {
+      "title": "Nilai-Nilai Kami",
+      "subtitle": "Prinsip-prinsip inti ini memandu semua yang kami lakukan di Hearty Bridge",
+      "compassion": {
+        "title": "Perawatan Penuh Kasih",
+        "description": "Kami mengutamakan empati dan pemahaman dalam setiap interaksi, memastikan keluarga merasa didukung sepanjang perjalanan mereka."
+      },
+      "trust": {
+        "title": "Kepercayaan & Keamanan",
+        "description": "Semua terapis diseleksi secara menyeluruh dan diverifikasi. Kami menjaga standar tertinggi untuk keamanan dan keunggulan profesional."
+      },
+      "quality": {
+        "title": "Keunggulan Kualitas",
+        "description": "Kami terus memantau dan meningkatkan platform kami untuk memastikan hasil terbaik bagi anak-anak dan keluarga."
+      }
+    },
+    "team": {
+      "title": "Tim Kepemimpinan Kami",
+      "subtitle": "Para profesional berpengalaman yang berdedikasi untuk meningkatkan layanan kesehatan anak",
+      "sarah": {
+        "name": "Dr. Sarah Johnson",
+        "title": "Kepala Eksekutif",
+        "description": "Terapis anak dengan pengalaman 15+ tahun dalam perkembangan anak"
+      },
+      "michael": {
+        "name": "Dr. Michael Chen",
+        "title": "Kepala Medis",
+        "description": "Psikolog klinis berlisensi yang mengkhususkan diri dalam gangguan spektrum autisme"
+      },
+      "emily": {
+        "name": "Emily Rodriguez",
+        "title": "Kepala Operasional",
+        "description": "Ahli teknologi kesehatan dengan semangat untuk meningkatkan akses ke layanan kesehatan"
+      }
+    },
+    "cta": {
+      "title": "Siap Untuk Mulai?",
+      "subtitle": "Bergabunglah dengan ribuan keluarga yang telah menemukan dukungan terapeutik yang tepat untuk anak-anak mereka melalui Hearty Bridge.",
+      "getStarted": "Mulai Sekarang",
+      "services": "Pelajari Layanan Kami"
+    }
+  },
+  "services": {
+    "hero": {
+      "title": "Layanan Kami",
+      "subtitle": "Layanan terapeutik komprehensif yang disesuaikan untuk memenuhi kebutuhan unik anak Anda"
+    },
+    "specializations": {
+      "title": "Spesialisasi Terapeutik",
+      "subtitle": "Terapis berkualifikasi kami memberikan perawatan ahli di berbagai spesialisasi",
+      "popular": "Populer",
+      "autism": {
+        "title": "Gangguan Spektrum Autisme",
+        "description": "Terapi perilaku khusus dan pelatihan keterampilan sosial untuk anak-anak dengan gangguan spektrum autisme.",
+        "aba": "Analisis Perilaku Terapan (ABA)",
+        "social": "Pelatihan Keterampilan Sosial",
+        "communication": "Pengembangan Komunikasi"
+      },
+      "speech": {
+        "title": "Terapi Wicara & Bahasa",
+        "description": "Dukungan pengembangan wicara dan bahasa komprehensif untuk anak-anak dengan tantangan komunikasi.",
+        "articulation": "Terapi Artikulasi",
+        "language": "Pengembangan Bahasa",
+        "fluency": "Gangguan Kefasihan"
+      },
+      "adhd": {
+        "title": "Dukungan ADHD",
+        "description": "Dukungan khusus untuk anak-anak dengan gangguan pemusatan perhatian dan hiperaktivitas serta tantangan fungsi eksekutif.",
+        "attention": "Pelatihan Perhatian",
+        "executive": "Keterampilan Fungsi Eksekutif",
+        "behavioral": "Intervensi Perilaku"
+      },
+      "emotional": {
+        "title": "Emosional & Perilaku",
+        "description": "Dukungan untuk anak-anak yang menghadapi regulasi emosi, kecemasan, dan tantangan perilaku.",
+        "anxiety": "Manajemen Kecemasan",
+        "regulation": "Regulasi Emosi",
+        "coping": "Strategi Koping"
+      },
+      "learning": {
+        "title": "Kesulitan Belajar",
+        "description": "Terapi pendidikan khusus untuk anak-anak dengan disleksia, diskalkulia, dan perbedaan belajar lainnya.",
+        "reading": "Intervensi Membaca",
+        "math": "Dukungan Matematika",
+        "study": "Keterampilan Belajar"
+      },
+      "developmental": {
+        "title": "Keterlambatan Perkembangan",
+        "description": "Intervensi dini dan dukungan perkembangan untuk anak-anak dengan berbagai keterlambatan perkembangan dan tonggak capaian.",
+        "early": "Intervensi Dini",
+        "milestone": "Penilaian Tonggak Capaian",
+        "family": "Dukungan Keluarga"
+      }
+    },
+    "platform": {
+      "title": "Cara Platform Kami Bekerja",
+      "subtitle": "Semua yang Anda butuhkan untuk mengelola perawatan terapeutik anak Anda dalam satu platform yang aman",
+      "scheduling": {
+        "title": "Penjadwalan Mudah",
+        "description": "Pesan dan kelola sesi terapi dengan ketersediaan real-time dan pengingat otomatis untuk kenyamanan Anda."
+      },
+      "telehealth": {
+        "title": "Opsi Telehealth",
+        "description": "Akses sesi terapi dari rumah Anda yang nyaman dengan platform video aman kami jika memungkinkan."
+      },
+      "progress": {
+        "title": "Pemantauan Kemajuan",
+        "description": "Pantau kemajuan anak Anda dengan laporan terperinci, pelacakan tujuan, dan pembaruan rutin dari terapis."
+      },
+      "messaging": {
+        "title": "Pesan Aman",
+        "description": "Berkomunikasi langsung dengan terapis Anda melalui sistem pesan aman dan sesuai HIPAA kami."
+      },
+      "verified": {
+        "title": "Terapis Terverifikasi",
+        "description": "Semua terapis berlisensi, telah melewati pemeriksaan latar belakang, dan terus dipantau untuk jaminan kualitas."
+      },
+      "familySupport": {
+        "title": "Dukungan Keluarga",
+        "description": "Akses sumber daya, materi pendidikan, dan dukungan keluarga untuk membantu Anda menavigasi perjalanan terapeutik anak Anda."
+      }
+    },
+    "pricing": {
+      "title": "Harga Transparan",
+      "subtitle": "Terapi berkualitas seharusnya terjangkau. Kami bekerja sama dengan sebagian besar rencana asuransi.",
+      "individual": {
+        "title": "Sesi Individual",
+        "price": "$120",
+        "period": "per sesi 50 menit",
+        "oneOnOne": "Terapi satu-satu",
+        "treatment": "Rencana perawatan personal",
+        "tracking": "Pemantauan kemajuan",
+        "communication": "Komunikasi orang tua"
+      },
+      "monthly": {
+        "title": "Paket Bulanan",
+        "price": "$420",
+        "period": "4 sesi per bulan",
+        "popular": "Paling Populer",
+        "everything": "Semua fitur Individual",
+        "priority": "Penjadwalan prioritas",
+        "reports": "Laporan kemajuan bulanan",
+        "resources": "Akses sumber daya keluarga",
+        "save": "Hemat $60/bulan"
+      },
+      "insurance": {
+        "title": "Asuransi",
+        "price": "Bervariasi",
+        "period": "berdasarkan rencana Anda",
+        "accept": "Kami menerima sebagian besar rencana",
+        "billing": "Penagihan langsung tersedia",
+        "verification": "Verifikasi cakupan",
+        "authorization": "Bantuan pra-otorisasi"
+      }
+    },
+    "cta": {
+      "title": "Siap Untuk Mulai?",
+      "subtitle": "Temukan terapis yang tepat untuk anak Anda hari ini dan mulailah perjalanan menuju potensi penuh mereka.",
+      "findTherapist": "Temukan Terapis",
+      "contactUs": "Hubungi Kami"
+    }
+  },
+  "contact": {
+    "hero": {
+      "title": "Hubungi Kami",
+      "subtitle": "Kami siap membantu Anda. Hubungi kami untuk pertanyaan tentang layanan, platform, atau bagaimana kami dapat mendukung kebutuhan keluarga Anda."
+    },
+    "info": {
+      "title": "Mari Terhubung",
+      "subtitle": "Tim dukungan kami siap membantu Anda menggunakan platform, menjawab pertanyaan tentang layanan terapi, atau memberikan bantuan dengan akun Anda.",
+      "email": {
+        "label": "Dukungan Email",
+        "address": "hello@heartybridge.com",
+        "note": "Kami biasanya merespon dalam 2-4 jam selama jam kerja"
+      },
+      "phone": {
+        "label": "Dukungan Telepon",
+        "number": "1-800-HEARTY-1 (1-800-432-7891)",
+        "hours": "Senin - Jumat: 8:00 - 18:00 WIB"
+      },
+      "emergency": {
+        "label": "Dukungan Darurat",
+        "availability": "Hotline Krisis 24/7 Tersedia",
+        "note": "Untuk kekhawatiran terapi mendesak atau situasi krisis"
+      },
+      "office": {
+        "label": "Kantor Pusat",
+        "address": "Jl. Kesehatan No. 123, Jakarta Selatan, 12560, Indonesia"
+      }
+    },
+    "form": {
+      "title": "Kirim Pesan",
+      "fullName": "Nama Lengkap",
+      "fullNamePlaceholder": "Nama lengkap Anda",
+      "email": "Alamat Email",
+      "emailPlaceholder": "email.anda@contoh.com",
+      "phone": "Nomor Telepon",
+      "phonePlaceholder": "08123456789",
+      "subject": "Subjek",
+      "subjectPlaceholder": "Pilih subjek",
+      "subjects": {
+        "general": "Pertanyaan Umum",
+        "therapist": "Mencari Terapis",
+        "platform": "Dukungan Platform",
+        "billing": "Tagihan & Asuransi",
+        "technical": "Masalah Teknis",
+        "feedback": "Saran & Masukan",
+        "partnership": "Peluang Kemitraan"
+      },
+      "message": "Pesan",
+      "messagePlaceholder": "Silakan jelaskan bagaimana kami dapat membantu Anda...",
+      "sending": "Mengirim...",
+      "send": "Kirim Pesan",
+      "privacy": "Dengan mengirimkan formulir ini, Anda menyetujui kebijakan privasi kami. Kami tidak akan pernah membagikan informasi Anda kepada pihak ketiga.",
+      "successAlert": "Terima kasih atas pesan Anda! Kami akan menghubungi Anda dalam 24 jam."
+    },
+    "faq": {
+      "title": "Pertanyaan yang Sering Diajukan",
+      "subtitle": "Jawaban cepat untuk pertanyaan umum tentang layanan kami",
+      "q1": {
+        "question": "Bagaimana cara menemukan terapis yang tepat untuk anak saya?",
+        "answer": "Platform kami mencocokkan Anda dengan terapis berdasarkan kebutuhan spesifik anak Anda, preferensi lokasi, dan cakupan asuransi. Anda dapat menelusuri profil, membaca ulasan, dan menjadwalkan konsultasi."
+      },
+      "q2": {
+        "question": "Apakah Anda menerima asuransi?",
+        "answer": "Ya! Kami bekerja sama dengan sebagian besar penyedia asuransi utama. Tim kami dapat membantu memverifikasi cakupan Anda dan menangani penagihan langsung jika memungkinkan. Kami juga menawarkan opsi pembayaran mandiri dan rencana pembayaran."
+      },
+      "q3": {
+        "question": "Apakah terapis Anda berlisensi dan berkualifikasi?",
+        "answer": "Semua terapis di platform kami adalah profesional berlisensi yang menjalani pemeriksaan latar belakang dan verifikasi kredensial secara menyeluruh. Kami terus memantau kualitas dan melakukan tinjauan berkala."
+      },
+      "q4": {
+        "question": "Bisakah saya melakukan sesi terapi virtual?",
+        "answer": "Ya, kami menawarkan sesi telehealth yang aman untuk kasus yang tepat. Banyak jenis terapi dapat diberikan secara virtual secara efektif, membuat perawatan lebih mudah diakses dan nyaman bagi keluarga."
+      }
+    },
+    "crisis": {
+      "title": "Dukungan Krisis",
+      "subtitle": "Jika Anda atau anak Anda mengalami krisis kesehatan mental, segera cari bantuan:",
+      "emergency": "Darurat: Hubungi 112",
+      "hotline": "Hotline Krisis: 119 ext 8",
+      "text": "Teks: HOME ke 741741 (Crisis Text Line)"
+    }
+  },
+  "auth": {
+    "login": {
+      "brandSubtitle": "Selamat datang kembali! Silakan masuk ke akun Anda",
+      "title": "Masuk",
+      "subtitle": "Masukkan kredensial Anda untuk mengakses akun Anda",
+      "email": "Alamat Email",
+      "emailPlaceholder": "Masukkan email Anda",
+      "password": "Kata Sandi",
+      "passwordPlaceholder": "Masukkan kata sandi Anda",
+      "rememberMe": "Ingat saya",
+      "forgotPassword": "Lupa kata sandi?",
+      "signingIn": "Sedang Masuk...",
+      "signIn": "Masuk",
+      "newTo": "Baru di Hearty Bridge?",
+      "createAccount": "Buat Akun Baru",
+      "quickAccess": "Akses cepat untuk:",
+      "parentsLabel": "Orang tua yang mencari terapi",
+      "therapistsLabel": "Terapis berlisensi",
+      "termsPrefix": "Dengan masuk, Anda menyetujui",
+      "and": "dan",
+      "loginFailed": "Masuk gagal"
+    },
+    "register": {
+      "brandSubtitle": "Menghubungkan anak dan terapis dengan penuh kasih",
+      "title": "Daftar Akun Orang Tua",
+      "subtitle": "Bergabunglah untuk mendapatkan terapi terbaik bagi anak Anda",
+      "accountType": "Akun Orang Tua",
+      "accountTypeDesc": "Daftar untuk mencari dan mengelola terapi untuk anak Anda",
+      "fullName": "Nama Lengkap",
+      "fullNamePlaceholder": "Masukkan nama lengkap Anda",
+      "email": "Alamat Email",
+      "emailPlaceholder": "Masukkan alamat email Anda",
+      "phone": "Nomor Telepon (Opsional)",
+      "phonePlaceholder": "Masukkan nomor telepon Anda",
+      "password": "Kata Sandi",
+      "passwordPlaceholder": "Buat kata sandi",
+      "confirmPassword": "Konfirmasi Kata Sandi",
+      "confirmPasswordPlaceholder": "Konfirmasi kata sandi Anda",
+      "acceptTermsPrefix": "Saya setuju dengan",
+      "and": "dan",
+      "creating": "Membuat Akun...",
+      "submit": "Daftar Akun",
+      "haveAccount": "Sudah punya akun?",
+      "signIn": "Masuk",
+      "registrationFailed": "Pendaftaran gagal"
+    }
+  },
+  "dashboard": {
+    "home": {
+      "welcome": "Selamat datang kembali, {name}!",
+      "adminSubtitle": "Kelola sistem praktik terapi Anda",
+      "therapistSubtitle": "Anda memiliki {count} sesi hari ini",
+      "parentSubtitle": "Pantau perkembangan {count} anak Anda",
+      "stats": {
+        "totalUsers": "Total Pengguna",
+        "activeTherapists": "Terapis Aktif",
+        "registeredPatients": "Pasien Terdaftar",
+        "systemUptime": "Uptime Sistem",
+        "assignedPatients": "Pasien yang Ditugaskan",
+        "todaySessions": "Sesi Hari Ini",
+        "upcomingSessions": "Sesi Mendatang",
+        "completedSessions": "Sesi Selesai",
+        "myChildren": "Anak Saya",
+        "nextAppointment": "Janji Temu Berikutnya",
+        "progressUpdates": "Pembaruan Kemajuan",
+        "recentReports": "Laporan Terbaru",
+        "excellent": "Sangat Baik"
+      },
+      "quickActions": {
+        "title": "Tindakan Cepat",
+        "subtitle": "Tindakan yang sering digunakan untuk peran Anda",
+        "addPatient": "Tambah Pasien Baru",
+        "addPatientDesc": "Daftarkan pasien baru di sistem",
+        "inviteTherapist": "Undang Terapis",
+        "inviteTherapistDesc": "Kirim undangan ke terapis baru",
+        "systemReports": "Laporan Sistem",
+        "systemReportsDesc": "Lihat analitik sistem komprehensif",
+        "viewSchedule": "Lihat Jadwal Saya",
+        "viewScheduleDesc": "Kelola janji temu dan ketersediaan Anda",
+        "createReport": "Buat Laporan",
+        "createReportDesc": "Buat laporan kemajuan pasien",
+        "viewAssignedPatients": "Lihat Pasien Ditugaskan",
+        "viewAssignedPatientsDesc": "Lihat semua pasien yang ditugaskan",
+        "myChildren": "Anak Saya",
+        "myChildrenDesc": "Lihat profil anak-anak Anda",
+        "upcomingAppointments": "Janji Temu Mendatang",
+        "upcomingAppointmentsDesc": "Lihat sesi terapi yang dijadwalkan",
+        "progressReports": "Laporan Kemajuan",
+        "progressReportsDesc": "Tinjau kemajuan terapi"
+      },
+      "recentActivity": {
+        "title": "Aktivitas Terbaru",
+        "subtitle": "Pembaruan dan notifikasi terbaru Anda"
+      },
+      "systemOverview": {
+        "title": "Ikhtisar Sistem",
+        "subtitle": "Indikator kinerja utama",
+        "therapistUtilization": "Pemanfaatan Terapis",
+        "patientSatisfaction": "Kepuasan Pasien",
+        "systemHealth": "Kesehatan Sistem"
+      },
+      "schedule": {
+        "todayTitle": "Jadwal Hari Ini",
+        "upcomingTitle": "Janji Temu Mendatang",
+        "todaySubtitle": "Janji temu Anda hari ini",
+        "upcomingSubtitle": "Sesi terapi mendatang anak Anda",
+        "noAppointments": "Tidak ada janji temu hari ini",
+        "therapistEmpty": "Jadwal Anda kosong hari ini",
+        "parentEmpty": "Tidak ada sesi terapi yang dijadwalkan",
+        "viewFull": "Lihat Jadwal Lengkap",
+        "statusCompleted": "Selesai",
+        "statusInProgress": "Sedang Berlangsung",
+        "statusScheduled": "Dijadwalkan",
+        "statusTomorrow": "Besok"
+      }
+    },
+    "patients": {
+      "titleAdmin": "Kelola Semua Pasien",
+      "titleTherapist": "Pasien yang Ditugaskan",
+      "titleParent": "Anak Saya",
+      "descAdmin": "Kelola semua pasien dalam sistem",
+      "descTherapist": "Kelola pasien yang ditugaskan dan sesi terapi Anda",
+      "descParent": "Kelola profil dan pantau perkembangan anak Anda",
+      "addPatient": "Tambah Pasien",
+      "addChild": "Tambah Anak",
+      "totalPatients": "Total Pasien",
+      "totalChildren": "Total Anak",
+      "sessionsThisMonth": "Sesi Bulan Ini",
+      "avgProgress": "Rata-rata Progress",
+      "searchFilter": "Cari & Filter",
+      "searchPatients": "Cari pasien...",
+      "searchChildren": "Cari nama anak...",
+      "allStatus": "Semua Status",
+      "allPatients": "Semua Pasien",
+      "myPatients": "Pasien Saya",
+      "assignedTherapist": "Terapis yang Ditugaskan",
+      "contact": "Hubungi",
+      "currentPrograms": "Program Terapi Saat Ini",
+      "frequency": "Frekuensi",
+      "progress": "Progress",
+      "nextSession": "Sesi berikutnya",
+      "sessions": "sesi",
+      "notScheduled": "Belum dijadwalkan",
+      "parent": "Orang Tua",
+      "yearsOld": "{age} tahun",
+      "noPatients": {
+        "titleParent": "Belum Ada Data Anak",
+        "titleOther": "Pasien Tidak Ditemukan",
+        "descParent": "Mulai dengan menambahkan profil anak pertama Anda",
+        "descOther": "Tidak ada pasien yang cocok dengan kriteria pencarian Anda",
+        "addFirst": "Tambah Anak Pertama",
+        "addPatient": "Tambah Pasien"
+      },
+      "actions": {
+        "viewDetail": "Lihat Detail",
+        "viewProgress": "Lihat Progress",
+        "scheduleSession": "Jadwal Sesi",
+        "reports": "Laporan"
+      }
+    },
+    "therapists": {
+      "title": "Manajemen Terapis",
+      "subtitle": "Kelola terapis dan penugasan mereka",
+      "addTherapist": "Tambah Terapis",
+      "totalTherapists": "Total Terapis",
+      "active": "Aktif",
+      "avgCaseload": "Rata-rata Beban Kasus",
+      "avgRating": "Penilaian Rata-rata",
+      "searchPlaceholder": "Cari terapis...",
+      "allStatus": "Semua Status",
+      "allSpecializations": "Semua Spesialisasi",
+      "specializations": "Spesialisasi:",
+      "availability": "Ketersediaan:",
+      "credentials": "Kredensial:",
+      "patients": "Pasien",
+      "sessions": "Sesi",
+      "viewProfile": "Lihat Profil",
+      "noTherapists": {
+        "title": "Tidak ada terapis ditemukan",
+        "descSearch": "Coba sesuaikan kriteria pencarian Anda.",
+        "descEmpty": "Mulai dengan menambahkan terapis pertama Anda."
+      }
+    },
+    "reports": {
+      "title": "Laporan & Analitik",
+      "subtitle": "Pantau kemajuan dan buat laporan komprehensif",
+      "createReport": "Buat Laporan",
+      "totalReports": "Total Laporan",
+      "completed": "Selesai",
+      "pending": "Tertunda",
+      "overdue": "Terlambat",
+      "searchPlaceholder": "Cari laporan...",
+      "allTypes": "Semua Jenis",
+      "allStatus": "Semua Status",
+      "tabs": {
+        "all": "Semua Laporan",
+        "draft": "Draf",
+        "completed": "Selesai",
+        "reviewed": "Ditinjau"
+      },
+      "card": {
+        "child": "Anak",
+        "therapist": "Terapis",
+        "created": "Dibuat",
+        "due": "Batas",
+        "tags": "Tag:",
+        "view": "Lihat",
+        "download": "Unduh"
+      },
+      "types": {
+        "progress": "Kemajuan",
+        "assessment": "Penilaian",
+        "therapyNotes": "Catatan Terapi",
+        "milestone": "Tonggak Capaian"
+      },
+      "noReports": {
+        "title": "Tidak ada laporan ditemukan",
+        "descSearch": "Coba sesuaikan kriteria pencarian Anda.",
+        "descEmpty": "Mulai dengan membuat laporan pertama Anda."
+      }
+    },
+    "schedules": {
+      "titleAdmin": "Manajemen Jadwal",
+      "titleTherapist": "Jadwal Saya",
+      "titleParent": "Jadwal Janji Temu",
+      "descAdmin": "Kelola semua jadwal dan janji temu",
+      "descTherapist": "Lihat dan kelola sesi terapi Anda",
+      "descParent": "Lihat janji temu anak Anda yang akan datang",
+      "newAppointment": "Jadwal Baru",
+      "searchPlaceholder": "Cari janji temu...",
+      "filterTherapist": "Filter berdasarkan terapis...",
+      "allStatus": "Semua Status",
+      "views": {
+        "day": "Hari",
+        "week": "Minggu",
+        "month": "Bulan"
+      },
+      "eventCard": {
+        "patient": "Pasien",
+        "therapist": "Terapis",
+        "viewDetails": "Lihat Detail",
+        "reschedule": "Jadwal Ulang",
+        "virtual": "Virtual: "
+      },
+      "noAppointments": {
+        "title": "Tidak ada janji temu hari ini",
+        "subtitle": "Jadwal Anda bersih untuk hari ini."
+      },
+      "stats": {
+        "totalAppointments": "Total Janji Temu",
+        "scheduled": "Dijadwalkan",
+        "completed": "Selesai",
+        "thisWeek": "Minggu Ini"
+      },
+      "more": "+{count} lainnya",
+      "types": {
+        "therapy": "Terapi",
+        "consultation": "Konsultasi",
+        "assessment": "Penilaian",
+        "followUp": "Tindak Lanjut"
+      }
+    },
+    "settings": {
+      "titleSystem": "Pengaturan Sistem",
+      "titleAccount": "Pengaturan Akun",
+      "descSystem": "Kelola konfigurasi dan preferensi sistem",
+      "descAccount": "Kelola preferensi dan pengaturan akun Anda",
+      "tabs": {
+        "profile": "Profil",
+        "notifications": "Notifikasi",
+        "privacy": "Privasi",
+        "system": "Sistem",
+        "security": "Keamanan",
+        "billing": "Tagihan"
+      },
+      "profile": {
+        "title": "Informasi Profil",
+        "fullName": "Nama Lengkap",
+        "fullNamePlaceholder": "Masukkan nama lengkap Anda",
+        "email": "Alamat Email",
+        "emailPlaceholder": "Masukkan email Anda",
+        "phone": "Nomor Telepon",
+        "phonePlaceholder": "Masukkan nomor telepon Anda",
+        "timezone": "Zona Waktu",
+        "save": "Simpan Perubahan",
+        "saving": "Menyimpan..."
+      },
+      "notifications": {
+        "title": "Preferensi Notifikasi",
+        "email": "Notifikasi Email",
+        "emailDesc": "Terima notifikasi melalui email",
+        "appointments": "Pengingat Janji Temu",
+        "appointmentsDesc": "Dapatkan pengingat tentang janji temu yang akan datang",
+        "messages": "Pesan Baru",
+        "messagesDesc": "Notifikasi untuk pesan baru",
+        "reports": "Laporan Kemajuan",
+        "reportsDesc": "Notifikasi untuk laporan kemajuan baru",
+        "save": "Simpan Perubahan"
+      },
+      "privacy": {
+        "title": "Privasi & Data",
+        "profileVisibility": "Visibilitas Profil",
+        "dataSharing": "Berbagi Data",
+        "dataSharingDesc": "Izinkan berbagi data anonim untuk penelitian",
+        "analytics": "Pelacakan Analitik",
+        "analyticsDesc": "Bantu kami berkembang dengan melacak pola penggunaan",
+        "public": "Publik",
+        "private": "Pribadi",
+        "therapistsOnly": "Hanya Terapis",
+        "save": "Simpan Perubahan"
+      },
+      "system": {
+        "title": "Pengaturan Sistem Umum",
+        "siteName": "Nama Situs",
+        "supportEmail": "Email Dukungan",
+        "timezone": "Zona Waktu Default",
+        "maintenanceMode": "Mode Pemeliharaan",
+        "maintenanceModeDesc": "Aktifkan untuk menempatkan sistem dalam mode pemeliharaan",
+        "save": "Simpan Perubahan"
+      }
+    },
+    "messages": {
+      "titleParent": "Pesan",
+      "titleTherapist": "Pesan Pasien",
+      "titleAdmin": "Semua Pesan",
+      "subtitleParent": "Berkomunikasi dengan terapis anak Anda",
+      "subtitleTherapist": "Berkomunikasi dengan orang tua dan pasien Anda",
+      "subtitleAdmin": "Monitor komunikasi di sistem"
+    }
+  },
+  "ui": {
+    "error": {
+      "somethingWentWrong": "Terjadi Kesalahan",
+      "unexpectedError": "Terjadi kesalahan yang tidak terduga. Silakan coba muat ulang halaman.",
+      "refreshPage": "Muat Ulang Halaman",
+      "error": "Kesalahan"
+    },
+    "loading": {
+      "loading": "Memuat...",
+      "pleaseWait": "Harap tunggu sementara kami memuat konten Anda.",
+      "loadingOverlay": "Memuat..."
+    }
+  }
+}

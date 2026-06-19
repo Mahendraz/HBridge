@@ -1,0 +1,74 @@
+[
+  {
+    "_id": "therapist1",
+    "name": "Dr. Sari Wulandari, M.Psi",
+    "email": "sari.wulandari@heartybridge.com",
+    "phone": "+6281234567891",
+    "specializations": ["Autisme", "Terapi Perilaku ABA", "Konseling Keluarga"],
+    "status": "active",
+    "assignedPatients": 8,
+    "maxPatients": 12,
+    "rating": 4.6,
+    "totalSessions": 156,
+    "joiningDate": "2023-08-01T09:00:00Z",
+    "availability": {
+      "days": ["Senin", "Selasa", "Rabu", "Kamis", "Sabtu"],
+      "hours": { "start": "08:00", "end": "16:00" }
+    },
+    "credentials": ["Psikolog Klinis", "Sertifikat ABA Level 2", "HIMPSI"]
+  },
+  {
+    "_id": "therapist2", 
+    "name": "Budi Santoso, S.ST",
+    "email": "budi.santoso@heartybridge.com",
+    "phone": "+6281234567892",
+    "specializations": ["Terapi Wicara", "Keterlambatan Bicara", "Gangguan Artikulasi"],
+    "status": "active",
+    "assignedPatients": 6,
+    "maxPatients": 10,
+    "rating": 4.8,
+    "totalSessions": 203,
+    "joiningDate": "2023-09-15T09:00:00Z",
+    "availability": {
+      "days": ["Senin", "Selasa", "Kamis", "Jumat"],
+      "hours": { "start": "09:00", "end": "17:00" }
+    },
+    "credentials": ["Terapis Wicara", "IKATEMI", "Sertifikat Terapi Oral Motor"]
+  },
+  {
+    "_id": "therapist3",
+    "name": "Linda Maharani, S.Tr.OT",
+    "email": "linda.maharani@heartybridge.com",
+    "phone": "+6281234567893", 
+    "specializations": ["Terapi Okupasi", "Integrasi Sensori", "Motorik Halus"],
+    "status": "active",
+    "assignedPatients": 5,
+    "maxPatients": 8,
+    "rating": 4.7,
+    "totalSessions": 134,
+    "joiningDate": "2024-01-10T09:00:00Z",
+    "availability": {
+      "days": ["Rabu", "Kamis", "Jumat", "Sabtu"],
+      "hours": { "start": "10:00", "end": "18:00" }
+    },
+    "credentials": ["Okupasi Terapis", "IKATOINDO", "Sertifikat Sensory Integration"]
+  },
+  {
+    "_id": "therapist4",
+    "name": "Dr. Ahmad Rizki, Sp.KFR",
+    "email": "ahmad.rizki@heartybridge.com",
+    "phone": "+6281234567894", 
+    "specializations": ["Fisioterapi", "Cerebral Palsy", "Rehabilitasi Medik"],
+    "status": "active",
+    "assignedPatients": 4,
+    "maxPatients": 8,
+    "rating": 4.9,
+    "totalSessions": 89,
+    "joiningDate": "2024-03-01T09:00:00Z",
+    "availability": {
+      "days": ["Senin", "Rabu", "Jumat"],
+      "hours": { "start": "13:00", "end": "20:00" }
+    },
+    "credentials": ["Spesialis Kedokteran Fisik & Rehabilitasi", "IDI", "PERDOSRI"]
+  }
+]

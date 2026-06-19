@@ -1,0 +1,48 @@
+[
+  {
+    "_id": "admin1",
+    "name": "Dr. Sarah Johnson",
+    "email": "admin@heartybridge.com",
+    "role": "admin",
+    "phone": "+1-555-0101",
+    "createdAt": "2024-01-15T09:00:00Z"
+  },
+  {
+    "_id": "therapist1",
+    "name": "Dr. Michael Chen",
+    "email": "michael.chen@heartybridge.com",
+    "role": "therapist",
+    "phone": "+1-555-0102",
+    "specialization": ["Autism Spectrum Disorders", "Behavioral Therapy"],
+    "clinic": "Hearty Bridge Center",
+    "experience": "8 years",
+    "createdAt": "2024-02-01T09:00:00Z"
+  },
+  {
+    "_id": "therapist2",
+    "name": "Dr. Emily Rodriguez",
+    "email": "emily.rodriguez@heartybridge.com",
+    "role": "therapist",
+    "phone": "+1-555-0103",
+    "specialization": ["Speech Therapy", "ADHD"],
+    "clinic": "Hearty Bridge Center",
+    "experience": "5 years",
+    "createdAt": "2024-02-15T09:00:00Z"
+  },
+  {
+    "_id": "parent1",
+    "name": "Jennifer Smith",
+    "email": "jennifer.smith@email.com",
+    "role": "parent",
+    "phone": "+1-555-0201",
+    "createdAt": "2024-03-01T09:00:00Z"
+  },
+  {
+    "_id": "parent2",
+    "name": "David Wilson",
+    "email": "david.wilson@email.com",
+    "role": "parent",
+    "phone": "+1-555-0202",
+    "createdAt": "2024-03-10T09:00:00Z"
+  }
+]

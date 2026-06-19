@@ -1,0 +1,54 @@
+[
+  {
+    "_id": "event1",
+    "title": "Behavioral Therapy Session",
+    "patientName": "Emma Smith", 
+    "therapistName": "Dr. Michael Chen",
+    "startTime": "2024-05-17T14:00:00Z",
+    "endTime": "2024-05-17T15:00:00Z",
+    "status": "scheduled",
+    "type": "therapy",
+    "notes": "Continue working on social communication skills",
+    "location": "Room 102",
+    "isVirtual": false
+  },
+  {
+    "_id": "event2",
+    "title": "Speech Therapy Session",
+    "patientName": "Lucas Wilson",
+    "therapistName": "Dr. Emily Rodriguez", 
+    "startTime": "2024-05-15T10:00:00Z",
+    "endTime": "2024-05-15T11:00:00Z",
+    "status": "scheduled",
+    "type": "therapy",
+    "notes": "Focus on articulation exercises",
+    "location": "Virtual Session",
+    "isVirtual": true
+  },
+  {
+    "_id": "event3",
+    "title": "Initial Assessment",
+    "patientName": "Sophia Martinez",
+    "therapistName": "Dr. Emily Rodriguez",
+    "startTime": "2024-05-20T11:00:00Z", 
+    "endTime": "2024-05-20T12:30:00Z",
+    "status": "scheduled",
+    "type": "assessment",
+    "notes": "Comprehensive speech and language evaluation",
+    "location": "Room 105",
+    "isVirtual": false
+  },
+  {
+    "_id": "event4",
+    "title": "Follow-up Session",
+    "patientName": "Alex Johnson",
+    "therapistName": "Dr. Michael Chen",
+    "startTime": "2024-04-20T15:30:00Z",
+    "endTime": "2024-04-20T16:30:00Z", 
+    "status": "completed",
+    "type": "follow-up",
+    "notes": "Session completed successfully",
+    "location": "Room 102",
+    "isVirtual": false
+  }
+]

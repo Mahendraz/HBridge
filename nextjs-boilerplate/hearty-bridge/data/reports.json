@@ -1,0 +1,70 @@
+[
+  {
+    "_id": "report1",
+    "title": "Emma Smith - Monthly Progress Report",
+    "type": "progress",
+    "patientName": "Emma Smith",
+    "therapistName": "Dr. Michael Chen",
+    "dateRange": {
+      "start": "2024-04-01T00:00:00Z",
+      "end": "2024-04-30T23:59:59Z"
+    },
+    "status": "completed",
+    "createdAt": "2024-05-01T10:00:00Z",
+    "createdBy": "Dr. Michael Chen",
+    "summary": {
+      "totalSessions": 8,
+      "progressScore": 78,
+      "recommendations": [
+        "Continue social communication interventions",
+        "Increase peer interaction opportunities", 
+        "Maintain consistent behavioral strategies at home"
+      ]
+    }
+  },
+  {
+    "_id": "report2",
+    "title": "Lucas Wilson - Speech Assessment Report",
+    "type": "session",
+    "patientName": "Lucas Wilson", 
+    "therapistName": "Dr. Emily Rodriguez",
+    "dateRange": {
+      "start": "2024-04-15T00:00:00Z",
+      "end": "2024-04-15T23:59:59Z"
+    },
+    "status": "completed",
+    "createdAt": "2024-04-16T09:00:00Z",
+    "createdBy": "Dr. Emily Rodriguez",
+    "summary": {
+      "totalSessions": 1,
+      "progressScore": 65,
+      "recommendations": [
+        "Daily articulation practice recommended",
+        "Parent involvement in home exercises crucial"
+      ]
+    }
+  },
+  {
+    "_id": "report3",
+    "title": "Q1 2024 System Analytics",
+    "type": "system",
+    "patientName": null,
+    "therapistName": null,
+    "dateRange": {
+      "start": "2024-01-01T00:00:00Z", 
+      "end": "2024-03-31T23:59:59Z"
+    },
+    "status": "completed",
+    "createdAt": "2024-04-01T08:00:00Z",
+    "createdBy": "System",
+    "summary": {
+      "totalSessions": 245,
+      "progressScore": 72,
+      "recommendations": [
+        "Overall patient progress trending positively",
+        "Consider expanding therapy offerings",
+        "Schedule optimization needed for peak hours"
+      ]
+    }
+  }
+]
