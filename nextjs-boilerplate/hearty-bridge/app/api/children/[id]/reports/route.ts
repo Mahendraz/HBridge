@@ -33,11 +33,8 @@ export const GET = withAnyAuth(
         return ErrorResponse.notFound('Child not found', 'RESOURCE_NOT_FOUND');
       }
 
-      // Check access permissions
+      // Check access permissions (therapist can view all children)
       if (user.role === 'parent' && child.parentId.toString() !== user.userId) {
-        return ErrorResponse.forbidden('Access denied', 'INSUFFICIENT_PERMISSIONS');
-      }
-      if (user.role === 'therapist' && (!child.therapistId || child.therapistId.toString() !== user.userId)) {
         return ErrorResponse.forbidden('Access denied', 'INSUFFICIENT_PERMISSIONS');
       }
 

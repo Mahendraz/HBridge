@@ -188,22 +188,8 @@ export function buildChildSearchQuery(
   if (user.role === 'parent') {
     // Parents can only see their own children
     query.parentId = user.userId;
-  } else if (user.role === 'therapist') {
-    // Therapists can see children assigned to them or unassigned children
-    if (filters.therapistId) {
-      query.therapistId = filters.therapistId;
-    } else if (filters.hasTherapist === false) {
-      query.therapistId = null;
-    } else if (filters.hasTherapist === true) {
-      query.therapistId = { $ne: null };
-    } else {
-      // Default: show assigned children and available children
-      query.$or = [
-        { therapistId: user.userId },
-        { therapistId: null }
-      ];
-    }
   }
+  // Admin and therapist see all active children (therapist is view-only via API layer)
 
   // Search functionality
   if (filters.search) {

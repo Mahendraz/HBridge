@@ -20,6 +20,7 @@ export interface IChild extends Document {
       relationship: string;
     };
   };
+  tokenBalance: number;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -111,6 +112,11 @@ const ChildSchema = new Schema<IChild>({
         maxlength: [50, 'Relationship cannot exceed 50 characters']
       }
     }
+  },
+  tokenBalance: {
+    type: Number,
+    default: 0,
+    min: 0,
   },
   isActive: {
     type: Boolean,

@@ -3,9 +3,9 @@
 import { useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { 
-  HomeIcon, 
-  UsersIcon, 
+import {
+  HomeIcon,
+  UsersIcon,
   UserPlusIcon,
   ChartBarIcon,
   CogIcon,
@@ -19,7 +19,8 @@ import {
   ShieldCheckIcon,
   UserIcon,
   BarChart3Icon,
-  MailIcon
+  MailIcon,
+  ClipboardCheckIcon
 } from "lucide-react";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { UserRole } from "@/lib/types/auth";
@@ -28,7 +29,7 @@ import { usePermissions } from "@/lib/utils/permissions";
 
 const iconMap = {
   HomeIcon,
-  UserIcon, 
+  UserIcon,
   UsersIcon,
   CalendarIcon,
   ChartBarIcon,
@@ -37,7 +38,8 @@ const iconMap = {
   MailIcon,
   BabyIcon,
   FileTextIcon,
-  ShieldCheckIcon
+  ShieldCheckIcon,
+  ClipboardCheckIcon
 };
 
 interface DashboardSidebarProps {

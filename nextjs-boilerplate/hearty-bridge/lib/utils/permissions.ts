@@ -77,7 +77,11 @@ export type Permission =
   // Financial permissions
   | "billing:view"
   | "billing:manage"
-  | "billing:view_own";
+  | "billing:view_own"
+
+  // Attendance permissions
+  | "attendance:view"
+  | "attendance:checkin";
 
 // Role-to-permissions mapping
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
@@ -142,9 +146,13 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     
     // Financial
     "billing:view",
-    "billing:manage"
+    "billing:manage",
+
+    // Attendance
+    "attendance:view",
+    "attendance:checkin"
   ],
-  
+
   therapist: [
     // Dashboard
     "dashboard:view",
@@ -172,9 +180,13 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     
     // Communication (assigned patients/families)
     "messages:view_own",
-    "messages:send"
+    "messages:send",
+
+    // Attendance
+    "attendance:view",
+    "attendance:checkin"
   ],
-  
+
   parent: [
     // Dashboard
     "dashboard:view",
@@ -401,10 +413,10 @@ export class PermissionChecker {
           permissions: ["reports:view_all"]
         },
         {
-          name: "Pengaturan",
-          href: "/dashboard/settings",
-          icon: "CogIcon",
-          permissions: ["settings:system"]
+          name: "Absensi",
+          href: "/dashboard/attendance",
+          icon: "ClipboardCheckIcon",
+          permissions: ["attendance:view"]
         }
       ],
       therapist: [
@@ -439,10 +451,10 @@ export class PermissionChecker {
           permissions: ["messages:view_own"]
         },
         {
-          name: "Pengaturan",
-          href: "/dashboard/settings",
-          icon: "CogIcon",
-          permissions: ["settings:view"]
+          name: "Absensi",
+          href: "/dashboard/attendance",
+          icon: "ClipboardCheckIcon",
+          permissions: ["attendance:view"]
         }
       ],
       parent: [
@@ -475,12 +487,6 @@ export class PermissionChecker {
           href: "/dashboard/messages",
           icon: "MailIcon",
           permissions: ["messages:view_own"]
-        },
-        {
-          name: "Pengaturan",
-          href: "/dashboard/settings",
-          icon: "CogIcon",
-          permissions: ["settings:view"]
         }
       ]
     };

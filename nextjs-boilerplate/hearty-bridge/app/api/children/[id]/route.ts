@@ -46,9 +46,8 @@ export const GET = withAnyAuth(
       // Populate based on user role
       if (user.role === 'parent') {
         childQuery = childQuery.populate('therapistId', 'name email profile.specialization profile.clinic');
-      } else if (user.role === 'therapist') {
-        childQuery = childQuery.populate('parentId', 'name email phone');
-      } else if (user.role === 'admin') {
+      } else {
+        // Admin and therapist both get full populate
         childQuery = childQuery
           .populate('parentId', 'name email phone')
           .populate('therapistId', 'name email profile.specialization profile.clinic');
@@ -63,8 +62,8 @@ export const GET = withAnyAuth(
         );
       }
 
-      // Check access permissions (admin always has access)
-      if (user.role !== 'admin' && !canAccessChild(user, child)) {
+      // Check access permissions (admin and therapist can view all children)
+      if (user.role === 'parent' && !canAccessChild(user, child)) {
         return ErrorResponse.forbidden(
           'You do not have permission to view this child',
           'INSUFFICIENT_PERMISSIONS'

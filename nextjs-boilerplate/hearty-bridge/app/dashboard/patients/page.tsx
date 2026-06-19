@@ -25,15 +25,11 @@ import {
   ClockIcon,
   FileTextIcon,
   MoreVerticalIcon,
-  EditIcon,
   EyeIcon,
   SearchIcon,
-  FilterIcon,
   UserPlusIcon,
   PhoneIcon,
   MailIcon,
-  TrashIcon,
-  UserCheckIcon,
   UsersIcon
 } from "lucide-react";
 import Link from "next/link";
@@ -70,6 +66,7 @@ interface Patient {
   lastSession?: string;
   nextSession?: string;
   progressScore?: number;
+  tokenBalance?: number;
   createdAt?: string;
 }
 
@@ -158,6 +155,7 @@ export default function UnifiedPatientsPage() {
             lastSession: child.lastSession,
             nextSession: child.nextSession,
             progressScore: child.progressScore || 0,
+            tokenBalance: child.tokenBalance ?? 0,
             createdAt: child.createdAt
           };
           });
@@ -304,13 +302,8 @@ export default function UnifiedPatientsPage() {
     if (user?.role === "parent") {
       // Parents only see their own children
       filtered = patients.filter(patient => patient.parent?.name === user.name);
-    } else if (user?.role === "therapist") {
-      // Therapists only see assigned patients
-      filtered = patients.filter(patient =>
-        patient.assignedTherapist?.name?.includes(user.name || "") || false
-      );
     }
-    // Admins see all patients
+    // Admin and therapist see all patients (therapist is view-only)
 
     // Search filtering
     if (searchTerm.trim()) {
@@ -329,6 +322,25 @@ export default function UnifiedPatientsPage() {
   };
 
   const filteredPatients = getFilteredPatients();
+
+  // For therapist: derive unique parents from their assigned patients
+  // For admin: use allParents (fetched separately, includes parents with no children)
+  const displayParents = user?.role === 'admin'
+    ? allParents
+    : (() => {
+        const map = new Map<string, { _id: string; name: string; email: string; phone?: string }>();
+        filteredPatients.forEach(p => {
+          if (p.parent?.id) {
+            map.set(p.parent.id, {
+              _id: p.parent.id,
+              name: p.parent.name || 'Orang Tua',
+              email: p.parent.email || '',
+              phone: p.parent.phone,
+            });
+          }
+        });
+        return Array.from(map.values());
+      })();
 
   const getPageTitle = () => {
     switch (user?.role) {
@@ -505,9 +517,18 @@ export default function UnifiedPatientsPage() {
                         <span>•</span>
                         <span>Lahir: {new Date(child.birthDate || "").toLocaleDateString('id-ID')}</span>
                       </CardDescription>
-                      <Badge variant="outline" className="mt-2">
-                        {child.diagnosis}
-                      </Badge>
+                      <div className="flex items-center gap-2 mt-2">
+                        <Badge variant="outline">
+                          {child.diagnosis}
+                        </Badge>
+                        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                          (child.tokenBalance ?? 0) > 0
+                            ? 'bg-yellow-100 text-yellow-800'
+                            : 'bg-red-100 text-red-800'
+                        }`}>
+                          {child.tokenBalance ?? 0} Token
+                        </span>
+                      </div>
                     </div>
                   </div>
                   <Button variant="ghost" size="sm">
@@ -601,10 +622,10 @@ export default function UnifiedPatientsPage() {
               </CardContent>
             </Card>
           ))
-        ) : user?.role === "admin" ? (
-          // Admin view: grouped by parent
+        ) : (
+          // Admin + Therapist view: grouped by parent
           <div className="space-y-4">
-            {allParents.map(parent => {
+            {displayParents.map(parent => {
               const children = filteredPatients.filter(
                 p => p.parent?.id === parent._id || p.parent?.id === parent._id.toString()
               );
@@ -624,18 +645,20 @@ export default function UnifiedPatientsPage() {
                           </div>
                         </div>
                       </div>
-                      <Button
-                        size="sm"
-                        variant="outline"
-                        onClick={() => {
-                          setCreatePatientForm(prev => ({ ...prev, parentId: parent._id }));
-                          fetchParents();
-                          setShowCreatePatientModal(true);
-                        }}
-                      >
-                        <PlusIcon className="h-4 w-4 mr-1" />
-                        Tambah Anak
-                      </Button>
+                      {user?.role === 'admin' && (
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setCreatePatientForm(prev => ({ ...prev, parentId: parent._id }));
+                            fetchParents();
+                            setShowCreatePatientModal(true);
+                          }}
+                        >
+                          <PlusIcon className="h-4 w-4 mr-1" />
+                          Tambah Anak
+                        </Button>
+                      )}
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">
@@ -655,6 +678,13 @@ export default function UnifiedPatientsPage() {
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
+                              <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
+                                (child.tokenBalance ?? 0) > 0
+                                  ? 'bg-yellow-100 text-yellow-800'
+                                  : 'bg-red-100 text-red-800'
+                              }`}>
+                                {child.tokenBalance ?? 0} Token
+                              </span>
                               <Badge variant={child.status === 'active' ? 'default' : 'secondary'}>
                                 {child.status === 'active' ? 'Aktif' : child.status === 'inactive' ? 'Tidak Aktif' : 'Tertunda'}
                               </Badge>
@@ -672,78 +702,22 @@ export default function UnifiedPatientsPage() {
                 </Card>
               );
             })}
-            {allParents.length === 0 && (
+            {displayParents.length === 0 && (
               <Card>
                 <CardContent className="py-8 text-center text-gray-500">
                   <UsersIcon className="h-12 w-12 mx-auto mb-3 text-gray-300" />
-                  <p className="font-medium text-gray-900">Belum ada orang tua terdaftar</p>
-                  <p className="text-sm mt-1">Tambahkan orang tua terlebih dahulu, lalu tambahkan anak mereka.</p>
+                  <p className="font-medium text-gray-900">
+                    {user?.role === 'admin' ? 'Belum ada orang tua terdaftar' : 'Tidak ada pasien yang ditugaskan'}
+                  </p>
+                  <p className="text-sm mt-1">
+                    {user?.role === 'admin'
+                      ? 'Tambahkan orang tua terlebih dahulu, lalu tambahkan anak mereka.'
+                      : 'Hubungi admin untuk penugasan pasien.'}
+                  </p>
                 </CardContent>
               </Card>
             )}
           </div>
-        ) : (
-          // Therapist view: flat patient list
-          <Card>
-            <CardHeader>
-              <CardTitle>Pasien Saya</CardTitle>
-            </CardHeader>
-            <CardContent>
-              {filteredPatients.length > 0 ? (
-                <div className="space-y-4">
-                  {filteredPatients.map((patient) => (
-                    <div key={patient.id} className="border rounded-lg p-4 hover:bg-gray-50">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-4">
-                          <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center">
-                            <BabyIcon className="h-6 w-6 text-teal-600" />
-                          </div>
-                          <div>
-                            <h3 className="font-semibold text-gray-900">{patient.name}</h3>
-                            <p className="text-sm text-gray-600">{patient.diagnosis}</p>
-                            {patient.parent && (
-                              <p className="text-xs text-gray-500">Orang Tua: {patient.parent.name}</p>
-                            )}
-                          </div>
-                        </div>
-
-                        <div className="flex items-center space-x-4">
-                          <div className="text-right text-sm">
-                            <p className="font-medium">{patient.totalSessions || 0} sesi</p>
-                            <p className="text-gray-500">
-                              Berikutnya: {patient.nextSession ? new Date(patient.nextSession).toLocaleDateString('id-ID') : "Belum dijadwalkan"}
-                            </p>
-                          </div>
-
-                          <Badge variant={patient.status === "active" ? "default" : "secondary"}>
-                            {patient.status === "active" ? "Aktif" :
-                             patient.status === "inactive" ? "Tidak Aktif" : "Tertunda"}
-                          </Badge>
-
-                          <div className="flex space-x-2">
-                            <Button size="sm" variant="outline">
-                              <EyeIcon className="h-4 w-4" />
-                            </Button>
-                            <PermissionGuard userRole={user?.role || "parent"} permissions={["patients:edit"]}>
-                              <Button size="sm" variant="outline">
-                                <EditIcon className="h-4 w-4" />
-                              </Button>
-                            </PermissionGuard>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <div className="text-center py-8 text-gray-500">
-                  <BabyIcon className="h-16 w-16 mx-auto mb-4 text-gray-400" />
-                  <h3 className="text-lg font-semibold text-gray-900 mb-2">Pasien Tidak Ditemukan</h3>
-                  <p className="text-gray-600 mb-6">Coba sesuaikan kriteria pencarian Anda.</p>
-                </div>
-              )}
-            </CardContent>
-          </Card>
         )}
       </div>
 

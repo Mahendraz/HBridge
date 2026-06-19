@@ -14,6 +14,7 @@ import {
   VideoIcon,
   SaveIcon,
   UserIcon,
+  CalendarIcon,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -28,22 +29,18 @@ interface FormState {
   title: string;
   description: string;
   content: string;
-  type: "progress" | "assessment" | "therapy-notes" | "milestone";
   childId: string;
   childName: string;
   dueDate: string;
-  tags: string;
 }
 
 const EMPTY_FORM: FormState = {
   title: "",
   description: "",
   content: "",
-  type: "progress",
   childId: "",
   childName: "",
   dueDate: "",
-  tags: "",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -66,10 +63,9 @@ export default function NewReportPage() {
     childId: urlChildId,
     childName: urlChildName,
   });
-  const [reportStatus, setReportStatus] = useState<"draft" | "completed" | "reviewed">("draft");
   const [allChildren, setAllChildren] = useState<ChildOption[]>([]);
   const [pendingFiles, setPendingFiles] = useState<{ file: File; preview: string }[]>([]);
-  const [saving, setSaving] = useState(false);
+  const [savingAs, setSavingAs] = useState<"draft" | "completed" | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [loadingChildren, setLoadingChildren] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -110,15 +106,10 @@ export default function NewReportPage() {
         title: d.title || "",
         description: d.description || "",
         content: d.content || "",
-        type: (d.type as FormState["type"]) || "progress",
         childId: d.childId || "",
         childName: d.childName || "",
         dueDate: d.dueDate || "",
-        tags: d.tags || "",
       });
-      if (d.status === "completed" || d.status === "reviewed") {
-        setReportStatus(d.status);
-      }
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -126,19 +117,18 @@ export default function NewReportPage() {
   // Auto-save form to localStorage (debounced 800ms)
   useEffect(() => {
     const timer = setTimeout(() => {
-      // Only save if there's something to save
       const hasContent = form.title || form.content || form.description || form.childId;
       if (hasContent) {
         draftHook.save({
           ...form,
-          status: reportStatus,
+          status: "draft",
           savedAt: new Date().toISOString(),
         });
       }
     }, 800);
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form, reportStatus]);
+  }, [form]);
 
   const handleChildChange = (childId: string) => {
     const child = allChildren.find((c) => c._id === childId);
@@ -174,13 +164,13 @@ export default function NewReportPage() {
     router.back();
   };
 
-  const handleSave = useCallback(async () => {
-    if (!form.title.trim() || !form.type || !form.childId) {
-      setSaveError("Judul, jenis laporan, dan pasien wajib diisi.");
+  const handleSave = useCallback(async (statusToSave: "draft" | "completed") => {
+    if (!form.title.trim() || !form.childId) {
+      setSaveError("Judul dan pasien wajib diisi.");
       return;
     }
 
-    setSaving(true);
+    setSavingAs(statusToSave);
     setSaveError(null);
 
     const token =
@@ -191,15 +181,10 @@ export default function NewReportPage() {
         title: form.title.trim(),
         description: form.description.trim(),
         content: form.content.trim(),
-        type: form.type,
-        status: reportStatus,
+        status: statusToSave,
         childId: form.childId,
         childName: form.childName,
         dueDate: form.dueDate || undefined,
-        tags: form.tags
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean),
       };
 
       const res = await fetch("/api/reports", {
@@ -237,9 +222,9 @@ export default function NewReportPage() {
     } catch (err: unknown) {
       setSaveError(err instanceof Error ? err.message : "Terjadi kesalahan.");
     } finally {
-      setSaving(false);
+      setSavingAs(null);
     }
-  }, [form, reportStatus, pendingFiles, draftHook, router]);
+  }, [form, pendingFiles, draftHook, router]);
 
   if (user?.role === "parent") return null;
 
@@ -251,6 +236,8 @@ export default function NewReportPage() {
       .join("")
       .toUpperCase();
   }
+
+  const isSaving = savingAs !== null;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
@@ -307,85 +294,18 @@ export default function NewReportPage() {
         </div>
       )}
 
-      {/* Status action bar */}
-      <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
-        <span className="text-xs text-gray-500">Status laporan:</span>
-        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-          reportStatus === "completed" ? "bg-green-100 text-green-800" :
-          reportStatus === "reviewed" ? "bg-purple-100 text-purple-800" :
-          "bg-yellow-100 text-yellow-800"
-        }`}>
-          {reportStatus === "completed" ? "Selesai" : reportStatus === "reviewed" ? "Ditinjau" : "Draf"}
-        </span>
-        <div className="ml-auto flex gap-2">
-          {reportStatus === "draft" && (
-            <button
-              onClick={() => setReportStatus("completed")}
-              className="text-xs font-medium px-3 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-            >
-              Tandai Selesai
-            </button>
-          )}
-          {reportStatus === "completed" && (
-            <button
-              onClick={() => setReportStatus("reviewed")}
-              className="text-xs font-medium px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
-            >
-              Tandai Ditinjau
-            </button>
-          )}
-          {reportStatus !== "draft" && (
-            <button
-              onClick={() => setReportStatus("draft")}
-              className="text-xs font-medium px-3 py-1.5 border border-gray-300 text-gray-600 rounded hover:bg-gray-100 transition-colors"
-            >
-              Kembalikan ke Draf
-            </button>
-          )}
-        </div>
-      </div>
-
       <Card>
         <CardContent className="p-6 space-y-5">
-          {/* Jenis Laporan */}
-          <div>
-            <label className="text-xs font-medium text-gray-700 mb-1 block">
-              Jenis Laporan <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={form.type}
-              onChange={(e) => setForm((f) => ({ ...f, type: e.target.value as FormState["type"] }))}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-            >
-              <option value="progress">Kemajuan</option>
-              <option value="assessment">Penilaian</option>
-              <option value="therapy-notes">Catatan Terapi</option>
-              <option value="milestone">Tonggak Capaian</option>
-            </select>
-          </div>
-
-          {/* Judul */}
-          <div>
-            <label className="text-xs font-medium text-gray-700 mb-1 block">
-              Judul <span className="text-red-500">*</span>
-            </label>
-            <Input
-              value={form.title}
-              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
-              placeholder="Judul laporan..."
-            />
-          </div>
-
-          {/* Pasien – hidden when pre-selected from URL picker */}
+          {/* Nama Anak – shown when NOT pre-selected from URL picker; prominent */}
           {!urlChildId && (
             <div>
-              <label className="text-xs font-medium text-gray-700 mb-1 block">
-                Pasien <span className="text-red-500">*</span>
+              <label className="text-sm font-semibold text-gray-800 mb-1.5 block">
+                Nama Anak / Pasien <span className="text-red-500">*</span>
               </label>
               <select
                 value={form.childId}
                 onChange={(e) => handleChildChange(e.target.value)}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full border-2 border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
                 disabled={loadingChildren}
               >
                 <option value="">
@@ -399,6 +319,32 @@ export default function NewReportPage() {
               </select>
             </div>
           )}
+
+          {/* Waktu Terapi – prominent */}
+          <div>
+            <label className="text-sm font-semibold text-gray-800 mb-1.5 flex items-center gap-1.5">
+              <CalendarIcon className="h-4 w-4 text-teal-600" />
+              Waktu Terapi
+            </label>
+            <input
+              type="date"
+              value={form.dueDate}
+              onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
+              className="w-full border-2 border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            />
+          </div>
+
+          {/* Judul */}
+          <div>
+            <label className="text-xs font-medium text-gray-700 mb-1 block">
+              Judul <span className="text-red-500">*</span>
+            </label>
+            <Input
+              value={form.title}
+              onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
+              placeholder="Judul laporan..."
+            />
+          </div>
 
           {/* Deskripsi */}
           <div>
@@ -422,28 +368,6 @@ export default function NewReportPage() {
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm resize-y min-h-[160px] focus:outline-none focus:ring-2 focus:ring-teal-500"
               placeholder="Catatan terapi, perkembangan, observasi..."
             />
-          </div>
-
-          {/* Batas Waktu + Tags */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-medium text-gray-700 mb-1 block">Batas Waktu</label>
-              <input
-                type="date"
-                value={form.dueDate}
-                onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-gray-700 mb-1 block">Tag (pisah koma)</label>
-              <Input
-                value={form.tags}
-                onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
-                placeholder="contoh: autisme, motorik"
-              />
-            </div>
           </div>
 
           {/* Media */}
@@ -519,11 +443,28 @@ export default function NewReportPage() {
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-            <Button variant="outline" onClick={handleBack} disabled={saving}>
+            <Button variant="outline" onClick={handleBack} disabled={isSaving}>
               Batal
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? (
+            <Button
+              variant="outline"
+              onClick={() => handleSave("draft")}
+              disabled={isSaving}
+            >
+              {savingAs === "draft" ? (
+                <>
+                  <span className="animate-spin inline-block h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+                  Menyimpan...
+                </>
+              ) : (
+                "Simpan Draf"
+              )}
+            </Button>
+            <Button
+              onClick={() => handleSave("completed")}
+              disabled={isSaving}
+            >
+              {savingAs === "completed" ? (
                 <>
                   <span className="animate-spin inline-block h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
                   Menyimpan...
@@ -531,7 +472,7 @@ export default function NewReportPage() {
               ) : (
                 <>
                   <SaveIcon className="h-4 w-4 mr-2" />
-                  Buat Laporan
+                  Simpan Laporan
                 </>
               )}
             </Button>

@@ -18,6 +18,7 @@ import {
   AlertCircleIcon,
   ClipboardListIcon,
   PencilIcon,
+  CreditCardIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -56,6 +57,23 @@ interface ChildDetail {
     allergies: string[];
     notes: string;
   };
+  tokenBalance?: number;
+}
+
+interface TokenTransaction {
+  _id: string;
+  type: 'topup' | 'deduct';
+  amount: number;
+  balanceBefore: number;
+  balanceAfter: number;
+  note: string;
+  adminName: string;
+  createdAt: string;
+}
+
+interface TokenData {
+  balance: number;
+  transactions: TokenTransaction[];
 }
 
 export default function PatientDetailPage() {
@@ -82,8 +100,18 @@ export default function PatientDetailPage() {
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
+  // Token state
+  const [tokenData, setTokenData] = useState<TokenData | null>(null);
+  const [tokenAmount, setTokenAmount] = useState('');
+  const [tokenNote, setTokenNote] = useState('');
+  const [tokenSaving, setTokenSaving] = useState<'topup' | 'deduct' | null>(null);
+  const [tokenError, setTokenError] = useState<string | null>(null);
+
   useEffect(() => {
-    if (id) fetchChild();
+    if (id) {
+      fetchChild();
+      fetchTokens();
+    }
   }, [id]);
 
   const fetchChild = async () => {
@@ -103,6 +131,56 @@ export default function PatientDetailPage() {
       setError("Terjadi kesalahan. Silakan coba lagi.");
     } finally {
       setLoading(false);
+    }
+  };
+
+  const fetchTokens = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/children/${id}/tokens`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const result = await res.json();
+        if (result.success) {
+          setTokenData(result.data);
+        }
+      }
+    } catch {
+      // silently fail – token section will show empty state
+    }
+  };
+
+  const handleToken = async (type: 'topup' | 'deduct') => {
+    if (type === 'topup') {
+      const parsed = parseInt(tokenAmount, 10);
+      if (!tokenAmount || isNaN(parsed) || parsed < 1) {
+        setTokenError('Jumlah top-up harus angka minimal 1');
+        return;
+      }
+    }
+    setTokenError(null);
+    setTokenSaving(type);
+    try {
+      const token = localStorage.getItem("token");
+      const amount = type === 'topup' ? parseInt(tokenAmount, 10) : 1;
+      const res = await fetch(`/api/children/${id}/tokens`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ type, amount, note: tokenNote }),
+      });
+      const result = await res.json();
+      if (res.ok && result.success) {
+        setTokenAmount('');
+        setTokenNote('');
+        fetchTokens();
+      } else {
+        setTokenError(result.error || 'Gagal memperbarui token');
+      }
+    } catch {
+      setTokenError('Terjadi kesalahan. Silakan coba lagi.');
+    } finally {
+      setTokenSaving(null);
     }
   };
 
@@ -366,6 +444,109 @@ export default function PatientDetailPage() {
                     {child.medicalInfo.notes}
                   </p>
                 </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {/* Token Terapi */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2 text-base">
+                <CreditCardIcon className="h-5 w-5 text-yellow-600" />
+                Token Terapi
+              </CardTitle>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              {/* Balance display */}
+              <div className="flex items-center gap-4 p-4 bg-yellow-50 rounded-lg">
+                <div className="text-center">
+                  <p className={`text-4xl font-bold ${(tokenData?.balance ?? 0) > 0 ? 'text-yellow-700' : 'text-red-600'}`}>
+                    {tokenData?.balance ?? 0}
+                  </p>
+                  <p className="text-xs text-gray-500 mt-1">Token Tersisa</p>
+                </div>
+              </div>
+
+              {/* Admin action panel */}
+              {user?.role === 'admin' && (
+                <div className="space-y-3 border rounded-lg p-4">
+                  <p className="text-xs font-semibold text-gray-600 uppercase tracking-wide">
+                    Kelola Token
+                  </p>
+                  <div className="flex gap-2">
+                    <Input
+                      type="number"
+                      min={1}
+                      placeholder="Jumlah top-up"
+                      value={tokenAmount}
+                      onChange={(e) => setTokenAmount(e.target.value)}
+                      className="w-32"
+                    />
+                    <Input
+                      placeholder="Catatan (opsional)"
+                      value={tokenNote}
+                      onChange={(e) => setTokenNote(e.target.value)}
+                      className="flex-1"
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <Button
+                      size="sm"
+                      className="bg-green-600 hover:bg-green-700"
+                      onClick={() => handleToken('topup')}
+                      disabled={tokenSaving !== null}
+                    >
+                      {tokenSaving === 'topup' ? 'Menyimpan...' : '+ Top Up'}
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="border-red-300 text-red-700 hover:bg-red-50"
+                      onClick={() => handleToken('deduct')}
+                      disabled={tokenSaving !== null}
+                    >
+                      {tokenSaving === 'deduct' ? 'Menyimpan...' : '− Kurangi 1'}
+                    </Button>
+                  </div>
+                  {tokenError && (
+                    <p className="text-sm text-red-600 bg-red-50 rounded px-3 py-2">{tokenError}</p>
+                  )}
+                </div>
+              )}
+
+              {/* Transaction history */}
+              {tokenData && tokenData.transactions.length > 0 ? (
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Riwayat (5 Terakhir)</p>
+                  <div className="space-y-1">
+                    {tokenData.transactions.slice(0, 5).map((tx) => (
+                      <div key={tx._id} className="flex items-center justify-between text-sm py-1.5 border-b last:border-0">
+                        <div className="flex items-center gap-2">
+                          <span className={`text-xs font-semibold px-1.5 py-0.5 rounded ${
+                            tx.type === 'topup'
+                              ? 'bg-green-100 text-green-700'
+                              : 'bg-red-100 text-red-700'
+                          }`}>
+                            {tx.type === 'topup' ? `+${tx.amount}` : `-${tx.amount}`}
+                          </span>
+                          <span className="text-gray-600 text-xs truncate max-w-[120px]">
+                            {tx.note || (tx.type === 'topup' ? 'Top Up' : 'Sesi Terapi')}
+                          </span>
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className="text-xs text-gray-400">
+                            {new Date(tx.createdAt).toLocaleDateString('id-ID', {
+                              day: 'numeric', month: 'short', year: 'numeric',
+                            })}
+                          </p>
+                          <p className="text-xs text-gray-500">Sisa: {tx.balanceAfter}</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              ) : (
+                <p className="text-sm text-gray-400 italic">Belum ada riwayat transaksi</p>
               )}
             </CardContent>
           </Card>

@@ -103,9 +103,9 @@ export const POST = withAnyAuth(
       tags,
     } = body;
 
-    if (!title || !type || !childId) {
+    if (!title || !childId) {
       return NextResponse.json(
-        { success: false, error: 'title, type, and childId are required' },
+        { success: false, error: 'title and childId are required' },
         { status: 400 }
       );
     }
@@ -114,7 +114,7 @@ export const POST = withAnyAuth(
       title: title.trim(),
       description: description?.trim() || '',
       content: content?.trim() || '',
-      type,
+      type: type || 'progress',
       status: status || 'draft',
       childId: new mongoose.Types.ObjectId(childId),
       childName: childName?.trim() || '',

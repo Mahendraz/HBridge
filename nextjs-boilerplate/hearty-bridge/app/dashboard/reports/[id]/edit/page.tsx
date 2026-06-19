@@ -15,6 +15,7 @@ import {
   EyeIcon,
   AlertCircleIcon,
   SaveIcon,
+  CalendarIcon,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -39,14 +40,10 @@ interface FormState {
   title: string;
   description: string;
   content: string;
-  type: "progress" | "assessment" | "therapy-notes" | "milestone";
   childId: string;
   childName: string;
   dueDate: string;
-  tags: string;
 }
-
-type ReportStatus = "draft" | "completed" | "reviewed";
 
 function formatSavedAt(iso: string): string {
   try {
@@ -77,23 +74,19 @@ export default function EditReportPage() {
     title: "",
     description: "",
     content: "",
-    type: "progress",
     childId: "",
     childName: "",
     dueDate: "",
-    tags: "",
   });
-  const [reportStatus, setReportStatus] = useState<ReportStatus>("draft");
   const [allChildren, setAllChildren] = useState<ChildOption[]>([]);
   const [existingMedia, setExistingMedia] = useState<MediaFile[]>([]);
   const [pendingFiles, setPendingFiles] = useState<{ file: File; preview: string }[]>([]);
-  const [saving, setSaving] = useState(false);
+  const [savingAs, setSavingAs] = useState<"draft" | "completed" | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [loadingReport, setLoadingReport] = useState(true);
   const [notFound, setNotFound] = useState(false);
-  const [serverUpdatedAt, setServerUpdatedAt] = useState<string>("");
-  // draft banner: 'local' | 'server' | null
-  const [draftChoice, setDraftChoice] = useState<"local" | "server" | null>(null);
+  // draft banner: 'prompt' | null
+  const [showDraftBanner, setShowDraftBanner] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const token =
@@ -143,20 +136,15 @@ export default function EditReportPage() {
           return;
         }
         const report = reportResult.data;
-        setServerUpdatedAt(report.updatedAt || "");
         setExistingMedia(report.mediaFiles || []);
-
-        setReportStatus(report.status || "draft");
 
         const serverForm: FormState = {
           title: report.title || "",
           description: report.description || "",
           content: report.content || "",
-          type: report.type || "progress",
           childId: report.childId || "",
           childName: report.childName || "",
           dueDate: report.dueDate ? report.dueDate.substring(0, 10) : "",
-          tags: Array.isArray(report.tags) ? report.tags.join(", ") : "",
         };
 
         // Check if there's a local draft that's newer than the server version
@@ -166,12 +154,9 @@ export default function EditReportPage() {
           localDraft.editingId === reportId &&
           new Date(localDraft.savedAt) > new Date(report.updatedAt || 0);
 
+        setForm(serverForm);
         if (hasFresherDraft) {
-          // Populate with server data initially; user can choose to load draft
-          setForm(serverForm);
-          setDraftChoice("prompt" as unknown as "local");
-        } else {
-          setForm(serverForm);
+          setShowDraftBanner(true);
         }
         setLoadingReport(false);
       } else {
@@ -193,14 +178,14 @@ export default function EditReportPage() {
     const timer = setTimeout(() => {
       draftHook.save({
         ...form,
-        status: reportStatus,
+        status: "draft",
         editingId: reportId,
         savedAt: new Date().toISOString(),
       });
     }, 800);
     return () => clearTimeout(timer);
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [form, loadingReport, reportId, reportStatus]);
+  }, [form, loadingReport, reportId]);
 
   const applyLocalDraft = () => {
     const localDraft = draftHook.draft;
@@ -209,21 +194,16 @@ export default function EditReportPage() {
       title: localDraft.title || "",
       description: localDraft.description || "",
       content: localDraft.content || "",
-      type: (localDraft.type as FormState["type"]) || "progress",
       childId: localDraft.childId || "",
       childName: localDraft.childName || "",
       dueDate: localDraft.dueDate || "",
-      tags: localDraft.tags || "",
     });
-    if (localDraft.status === "completed" || localDraft.status === "reviewed" || localDraft.status === "draft") {
-      setReportStatus(localDraft.status);
-    }
-    setDraftChoice(null);
+    setShowDraftBanner(false);
   };
 
   const loadServerData = () => {
     draftHook.clear();
-    setDraftChoice(null);
+    setShowDraftBanner(false);
   };
 
   const handleChildChange = (childId: string) => {
@@ -272,13 +252,13 @@ export default function EditReportPage() {
     router.back();
   };
 
-  const handleSave = useCallback(async () => {
-    if (!form.title.trim() || !form.type || !form.childId) {
-      setSaveError("Judul, jenis laporan, dan pasien wajib diisi.");
+  const handleSave = useCallback(async (statusToSave: "draft" | "completed") => {
+    if (!form.title.trim() || !form.childId) {
+      setSaveError("Judul dan pasien wajib diisi.");
       return;
     }
 
-    setSaving(true);
+    setSavingAs(statusToSave);
     setSaveError(null);
 
     try {
@@ -286,15 +266,10 @@ export default function EditReportPage() {
         title: form.title.trim(),
         description: form.description.trim(),
         content: form.content.trim(),
-        type: form.type,
-        status: reportStatus,
+        status: statusToSave,
         childId: form.childId,
         childName: form.childName,
         dueDate: form.dueDate || undefined,
-        tags: form.tags
-          .split(",")
-          .map((t) => t.trim())
-          .filter(Boolean),
       };
 
       const res = await fetch(`/api/reports/${reportId}`, {
@@ -330,9 +305,9 @@ export default function EditReportPage() {
     } catch (err: unknown) {
       setSaveError(err instanceof Error ? err.message : "Terjadi kesalahan.");
     } finally {
-      setSaving(false);
+      setSavingAs(null);
     }
-  }, [form, reportStatus, pendingFiles, reportId, token, draftHook, router]);
+  }, [form, pendingFiles, reportId, token, draftHook, router]);
 
   // ── Render states ──────────────────────────────────────────────────────────
   if (user?.role === "parent") return null;
@@ -359,7 +334,7 @@ export default function EditReportPage() {
     );
   }
 
-  const showDraftBanner = draftChoice === ("prompt" as unknown as "local");
+  const isSaving = savingAs !== null;
 
   return (
     <div className="max-w-3xl mx-auto space-y-6 pb-12">
@@ -411,63 +386,39 @@ export default function EditReportPage() {
         </div>
       )}
 
-      {/* Status action bar */}
-      <div className="flex items-center gap-3 bg-gray-50 border border-gray-200 rounded-lg px-4 py-3">
-        <span className="text-xs text-gray-500">Status saat ini:</span>
-        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${
-          reportStatus === "completed" ? "bg-green-100 text-green-800" :
-          reportStatus === "reviewed" ? "bg-purple-100 text-purple-800" :
-          "bg-yellow-100 text-yellow-800"
-        }`}>
-          {reportStatus === "completed" ? "Selesai" : reportStatus === "reviewed" ? "Ditinjau" : "Draf"}
-        </span>
-        <div className="ml-auto flex gap-2">
-          {reportStatus === "draft" && (
-            <button
-              onClick={() => setReportStatus("completed")}
-              className="text-xs font-medium px-3 py-1.5 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
-            >
-              Tandai Selesai
-            </button>
-          )}
-          {reportStatus === "completed" && (
-            <button
-              onClick={() => setReportStatus("reviewed")}
-              className="text-xs font-medium px-3 py-1.5 bg-purple-600 text-white rounded hover:bg-purple-700 transition-colors"
-            >
-              Tandai Ditinjau
-            </button>
-          )}
-          {reportStatus !== "draft" && (
-            <button
-              onClick={() => setReportStatus("draft")}
-              className="text-xs font-medium px-3 py-1.5 border border-gray-300 text-gray-600 rounded hover:bg-gray-100 transition-colors"
-            >
-              Kembalikan ke Draf
-            </button>
-          )}
-        </div>
-      </div>
-
       <Card>
         <CardContent className="p-6 space-y-5">
-          {/* Jenis Laporan */}
+          {/* Pasien – prominent */}
           <div>
-            <label className="text-xs font-medium text-gray-700 mb-1 block">
-              Jenis Laporan <span className="text-red-500">*</span>
+            <label className="text-sm font-semibold text-gray-800 mb-1.5 block">
+              Nama Anak / Pasien <span className="text-red-500">*</span>
             </label>
             <select
-              value={form.type}
-              onChange={(e) =>
-                setForm((f) => ({ ...f, type: e.target.value as FormState["type"] }))
-              }
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+              value={form.childId}
+              onChange={(e) => handleChildChange(e.target.value)}
+              className="w-full border-2 border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
             >
-              <option value="progress">Kemajuan</option>
-              <option value="assessment">Penilaian</option>
-              <option value="therapy-notes">Catatan Terapi</option>
-              <option value="milestone">Tonggak Capaian</option>
+              <option value="">Pilih pasien...</option>
+              {allChildren.map((c) => (
+                <option key={c._id} value={c._id}>
+                  {c.name}
+                </option>
+              ))}
             </select>
+          </div>
+
+          {/* Waktu Terapi – prominent */}
+          <div>
+            <label className="text-sm font-semibold text-gray-800 mb-1.5 flex items-center gap-1.5">
+              <CalendarIcon className="h-4 w-4 text-teal-600" />
+              Waktu Terapi
+            </label>
+            <input
+              type="date"
+              value={form.dueDate}
+              onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
+              className="w-full border-2 border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
+            />
           </div>
 
           {/* Judul */}
@@ -480,25 +431,6 @@ export default function EditReportPage() {
               onChange={(e) => setForm((f) => ({ ...f, title: e.target.value }))}
               placeholder="Judul laporan..."
             />
-          </div>
-
-          {/* Pasien */}
-          <div>
-            <label className="text-xs font-medium text-gray-700 mb-1 block">
-              Pasien <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={form.childId}
-              onChange={(e) => handleChildChange(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-            >
-              <option value="">Pilih pasien...</option>
-              {allChildren.map((c) => (
-                <option key={c._id} value={c._id}>
-                  {c.name}
-                </option>
-              ))}
-            </select>
           </div>
 
           {/* Deskripsi */}
@@ -523,28 +455,6 @@ export default function EditReportPage() {
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm resize-y min-h-[160px] focus:outline-none focus:ring-2 focus:ring-teal-500"
               placeholder="Catatan terapi, perkembangan, observasi..."
             />
-          </div>
-
-          {/* Batas Waktu + Tags */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            <div>
-              <label className="text-xs font-medium text-gray-700 mb-1 block">Batas Waktu</label>
-              <input
-                type="date"
-                value={form.dueDate}
-                onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
-              />
-            </div>
-
-            <div>
-              <label className="text-xs font-medium text-gray-700 mb-1 block">Tag (pisah koma)</label>
-              <Input
-                value={form.tags}
-                onChange={(e) => setForm((f) => ({ ...f, tags: e.target.value }))}
-                placeholder="contoh: autisme, motorik"
-              />
-            </div>
           </div>
 
           {/* Media Section */}
@@ -675,11 +585,28 @@ export default function EditReportPage() {
 
           {/* Actions */}
           <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
-            <Button variant="outline" onClick={handleBack} disabled={saving}>
+            <Button variant="outline" onClick={handleBack} disabled={isSaving}>
               Batal
             </Button>
-            <Button onClick={handleSave} disabled={saving}>
-              {saving ? (
+            <Button
+              variant="outline"
+              onClick={() => handleSave("draft")}
+              disabled={isSaving}
+            >
+              {savingAs === "draft" ? (
+                <>
+                  <span className="animate-spin inline-block h-4 w-4 border-2 border-current border-t-transparent rounded-full mr-2" />
+                  Menyimpan...
+                </>
+              ) : (
+                "Simpan Draf"
+              )}
+            </Button>
+            <Button
+              onClick={() => handleSave("completed")}
+              disabled={isSaving}
+            >
+              {savingAs === "completed" ? (
                 <>
                   <span className="animate-spin inline-block h-4 w-4 border-2 border-white border-t-transparent rounded-full mr-2" />
                   Menyimpan...
@@ -687,7 +614,7 @@ export default function EditReportPage() {
               ) : (
                 <>
                   <SaveIcon className="h-4 w-4 mr-2" />
-                  Simpan Perubahan
+                  Simpan Laporan
                 </>
               )}
             </Button>

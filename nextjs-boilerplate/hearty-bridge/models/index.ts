@@ -8,3 +8,5 @@ export { default as Conversation, type IConversation, type IConversationModel, t
 export { default as Document, type IDocument, type IDocumentModel } from './Document';
 export { SearchIndex, ActivityLog, type ISearchIndex, type ISearchIndexModel, type IActivityLog, type IActivityLogModel } from './SearchIndex';
 export { default as Report, type IReport, type IReportModel, type IReportMediaFile } from './Report';
+export { default as TokenTransaction, type ITokenTransaction, type ITokenTransactionModel } from './TokenTransaction';
+export { default as Attendance, type IAttendance, type IAttendanceModel } from './Attendance';

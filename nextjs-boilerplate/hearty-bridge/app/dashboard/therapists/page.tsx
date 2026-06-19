@@ -7,7 +7,6 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
-import { Select } from "@/components/ui/select";
 import {
   Dialog,
   DialogContent,
@@ -17,15 +16,10 @@ import {
 } from "@/components/ui/dialog";
 import {
   UserPlusIcon,
-  SearchIcon,
   UserIcon,
   PhoneIcon,
   MailIcon,
   EditIcon,
-  UserCheckIcon,
-  StarIcon,
-  UsersIcon,
-  BuildingIcon,
 } from "lucide-react";
 
 interface Therapist {
@@ -37,8 +31,6 @@ interface Therapist {
   status: 'active' | 'inactive' | 'on-leave';
   assignedPatients: number;
   maxPatients: number;
-  clinic?: string;
-  experience?: number;
 }
 
 export default function TherapistsPage() {
@@ -50,15 +42,10 @@ export default function TherapistsPage() {
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
   const [specializationFilter, setSpecializationFilter] = useState("all");
-  const [stats, setStats] = useState({
-    total: 0,
-    active: 0,
-    avgCaseload: 0,
-    avgRating: '0.0'
-  });
+  const [stats, setStats] = useState({ total: 0, active: 0 });
   const [showCreateModal, setShowCreateModal] = useState(false);
   const [createForm, setCreateForm] = useState({
-    name: '', email: '', password: '', specialization: '', clinic: '',
+    name: '', email: '', password: '', specialization: '',
   });
   const [createError, setCreateError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
@@ -103,8 +90,6 @@ export default function TherapistsPage() {
         setStats({
           total: result.total ?? data.length,
           active: result.active ?? data.filter((t: any) => t.status === 'active').length,
-          avgCaseload: result.avgCaseload ?? 0,
-          avgRating: result.avgRating ?? '0.0'
         });
       } else {
         console.error('Failed to fetch therapists:', response.statusText);
@@ -165,13 +150,12 @@ export default function TherapistsPage() {
           password: createForm.password,
           role: 'therapist',
           specialization: createForm.specialization || undefined,
-          clinic: createForm.clinic || undefined,
         }),
       });
       const result = await response.json();
       if (response.ok && result.success) {
         setShowCreateModal(false);
-        setCreateForm({ name: '', email: '', password: '', specialization: '', clinic: '' });
+        setCreateForm({ name: '', email: '', password: '', specialization: '' });
         fetchTherapists();
       } else {
         setCreateError(result.error || result.message || 'Gagal membuat akun terapis.');
@@ -248,25 +232,13 @@ export default function TherapistsPage() {
               <span>{therapist.phone}</span>
             </div>
           ) : null}
-          {therapist.clinic ? (
-            <div className="flex items-center gap-2 text-gray-600">
-              <BuildingIcon className="h-4 w-4 text-gray-400 shrink-0" />
-              <span className="truncate">{therapist.clinic}</span>
-            </div>
-          ) : null}
         </div>
 
         {/* Stats */}
-        <div className="grid grid-cols-2 gap-3 pt-3 border-t border-gray-100">
+        <div className="pt-3 border-t border-gray-100">
           <div className="text-center bg-gray-50 rounded-lg py-2.5">
             <p className="text-lg font-bold text-gray-900">{therapist.assignedPatients}</p>
             <p className="text-xs text-gray-500">Pasien Aktif</p>
-          </div>
-          <div className="text-center bg-gray-50 rounded-lg py-2.5">
-            <p className="text-lg font-bold text-gray-900">
-              {therapist.experience ? `${therapist.experience} thn` : '-'}
-            </p>
-            <p className="text-xs text-gray-500">Pengalaman</p>
           </div>
         </div>
 
@@ -319,109 +291,10 @@ export default function TherapistsPage() {
         </PermissionGuard>
       </div>
 
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <UserIcon className="h-6 w-6 text-teal-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Total Terapis</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.total}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-green-100 rounded-lg">
-                <UserCheckIcon className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Aktif</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.active}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-yellow-100 rounded-lg">
-                <UsersIcon className="h-6 w-6 text-yellow-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Rata-rata Beban Kasus</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.avgCaseload}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardContent className="p-6">
-            <div className="flex items-center">
-              <div className="p-2 bg-purple-100 rounded-lg">
-                <StarIcon className="h-6 w-6 text-purple-600" />
-              </div>
-              <div className="ml-4">
-                <p className="text-sm font-medium text-gray-600">Penilaian Rata-rata</p>
-                <p className="text-2xl font-bold text-gray-900">{stats.avgRating}</p>
-              </div>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Filters */}
-      <Card>
-        <CardContent className="p-6">
-          <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-            <div className="flex-1">
-              <div className="relative">
-                <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-500" />
-                <Input
-                  placeholder="Cari terapis..."
-                  value={searchTerm}
-                  onChange={(e) => setSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-            </div>
-
-            <div className="flex gap-2">
-              <Select
-                value={statusFilter}
-                onValueChange={setStatusFilter}
-                options={[
-                  { value: "all", label: "Semua Status" },
-                  { value: "active", label: "Aktif" },
-                  { value: "inactive", label: "Tidak Aktif" },
-                  { value: "on-leave", label: "Cuti" }
-                ]}
-              />
-
-              <Select
-                value={specializationFilter}
-                onValueChange={setSpecializationFilter}
-                options={[
-                  { value: "all", label: "Semua Spesialisasi" },
-                  { value: "Autism Spectrum Disorders", label: "Autism Spectrum Disorders" },
-                  { value: "Speech Therapy", label: "Speech Therapy" },
-                  { value: "ADHD", label: "ADHD" },
-                  { value: "Occupational Therapy", label: "Occupational Therapy" },
-                  { value: "Behavioral Therapy", label: "Behavioral Therapy" }
-                ]}
-              />
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+      {/* Summary */}
+      <p className="text-sm text-gray-500">
+        {stats.total} terapis terdaftar · {stats.active} aktif
+      </p>
 
       {/* Therapists Grid */}
       {filteredTherapists.length === 0 ? (
@@ -507,15 +380,6 @@ export default function TherapistsPage() {
                 value={createForm.specialization}
                 onChange={(e) => setCreateForm(f => ({ ...f, specialization: e.target.value }))}
                 placeholder="cth. Terapi Wicara, Fisioterapi"
-                className="mt-1"
-              />
-            </div>
-            <div>
-              <label className="text-sm font-medium text-gray-700">Klinik</label>
-              <Input
-                value={createForm.clinic}
-                onChange={(e) => setCreateForm(f => ({ ...f, clinic: e.target.value }))}
-                placeholder="Nama klinik atau rumah sakit"
                 className="mt-1"
               />
             </div>

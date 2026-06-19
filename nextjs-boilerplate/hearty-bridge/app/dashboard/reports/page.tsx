@@ -40,6 +40,10 @@ import {
   AlertCircleIcon,
   ClockIcon,
   ChevronRightIcon,
+  ChevronLeftIcon,
+  XIcon,
+  ZoomInIcon,
+  ExternalLinkIcon,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -69,7 +73,7 @@ interface Report {
   description: string;
   content?: string;
   type: "progress" | "assessment" | "therapy-notes" | "milestone";
-  status: "draft" | "completed" | "reviewed";
+  status: "draft" | "completed";
   childId?: string;
   childName: string;
   therapistId?: string;
@@ -99,7 +103,6 @@ function getStatusLabel(status: string) {
   const map: Record<string, string> = {
     draft: "Draf",
     completed: "Selesai",
-    reviewed: "Ditinjau",
   };
   return map[status] ?? status;
 }
@@ -118,7 +121,6 @@ function getStatusBadgeVariant(
   status: string
 ): "default" | "secondary" | "outline" {
   if (status === "completed") return "default";
-  if (status === "reviewed") return "secondary";
   return "outline";
 }
 
@@ -246,6 +248,152 @@ function PatientPickerDialog({
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Lightbox – full-screen image viewer
+// ─────────────────────────────────────────────────────────────────────────────
+function Lightbox({
+  images,
+  startIndex,
+  onClose,
+}: {
+  images: ReportMediaFile[];
+  startIndex: number;
+  onClose: () => void;
+}) {
+  const [idx, setIdx] = React.useState(startIndex);
+  const current = images[idx];
+
+  // Keyboard navigation
+  React.useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") onClose();
+      if (e.key === "ArrowLeft" && idx > 0) setIdx((i) => i - 1);
+      if (e.key === "ArrowRight" && idx < images.length - 1) setIdx((i) => i + 1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [idx, images.length, onClose]);
+
+  // Lock body scroll while open
+  React.useEffect(() => {
+    document.body.style.overflow = "hidden";
+    return () => { document.body.style.overflow = ""; };
+  }, []);
+
+  if (!current) return null;
+
+  return (
+    // Backdrop — click outside image to close
+    <div
+      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/95 p-4 sm:p-6"
+      onClick={onClose}
+    >
+      {/* Top bar: counter + close */}
+      <div
+        className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 py-3 sm:px-6"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <span className="text-white/60 text-sm tabular-nums select-none">
+          {images.length > 1 ? `${idx + 1} / ${images.length}` : ""}
+        </span>
+        <div className="flex items-center gap-3">
+          <a
+            href={current.url}
+            target="_blank"
+            rel="noreferrer"
+            className="text-white/60 hover:text-white transition-colors"
+            title="Buka di tab baru"
+          >
+            <ExternalLinkIcon className="h-5 w-5" />
+          </a>
+          <button
+            onClick={onClose}
+            className="text-white/60 hover:text-white transition-colors"
+            title="Tutup (Esc)"
+          >
+            <XIcon className="h-6 w-6" />
+          </button>
+        </div>
+      </div>
+
+      {/* Prev arrow */}
+      {idx > 0 && (
+        <button
+          className="absolute left-2 sm:left-5 top-1/2 -translate-y-1/2 z-10
+                     bg-white/10 hover:bg-white/25 active:bg-white/35
+                     text-white rounded-full p-2 sm:p-3 transition-colors"
+          onClick={(e) => { e.stopPropagation(); setIdx((i) => i - 1); }}
+          title="Sebelumnya (←)"
+        >
+          <ChevronLeftIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+        </button>
+      )}
+
+      {/* Image card */}
+      <div
+        className="flex flex-col items-center gap-3 max-w-[92vw] max-h-[88vh]"
+        onClick={(e) => e.stopPropagation()}
+      >
+        <div className="relative rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10
+                        flex items-center justify-center
+                        bg-black/40 max-w-[92vw] max-h-[80vh]">
+          <img
+            key={current.gcsPath}
+            src={current.url}
+            alt={current.fileName}
+            className="block max-w-[92vw] max-h-[80vh] w-auto h-auto object-contain"
+            onError={(e) => {
+              (e.target as HTMLImageElement).style.opacity = "0.3";
+            }}
+          />
+        </div>
+
+        {/* Caption */}
+        <div className="flex items-center gap-2 text-center">
+          <p className="text-white/70 text-xs sm:text-sm truncate max-w-[80vw]">
+            {current.fileName}
+          </p>
+          {current.size > 0 && (
+            <span className="text-white/40 text-xs shrink-0">
+              ({(current.size / 1024).toFixed(0)} KB)
+            </span>
+          )}
+        </div>
+
+        {/* Dot strip (shows when multiple images) */}
+        {images.length > 1 && (
+          <div className="flex gap-1.5 mt-1">
+            {images.map((_, i) => (
+              <button
+                key={i}
+                onClick={() => setIdx(i)}
+                className={`h-1.5 rounded-full transition-all duration-200 ${
+                  i === idx
+                    ? "bg-white w-5"
+                    : "bg-white/35 hover:bg-white/60 w-1.5"
+                }`}
+              />
+            ))}
+          </div>
+        )}
+      </div>
+
+      {/* Next arrow */}
+      {idx < images.length - 1 && (
+        <button
+          className="absolute right-2 sm:right-5 top-1/2 -translate-y-1/2 z-10
+                     bg-white/10 hover:bg-white/25 active:bg-white/35
+                     text-white rounded-full p-2 sm:p-3 transition-colors"
+          onClick={(e) => { e.stopPropagation(); setIdx((i) => i + 1); }}
+          title="Berikutnya (→)"
+        >
+          <ChevronRightIcon className="h-5 w-5 sm:h-6 sm:w-6" />
+        </button>
+      )}
+    </div>
+  );
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Read-only view dialog
 // ─────────────────────────────────────────────────────────────────────────────
 function ReportViewDialog({
@@ -255,130 +403,175 @@ function ReportViewDialog({
   report: Report;
   onClose: () => void;
 }) {
+  const [lightboxIdx, setLightboxIdx] = React.useState<number | null>(null);
+  // Only images go into the lightbox; videos keep their external link
+  const imageFiles = (report.mediaFiles ?? []).filter((m) => m.fileType === "image");
+
   return (
-    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
-      <DialogContent size="full">
-        <DialogHeader>
-          <DialogTitle>Detail Laporan</DialogTitle>
-        </DialogHeader>
+    <>
+      {/* Lightbox rendered outside Dialog so it covers the entire viewport */}
+      {lightboxIdx !== null && (
+        <Lightbox
+          images={imageFiles}
+          startIndex={lightboxIdx}
+          onClose={() => setLightboxIdx(null)}
+        />
+      )}
 
-        <div className="space-y-4 mt-4">
-          <div className="flex flex-wrap gap-2">
-            <Badge className={getTypeColor(report.type)} variant="outline">
-              {getTypeLabel(report.type)}
-            </Badge>
-            <Badge variant={getStatusBadgeVariant(report.status)}>
-              {getStatusLabel(report.status)}
-            </Badge>
-          </div>
+      <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+        <DialogContent size="full">
+          <DialogHeader>
+            <DialogTitle>Detail Laporan</DialogTitle>
+          </DialogHeader>
 
-          <div>
-            <p className="text-xs text-gray-500 mb-0.5">Judul</p>
-            <p className="text-lg font-semibold text-gray-900">{report.title}</p>
-          </div>
-
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-xs text-gray-500 mb-0.5">Pasien</p>
-              <p className="text-gray-900">{report.childName || "—"}</p>
+          <div className="space-y-4 mt-4">
+            <div className="flex flex-wrap gap-2">
+              <Badge className={getTypeColor(report.type)} variant="outline">
+                {getTypeLabel(report.type)}
+              </Badge>
+              <Badge variant={getStatusBadgeVariant(report.status)}>
+                {getStatusLabel(report.status)}
+              </Badge>
             </div>
-            <div>
-              <p className="text-xs text-gray-500 mb-0.5">Terapis</p>
-              <p className="text-gray-900">{report.therapistName || "—"}</p>
-            </div>
-          </div>
 
-          {report.description && (
             <div>
-              <p className="text-xs text-gray-500 mb-0.5">Deskripsi</p>
-              <p className="text-sm text-gray-700">{report.description}</p>
+              <p className="text-xs text-gray-500 mb-0.5">Judul</p>
+              <p className="text-lg font-semibold text-gray-900">{report.title}</p>
             </div>
-          )}
 
-          {report.content && (
-            <div>
-              <p className="text-xs text-gray-500 mb-0.5">Isi Laporan</p>
-              <div className="text-sm text-gray-800 whitespace-pre-wrap bg-gray-50 rounded p-3 min-h-[60px]">
-                {report.content}
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-xs text-gray-500 mb-0.5">Pasien</p>
+                <p className="text-gray-900">{report.childName || "—"}</p>
+              </div>
+              <div>
+                <p className="text-xs text-gray-500 mb-0.5">Terapis</p>
+                <p className="text-gray-900">{report.therapistName || "—"}</p>
               </div>
             </div>
-          )}
 
-          <div className="grid grid-cols-2 gap-4 text-sm">
-            <div>
-              <p className="text-xs text-gray-500 mb-0.5">Tanggal Dibuat</p>
-              <p className="text-gray-900">
-                {new Date(report.createdAt).toLocaleDateString("id-ID")}
-              </p>
-            </div>
-            {report.dueDate && (
+            {report.description && (
               <div>
-                <p className="text-xs text-gray-500 mb-0.5">Batas Waktu</p>
+                <p className="text-xs text-gray-500 mb-0.5">Deskripsi</p>
+                <p className="text-sm text-gray-700">{report.description}</p>
+              </div>
+            )}
+
+            {report.content && (
+              <div>
+                <p className="text-xs text-gray-500 mb-0.5">Isi Laporan</p>
+                <div className="text-sm text-gray-800 whitespace-pre-wrap bg-gray-50 rounded p-3 min-h-[60px]">
+                  {report.content}
+                </div>
+              </div>
+            )}
+
+            <div className="grid grid-cols-2 gap-4 text-sm">
+              <div>
+                <p className="text-xs text-gray-500 mb-0.5">Tanggal Dibuat</p>
                 <p className="text-gray-900">
-                  {new Date(report.dueDate).toLocaleDateString("id-ID")}
+                  {new Date(report.createdAt).toLocaleDateString("id-ID")}
                 </p>
+              </div>
+              {report.dueDate && (
+                <div>
+                  <p className="text-xs text-gray-500 mb-0.5">Waktu Terapi</p>
+                  <p className="text-gray-900">
+                    {new Date(report.dueDate).toLocaleDateString("id-ID")}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            {report.tags && report.tags.length > 0 && (
+              <div>
+                <p className="text-xs text-gray-500 mb-1">Tag</p>
+                <div className="flex flex-wrap gap-1">
+                  {report.tags.map((tag, i) => (
+                    <Badge key={i} variant="outline" className="text-xs">
+                      {tag}
+                    </Badge>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {report.mediaFiles && report.mediaFiles.length > 0 && (
+              <div>
+                <p className="text-xs text-gray-500 mb-2">
+                  Media ({report.mediaFiles.length} file)
+                </p>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                  {report.mediaFiles.map((m) => {
+                    const imgIdx = imageFiles.findIndex((img) => img.gcsPath === m.gcsPath);
+                    const isImage = m.fileType === "image";
+                    return (
+                      <div key={m.gcsPath} className="group relative">
+                        {isImage ? (
+                          // Clickable image thumbnail → opens lightbox
+                          <button
+                            type="button"
+                            onClick={() => setLightboxIdx(imgIdx)}
+                            className="w-full text-left border rounded-lg overflow-hidden bg-gray-50
+                                       hover:border-teal-400 focus-visible:outline-none
+                                       focus-visible:ring-2 focus-visible:ring-teal-500
+                                       transition-all block"
+                          >
+                            <div className="relative overflow-hidden">
+                              <img
+                                src={m.url}
+                                alt={m.fileName}
+                                className="w-full h-24 object-cover transition-transform duration-300
+                                           group-hover:scale-105"
+                                onError={(e) => {
+                                  (e.target as HTMLImageElement).style.display = "none";
+                                }}
+                              />
+                              {/* Zoom hint overlay */}
+                              <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20
+                                              flex items-center justify-center
+                                              opacity-0 group-hover:opacity-100
+                                              transition-all duration-200">
+                                <ZoomInIcon className="h-7 w-7 text-white drop-shadow-lg" />
+                              </div>
+                            </div>
+                            <div className="px-2 py-1.5">
+                              <p className="text-[10px] text-gray-600 truncate">{m.fileName}</p>
+                            </div>
+                          </button>
+                        ) : (
+                          // Video → open in new tab
+                          <a
+                            href={m.url}
+                            target="_blank"
+                            rel="noreferrer"
+                            className="border rounded-lg overflow-hidden bg-gray-50
+                                       hover:bg-gray-100 hover:border-gray-300 block transition-colors"
+                          >
+                            <div className="flex items-center justify-center h-24 bg-gray-100">
+                              <VideoIcon className="h-8 w-8 text-gray-400" />
+                            </div>
+                            <div className="px-2 py-1.5">
+                              <p className="text-[10px] text-gray-600 truncate">{m.fileName}</p>
+                            </div>
+                          </a>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
               </div>
             )}
           </div>
 
-          {report.tags && report.tags.length > 0 && (
-            <div>
-              <p className="text-xs text-gray-500 mb-1">Tag</p>
-              <div className="flex flex-wrap gap-1">
-                {report.tags.map((tag, i) => (
-                  <Badge key={i} variant="outline" className="text-xs">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {report.mediaFiles && report.mediaFiles.length > 0 && (
-            <div>
-              <p className="text-xs text-gray-500 mb-2">
-                Media ({report.mediaFiles.length} file)
-              </p>
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
-                {report.mediaFiles.map((m) => (
-                  <a
-                    key={m.gcsPath}
-                    href={m.url}
-                    target="_blank"
-                    rel="noreferrer"
-                    className="border rounded-lg overflow-hidden bg-gray-50 hover:bg-gray-100 block"
-                  >
-                    {m.fileType === "image" ? (
-                      <img
-                        src={m.url}
-                        alt={m.fileName}
-                        className="w-full h-20 object-cover"
-                        onError={(e) => {
-                          (e.target as HTMLImageElement).style.display = "none";
-                        }}
-                      />
-                    ) : (
-                      <div className="flex items-center justify-center h-20 bg-gray-100">
-                        <VideoIcon className="h-8 w-8 text-gray-400" />
-                      </div>
-                    )}
-                    <div className="px-2 py-1">
-                      <p className="text-[10px] text-gray-600 truncate">{m.fileName}</p>
-                    </div>
-                  </a>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="flex justify-end mt-6 pt-4 border-t border-gray-200">
-          <Button variant="outline" onClick={onClose}>
-            Tutup
-          </Button>
-        </div>
-      </DialogContent>
-    </Dialog>
+          <div className="flex justify-end mt-6 pt-4 border-t border-gray-200">
+            <Button variant="outline" onClick={onClose}>
+              Tutup
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 }
 
@@ -399,7 +592,6 @@ export default function ReportsPage() {
   const [typeFilter, setTypeFilter] = useState("all");
   const [statusFilter, setStatusFilter] = useState("all");
   const [activeTab, setActiveTab] = useState("all");
-  const [stats, setStats] = useState({ total: 0, completed: 0, pending: 0, overdue: 0 });
   const [viewingReport, setViewingReport] = useState<Report | null>(null);
   const [showPatientPicker, setShowPatientPicker] = useState(false);
 
@@ -452,13 +644,6 @@ export default function ReportsPage() {
         const result = await res.json();
         const data: Report[] = result.success && result.data ? result.data : [];
         setReports(data);
-        const completed = data.filter((r) => r.status === "completed").length;
-        const pending = data.filter((r) => r.status === "draft").length;
-        const overdue = data.filter((r) => {
-          if (!r.dueDate) return false;
-          return new Date(r.dueDate) < new Date() && r.status !== "completed";
-        }).length;
-        setStats({ total: data.length, completed, pending, overdue });
       } else {
         const err = await res.json().catch(() => ({}));
         setFetchError(err.error || `Gagal memuat data (${res.status})`);
@@ -511,41 +696,24 @@ export default function ReportsPage() {
     return (
       <div className="rounded-xl shadow-sm hover:shadow-lg transition-shadow">
         <MagicCard gradientColor="#f0fdfa" gradientOpacity={0.5}>
-          {/* Header */}
-          <div className="p-5 pb-3">
-            <div className="flex items-start justify-between gap-2">
-              <div className="flex-1 min-w-0">
-                <div className="flex items-center flex-wrap gap-1.5 mb-2">
-                  <Badge className={getTypeColor(report.type)} variant="outline">
-                    {getTypeLabel(report.type)}
+          <div className="p-5 space-y-3">
+            {/* Action buttons */}
+            <div className="flex items-center justify-between gap-2">
+              <div className="flex items-center gap-1.5">
+                {hasMedia && (
+                  <Badge
+                    variant="outline"
+                    className="text-xs bg-blue-50 text-blue-700 border-blue-200"
+                  >
+                    {report.mediaFiles!.some((m) => m.fileType === "video") ? (
+                      <VideoIcon className="h-3 w-3 mr-1 inline" />
+                    ) : (
+                      <ImageIcon className="h-3 w-3 mr-1 inline" />
+                    )}
+                    {report.mediaFiles!.length} media
                   </Badge>
-                  <Badge variant={getStatusBadgeVariant(report.status)}>
-                    {getStatusLabel(report.status)}
-                  </Badge>
-                  {hasMedia && (
-                    <Badge
-                      variant="outline"
-                      className="text-xs bg-blue-50 text-blue-700 border-blue-200"
-                    >
-                      {report.mediaFiles!.some((m) => m.fileType === "video") ? (
-                        <VideoIcon className="h-3 w-3 mr-1 inline" />
-                      ) : (
-                        <ImageIcon className="h-3 w-3 mr-1 inline" />
-                      )}
-                      {report.mediaFiles!.length} media
-                    </Badge>
-                  )}
-                </div>
-                <h3 className="text-base font-semibold text-gray-900 leading-snug">
-                  {report.title}
-                </h3>
-                {report.description && (
-                  <p className="text-sm text-gray-600 mt-1 line-clamp-2">
-                    {report.description}
-                  </p>
                 )}
               </div>
-
               <PermissionGuard
                 userRole={user?.role || "parent"}
                 permissions={["reports:create", "reports:view_all"]}
@@ -579,11 +747,9 @@ export default function ReportsPage() {
                 </div>
               </PermissionGuard>
             </div>
-          </div>
 
-          {/* Body */}
-          <div className="px-5 pb-5 space-y-3">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
+            {/* Info */}
+            <div className="space-y-2 text-sm">
               <div className="flex items-center gap-1.5 text-gray-700">
                 <UserIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
                 <span className="truncate">
@@ -596,38 +762,18 @@ export default function ReportsPage() {
                   <span className="font-medium">Terapis:</span> {report.therapistName}
                 </span>
               </div>
-            </div>
-
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-2 text-sm">
-              <div className="flex items-center gap-1.5 text-gray-700">
-                <CalendarIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                <span>
-                  <span className="font-medium">Dibuat:</span>{" "}
-                  {new Date(report.createdAt).toLocaleDateString("id-ID")}
-                </span>
-              </div>
               {report.dueDate && (
                 <div className="flex items-center gap-1.5 text-gray-700">
                   <CalendarIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
                   <span>
-                    <span className="font-medium">Batas:</span>{" "}
+                    <span className="font-medium">Waktu Terapi:</span>{" "}
                     {new Date(report.dueDate).toLocaleDateString("id-ID")}
                   </span>
                 </div>
               )}
             </div>
 
-            {report.tags && report.tags.length > 0 && (
-              <div className="flex flex-wrap gap-1">
-                {report.tags.map((tag, i) => (
-                  <Badge key={i} variant="outline" className="text-xs">
-                    {tag}
-                  </Badge>
-                ))}
-              </div>
-            )}
-
-            <div className="flex gap-2 pt-3 border-t border-gray-100">
+            <div className="flex gap-2 pt-2 border-t border-gray-100">
               <Button
                 variant="outline"
                 size="sm"
@@ -756,24 +902,11 @@ export default function ReportsPage() {
         <h3 className="text-lg font-medium text-gray-900 mb-2">
           Tidak ada laporan ditemukan
         </h3>
-        <p className="text-gray-600 mb-4">
+        <p className="text-gray-600">
           {searchTerm || typeFilter !== "all" || statusFilter !== "all"
             ? "Coba sesuaikan kriteria pencarian."
             : "Mulai dengan membuat laporan pertama."}
         </p>
-        <PermissionGuard
-          userRole={user?.role || "parent"}
-          permissions={["reports:create"]}
-        >
-          <ShimmerButton
-            borderRadius="8px"
-            onClick={() => setShowPatientPicker(true)}
-            className="text-sm font-medium px-4 py-2"
-          >
-            <PlusIcon className="h-5 w-5 mr-2" />
-            Buat Laporan
-          </ShimmerButton>
-        </PermissionGuard>
       </div>
     ) : (
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
@@ -814,59 +947,6 @@ export default function ReportsPage() {
         </PermissionGuard>
       </div>
 
-      {/* Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
-        {[
-          {
-            label: "Total Laporan",
-            value: stats.total,
-            icon: <FileTextIcon className="h-6 w-6 text-teal-600" />,
-            bg: "bg-teal-100",
-            gradientColor: "#ccfbf1",
-          },
-          {
-            label: "Selesai",
-            value: stats.completed,
-            icon: <BarChart3Icon className="h-6 w-6 text-green-600" />,
-            bg: "bg-green-100",
-            gradientColor: "#dcfce7",
-          },
-          {
-            label: "Tertunda",
-            value: stats.pending,
-            icon: <TrendingUpIcon className="h-6 w-6 text-yellow-600" />,
-            bg: "bg-yellow-100",
-            gradientColor: "#fef9c3",
-          },
-          {
-            label: "Terlambat",
-            value: stats.overdue,
-            icon: <CalendarIcon className="h-6 w-6 text-red-600" />,
-            bg: "bg-red-100",
-            gradientColor: "#fee2e2",
-          },
-        ].map((s, idx) => (
-          <BlurFade key={s.label} delay={idx * 0.08} inView>
-            <div className="rounded-xl shadow-sm">
-              <MagicCard gradientColor={s.gradientColor} gradientOpacity={0.5}>
-                <div className="p-6">
-                  <div className="flex items-center">
-                    <div className={`p-2 ${s.bg} rounded-lg`}>{s.icon}</div>
-                    <div className="ml-4">
-                      <p className="text-sm font-medium text-gray-600">{s.label}</p>
-                      <NumberTicker
-                        value={s.value}
-                        className="text-2xl font-bold text-gray-900"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </MagicCard>
-            </div>
-          </BlurFade>
-        ))}
-      </div>
-
       {/* Filter + List */}
       <Card>
         <CardContent className="p-6">
@@ -899,18 +979,16 @@ export default function ReportsPage() {
                   { value: "all", label: "Semua Status" },
                   { value: "draft", label: "Draf" },
                   { value: "completed", label: "Selesai" },
-                  { value: "reviewed", label: "Ditinjau" },
                 ]}
               />
             </div>
           </div>
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
-            <TabsList className="grid w-full grid-cols-4">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="all">Semua</TabsTrigger>
               <TabsTrigger value="draft">Draf</TabsTrigger>
               <TabsTrigger value="completed">Selesai</TabsTrigger>
-              <TabsTrigger value="reviewed">Ditinjau</TabsTrigger>
             </TabsList>
             <TabsContent value="all" className="mt-6">
               <ReportGrid />
@@ -919,9 +997,6 @@ export default function ReportsPage() {
               <ReportGrid />
             </TabsContent>
             <TabsContent value="completed" className="mt-6">
-              <ReportGrid />
-            </TabsContent>
-            <TabsContent value="reviewed" className="mt-6">
               <ReportGrid />
             </TabsContent>
           </Tabs>

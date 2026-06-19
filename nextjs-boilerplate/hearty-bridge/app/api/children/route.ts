@@ -80,7 +80,9 @@ export const GET = withAnyAuth(
 
       // Format response based on user role and permissions
       const formattedChildren = children.map(child => {
-        const hasAccess = user.role === 'admin' ? true : canAccessChild(user, child);
+        const hasAccess = user.role === 'admin' || user.role === 'therapist'
+          ? true
+          : canAccessChild(user, child);
         return formatChildrenForResponse([child], hasAccess)[0];
       });
 

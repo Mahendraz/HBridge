@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/db/mongodb';
 import User from '@/models/User';
-import Child from '@/models/Child';
+import WeeklySchedule from '@/models/WeeklySchedule';
 import { withAnyAuth } from '@/lib/middleware/auth';
 import { 
   withErrorHandling, 
@@ -101,13 +101,18 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
       ];
     }
 
-    // Get patient assignments for each therapist
-    const therapistsWithStats = await Promise.all(
-      therapists.map(async (therapist) => {
-        const assignedPatients = await Child.find({ 
-          therapistId: therapist._id,
-          status: 'active'
-        }).countDocuments();
+    // Count unique patients per therapist from weekly schedule
+    const scheduleSlots = await WeeklySchedule.find({}).select('therapistId patientId').lean().catch(() => []);
+    const patientsByTherapist = new Map<string, Set<string>>();
+    for (const slot of scheduleSlots) {
+      const tid = String(slot.therapistId);
+      if (!patientsByTherapist.has(tid)) patientsByTherapist.set(tid, new Set());
+      patientsByTherapist.get(tid)!.add(String(slot.patientId));
+    }
+
+    const therapistsWithStats = therapists.map((therapist) => {
+        const tid = String(therapist._id);
+        const assignedPatients = patientsByTherapist.get(tid)?.size ?? 0;
 
         return {
           _id: therapist._id,
@@ -137,8 +142,7 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
           clinic: therapist.profile?.clinic || 'Hearty Bridge Center',
           experience: therapist.profile?.experience || 5
         };
-      })
-    );
+      });
 
     // If user is therapist, only return their own data
     const filteredTherapists = user.role === 'therapist' 

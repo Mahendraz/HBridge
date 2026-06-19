@@ -8,12 +8,12 @@ export interface ReportDraftData {
   title: string;
   description: string;
   content: string;
-  type: string;
+  type?: string;
   status: string;
   childId: string;
   childName: string;
   dueDate: string;
-  tags: string;
+  tags?: string;
   /** Present when editing an existing report; undefined when creating new */
   editingId?: string;
   /** ISO timestamp of when the draft was last saved */
