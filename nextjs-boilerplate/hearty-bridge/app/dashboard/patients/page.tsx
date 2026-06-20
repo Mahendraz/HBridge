@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { usePermissions, PermissionGuard } from "@/lib/utils/permissions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
@@ -67,15 +68,18 @@ interface Patient {
   nextSession?: string;
   progressScore?: number;
   tokenBalance?: number;
+  tokenExpiry?: string | null;
   createdAt?: string;
 }
 
 export default function UnifiedPatientsPage() {
   const { user } = useAuth();
+  const router = useRouter();
   const permissions = usePermissions(user?.role || "parent");
 
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
+  const [completedSessions, setCompletedSessions] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [showCreateParentModal, setShowCreateParentModal] = useState(false);
@@ -97,7 +101,24 @@ export default function UnifiedPatientsPage() {
   useEffect(() => {
     fetchPatients();
     if (user?.role === 'admin') fetchAllParents();
+    if (user?.role === 'parent') fetchCompletedSessions();
   }, [user]);
+
+  const fetchCompletedSessions = async () => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/reports?limit=1000', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const result = await res.json();
+        const reports: any[] = result.data || [];
+        setCompletedSessions(reports.length);
+      }
+    } catch {
+      setCompletedSessions(0);
+    }
+  };
 
   const fetchPatients = async () => {
     try {
@@ -156,6 +177,7 @@ export default function UnifiedPatientsPage() {
             nextSession: child.nextSession,
             progressScore: child.progressScore || 0,
             tokenBalance: child.tokenBalance ?? 0,
+            tokenExpiry: child.tokenExpiry ?? null,
             createdAt: child.createdAt
           };
           });
@@ -298,11 +320,7 @@ export default function UnifiedPatientsPage() {
   const getFilteredPatients = () => {
     let filtered = patients;
 
-    // Role-based filtering
-    if (user?.role === "parent") {
-      // Parents only see their own children
-      filtered = patients.filter(patient => patient.parent?.name === user.name);
-    }
+    // Role-based filtering is handled server-side by /api/children
     // Admin and therapist see all patients (therapist is view-only)
 
     // Search filtering
@@ -417,53 +435,94 @@ export default function UnifiedPatientsPage() {
         </div>
       </div>
 
-      {/* Overview Stats */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <BabyIcon className="h-6 w-6 text-teal-600" />
+      {/* Overview Stats — parent view shows session stats, others show general stats */}
+      {user?.role === "parent" ? (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="text-center">
+                <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <CalendarIcon className="h-6 w-6 text-teal-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900">{completedSessions}</h3>
+                <p className="text-gray-600">Sesi yang Sudah Dilalui</p>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">{filteredPatients.length}</h3>
-              <p className="text-gray-600">
-                {user?.role === "parent" ? "Total Anak" : "Total Pasien"}
-              </p>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <CalendarIcon className="h-6 w-6 text-green-600" />
+          <Card>
+            <CardContent className="p-6">
+              <div className="text-center">
+                <div className="w-12 h-12 bg-amber-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <ClockIcon className="h-6 w-6 text-amber-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900">
+                  {filteredPatients.reduce((sum, p) => sum + (p.tokenBalance || 0), 0)}
+                </h3>
+                <p className="text-gray-600">Sesi yang Tersisa</p>
+                {(() => {
+                  const expiries = filteredPatients
+                    .map(p => p.tokenExpiry)
+                    .filter((d): d is string => !!d)
+                    .map(d => new Date(d))
+                    .sort((a, b) => a.getTime() - b.getTime());
+                  if (expiries.length === 0) return null;
+                  return (
+                    <p className="text-xs text-amber-600 mt-1">
+                      Expire: {expiries[0].toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
+                    </p>
+                  );
+                })()}
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">
-                {filteredPatients.reduce((sum, patient) => sum + (patient.sessionsThisMonth || 0), 0)}
-              </h3>
-              <p className="text-gray-600">Sesi Bulan Ini</p>
-            </div>
-          </CardContent>
-        </Card>
+            </CardContent>
+          </Card>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+          <Card>
+            <CardContent className="p-6">
+              <div className="text-center">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <BabyIcon className="h-6 w-6 text-teal-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900">{filteredPatients.length}</h3>
+                <p className="text-gray-600">Total Pasien</p>
+              </div>
+            </CardContent>
+          </Card>
 
-        <Card>
-          <CardContent className="p-6">
-            <div className="text-center">
-              <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
-                <TrendingUpIcon className="h-6 w-6 text-purple-600" />
+          <Card>
+            <CardContent className="p-6">
+              <div className="text-center">
+                <div className="w-12 h-12 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <CalendarIcon className="h-6 w-6 text-green-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900">
+                  {filteredPatients.reduce((sum, patient) => sum + (patient.sessionsThisMonth || 0), 0)}
+                </h3>
+                <p className="text-gray-600">Sesi Bulan Ini</p>
               </div>
-              <h3 className="text-2xl font-bold text-gray-900">
-                {Math.round(filteredPatients.reduce((sum, patient) =>
-                  sum + (patient.currentPrograms?.reduce((pSum, program) => pSum + program.progress, 0) || 0) /
-                  (patient.currentPrograms?.length || 1), 0
-                ) / (filteredPatients.length || 1))}%
-              </h3>
-              <p className="text-gray-600">Rata-rata Progress</p>
-            </div>
-          </CardContent>
-        </Card>
-      </div>
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardContent className="p-6">
+              <div className="text-center">
+                <div className="w-12 h-12 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-3">
+                  <TrendingUpIcon className="h-6 w-6 text-purple-600" />
+                </div>
+                <h3 className="text-2xl font-bold text-gray-900">
+                  {Math.round(filteredPatients.reduce((sum, patient) =>
+                    sum + (patient.currentPrograms?.reduce((pSum, program) => pSum + program.progress, 0) || 0) /
+                    (patient.currentPrograms?.length || 1), 0
+                  ) / (filteredPatients.length || 1))}%
+                </h3>
+                <p className="text-gray-600">Rata-rata Progress</p>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       {/* Search and Filter */}
       <Card>
@@ -549,7 +608,20 @@ export default function UnifiedPatientsPage() {
                       </p>
                     </div>
                   </div>
-                  <Button size="sm" variant="outline">Hubungi</Button>
+                  <Button
+                    size="sm"
+                    variant="outline"
+                    disabled={!child.assignedTherapist?.id}
+                    onClick={() => {
+                      if (child.assignedTherapist?.id) {
+                        router.push(
+                          `/dashboard/messages?therapistId=${child.assignedTherapist.id}&childId=${child.id}`
+                        );
+                      }
+                    }}
+                  >
+                    Hubungi
+                  </Button>
                 </div>
 
                 {/* Current Programs */}

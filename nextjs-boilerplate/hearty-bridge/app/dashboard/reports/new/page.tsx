@@ -18,6 +18,15 @@ import {
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
+// Helpers
+// ─────────────────────────────────────────────────────────────────────────────
+function formatDisplayDate(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const months = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
+  return `${d} ${months[m - 1]} ${y}`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
 // Types
 // ─────────────────────────────────────────────────────────────────────────────
 interface ChildOption {
@@ -53,15 +62,20 @@ export default function NewReportPage() {
   const draftHook = useReportDraft();
 
   // Patient info passed from the picker (URL search params)
-  const urlChildId = searchParams.get("childId") || "";
-  const urlChildName = searchParams.get("childName") || "";
-  const urlDiagnosis = searchParams.get("diagnosis") || "";
+  const urlChildId       = searchParams.get("childId")       || "";
+  const urlChildName     = searchParams.get("childName")     || "";
+  const urlDiagnosis     = searchParams.get("diagnosis")     || "";
   const urlTherapistName = searchParams.get("therapistName") || "";
+  // From schedule redirect
+  const urlSessionDate  = searchParams.get("sessionDate")  || "";  // YYYY-MM-DD
+  const urlSessionHour  = searchParams.get("sessionHour")  || "";  // "9", "10", etc.
+  const urlTherapyType  = searchParams.get("therapyType")  || "";  // "OT" / "TW"
 
   const [form, setForm] = useState<FormState>({
     ...EMPTY_FORM,
-    childId: urlChildId,
+    childId:   urlChildId,
     childName: urlChildName,
+    dueDate:   urlSessionDate || "",  // pre-fill from session date
   });
   const [allChildren, setAllChildren] = useState<ChildOption[]>([]);
   const [pendingFiles, setPendingFiles] = useState<{ file: File; preview: string }[]>([]);
@@ -110,6 +124,17 @@ export default function NewReportPage() {
         childName: d.childName || "",
         dueDate: d.dueDate || "",
       });
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Auto-fill title when coming from schedule redirect
+  useEffect(() => {
+    if (urlChildName && urlSessionDate) {
+      setForm((f) => ({
+        ...f,
+        title: f.title || `Laporan Sesi — ${urlChildName} — ${formatDisplayDate(urlSessionDate)}`,
+      }));
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, []);
@@ -177,7 +202,7 @@ export default function NewReportPage() {
       typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
 
     try {
-      const payload = {
+      const payload: Record<string, unknown> = {
         title: form.title.trim(),
         description: form.description.trim(),
         content: form.content.trim(),
@@ -185,6 +210,10 @@ export default function NewReportPage() {
         childId: form.childId,
         childName: form.childName,
         dueDate: form.dueDate || undefined,
+        // From schedule redirect — store session metadata
+        ...(urlSessionDate && { sessionDate: urlSessionDate }),
+        ...(urlSessionHour && { sessionHour: parseInt(urlSessionHour) }),
+        ...(urlSessionDate && { type: "therapy-notes" }),
       };
 
       const res = await fetch("/api/reports", {
@@ -279,6 +308,14 @@ export default function NewReportPage() {
               {urlTherapistName && (
                 <p className="text-sm text-gray-600">
                   <span className="font-medium">Terapis:</span> {urlTherapistName}
+                </p>
+              )}
+              {urlSessionDate && (
+                <p className="text-sm text-gray-600">
+                  <span className="font-medium">Sesi:</span>{" "}
+                  {formatDisplayDate(urlSessionDate)}
+                  {urlSessionHour ? ` — jam ${urlSessionHour}:00` : ""}
+                  {urlTherapyType ? ` — ${urlTherapyType}` : ""}
                 </p>
               )}
             </div>

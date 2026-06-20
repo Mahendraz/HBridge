@@ -22,6 +22,8 @@ export interface IReport extends Document {
   therapistName: string;
   mediaFiles: IReportMediaFile[];
   dueDate?: Date;
+  sessionDate?: Date;
+  sessionHour?: number;
   tags: string[];
   fileUrl?: string;
   isActive: boolean;
@@ -77,6 +79,8 @@ const ReportSchema = new Schema<IReport>(
     therapistName: { type: String, default: '', trim: true },
     mediaFiles:    { type: [ReportMediaFileSchema], default: [] },
     dueDate:       { type: Date },
+    sessionDate:   { type: Date, default: null, index: true },
+    sessionHour:   { type: Number, default: null },
     tags:          [{ type: String, trim: true }],
     fileUrl:       { type: String },
     isActive:      { type: Boolean, default: true },

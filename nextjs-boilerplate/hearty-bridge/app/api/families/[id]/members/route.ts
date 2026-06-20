@@ -35,7 +35,7 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
     }
 
     // Check permission to view family members
-    const canView = family.canUserAccess(new mongoose.Types.ObjectId(user.id)) || 
+    const canView = family.canUserAccess(new mongoose.Types.ObjectId(user.userId)) ||
                     user.role === 'admin';
 
     if (!canView) {
@@ -90,10 +90,10 @@ export const POST = withAnyAuth(async (request: NextRequest, user: any) => {
 
     // Check permission to add members
     const isPrimaryParent = family.primaryParents.some(
-      parentId => parentId.toString() === user.id
+      parentId => parentId.toString() === user.userId
     );
     const hasManagePermission = family.extendedMembers.some(
-      member => member.userId?.toString() === user.id && 
+      member => member.userId?.toString() === user.userId &&
                 member.isActive && 
                 member.permissions.includes('manage-family')
     );

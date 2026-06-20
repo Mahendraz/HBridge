@@ -28,6 +28,8 @@ export function formatChildForResponse(child: IChild, includePrivateInfo: boolea
     gender: child.gender,
     age: child.getAge(),
     isActive: child.isActive,
+    tokenBalance: child.tokenBalance ?? 0,
+    tokenExpiry: child.tokenExpiry ? child.tokenExpiry.toISOString() : null,
     createdAt: child.createdAt?.toISOString(),
     updatedAt: child.updatedAt?.toISOString(),
   };
@@ -189,7 +191,7 @@ export function buildChildSearchQuery(
     // Parents can only see their own children
     query.parentId = user.userId;
   }
-  // Admin and therapist see all active children (therapist is view-only via API layer)
+  // Admin and therapist: further filtering handled at the route level
 
   // Search functionality
   if (filters.search) {

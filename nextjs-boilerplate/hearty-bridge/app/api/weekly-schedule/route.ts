@@ -6,47 +6,93 @@ import WeeklySchedule from '@/models/WeeklySchedule';
 import Child from '@/models/Child';
 import mongoose from 'mongoose';
 
+/** Return the Monday (UTC) of the week containing the given date string, as a Date. */
+function getMondayOfWeek(dateStr?: string): Date {
+  const base = dateStr ? new Date(dateStr + 'T00:00:00Z') : new Date();
+  const day = base.getUTCDay(); // 0=Sun,1=Mon,...
+  const toMon = day === 0 ? -6 : 1 - day;
+  const mon = new Date(base);
+  mon.setUTCDate(base.getUTCDate() + toMon);
+  mon.setUTCHours(0, 0, 0, 0);
+  return mon;
+}
+
 /**
- * GET /api/weekly-schedule
- * Returns weekly schedule slots from MongoDB, filtered by role:
- *   admin/therapist → all slots
- *   parent          → only slots where patientId matches one of their children
+ * Given an array of schedule slots (possibly multiple versions per day+hour),
+ * return only the active version for `weekStart`:
+ *   - Keep only slots where effectiveFrom is null OR effectiveFrom <= weekStart
+ *   - For each (day, hour), pick the one with the largest effectiveFrom
+ *     (null treated as -Infinity / oldest)
+ */
+function deduplicateSlots(slots: any[], weekStart: Date): any[] {
+  const map = new Map<string, any>();
+  for (const slot of slots) {
+    const key = `${slot.day}_${slot.hour}`;
+    const slotDate = slot.effectiveFrom ? new Date(slot.effectiveFrom).getTime() : -Infinity;
+    const existingSlot = map.get(key);
+    const existingDate = existingSlot
+      ? (existingSlot.effectiveFrom ? new Date(existingSlot.effectiveFrom).getTime() : -Infinity)
+      : -Infinity;
+    if (!existingSlot || slotDate > existingDate) {
+      map.set(key, slot);
+    }
+  }
+  return [...map.values()];
+}
+
+/**
+ * GET /api/weekly-schedule?weekStart=YYYY-MM-DD
+ * Returns the active schedule slots for the specified week.
+ * Defaults to the current week if weekStart is omitted.
  */
 export const GET = withAnyAuth(
   withErrorHandling(async (req: NextRequest, user: any) => {
     await connectToDatabase();
 
-    let slots;
+    const params = new URL(req.url).searchParams;
+    const weekStart = getMondayOfWeek(params.get('weekStart') ?? undefined);
+
+    // Query all slots that could be active for this week:
+    // effectiveFrom is null (legacy) OR effectiveFrom <= weekStart
+    const query: any = {
+      $or: [
+        { effectiveFrom: null },
+        { effectiveFrom: { $lte: weekStart } },
+      ],
+    };
+
+    let allSlots: any[];
 
     if (user.role === 'parent') {
-      // Find this parent's children
       const children = await Child.find({
-        parentId: new mongoose.Types.ObjectId(user.id),
+        parentId: new mongoose.Types.ObjectId(user.userId),
         isActive: true,
       }).select('_id').lean();
-
       const childIds = children.map((c: any) => c._id.toString());
-
-      slots = await WeeklySchedule.find({
-        patientId: { $in: childIds },
-      })
-        .sort({ day: 1, hour: 1 })
-        .lean();
-    } else {
-      // admin and therapist see everything
-      slots = await WeeklySchedule.find({})
-        .sort({ day: 1, hour: 1 })
-        .lean();
+      query.patientId = { $in: childIds };
     }
 
-    return NextResponse.json({ success: true, data: slots });
+    allSlots = await WeeklySchedule.find(query).lean();
+
+    const activeSlots = deduplicateSlots(allSlots, weekStart);
+    activeSlots.sort((a, b) => {
+      const days = ['senin','selasa','rabu','kamis','jumat','sabtu'];
+      const di = days.indexOf(a.day) - days.indexOf(b.day);
+      return di !== 0 ? di : a.hour - b.hour;
+    });
+
+    return NextResponse.json({ success: true, data: activeSlots });
   })
 );
 
 /**
  * POST /api/weekly-schedule
- * Admin only: create or update a slot
- * Body: WeeklySlot (with optional _id for update)
+ * Admin only: create or update a slot with versioning.
+ * Body: WeeklySlot fields + effectiveFrom (YYYY-MM-DD string)
+ *
+ * Versioning logic:
+ *   - If a slot with the same (day, hour, effectiveFrom) already exists → update it
+ *   - Otherwise → create a new document (old versions are preserved)
  */
 export const POST = withAnyAuth(
   withErrorHandling(async (req: NextRequest, user: any) => {
@@ -60,25 +106,31 @@ export const POST = withAnyAuth(
     await connectToDatabase();
 
     const body = await req.json();
-    const { _id, ...data } = body;
+    const { _id, effectiveFrom: effectiveFromStr, ...data } = body;
+
+    // Parse effectiveFrom — default to Monday of current week
+    const effectiveFrom = effectiveFromStr
+      ? new Date(effectiveFromStr + 'T00:00:00Z')
+      : getMondayOfWeek();
+
+    // Check if a slot with the same (day, hour, effectiveFrom) already exists
+    const existing = await WeeklySchedule.findOne({
+      day: data.day,
+      hour: data.hour,
+      effectiveFrom,
+    });
 
     let slot;
-    if (_id) {
-      // Update existing slot
+    if (existing) {
+      // Idempotent update for same week
       slot = await WeeklySchedule.findByIdAndUpdate(
-        _id,
-        { $set: data },
+        existing._id,
+        { $set: { ...data, effectiveFrom } },
         { new: true, runValidators: true }
       );
-      if (!slot) {
-        return NextResponse.json(
-          ErrorResponse.notFound('Slot'),
-          { status: 404 }
-        );
-      }
     } else {
-      // Create new slot
-      slot = await WeeklySchedule.create(data);
+      // New version — insert fresh document
+      slot = await WeeklySchedule.create({ ...data, effectiveFrom });
     }
 
     return NextResponse.json({ success: true, data: slot });
@@ -87,7 +139,7 @@ export const POST = withAnyAuth(
 
 /**
  * DELETE /api/weekly-schedule?id=<slotId>
- * Admin only: remove a slot
+ * Admin only: remove a specific slot document by its _id.
  */
 export const DELETE = withAnyAuth(
   withErrorHandling(async (req: NextRequest, user: any) => {

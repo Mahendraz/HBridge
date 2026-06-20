@@ -30,7 +30,7 @@ export const POST = withAnyAuth(async (request: NextRequest, user: any) => {
 
     // For non-admin users, only allow operations on their own uploads
     if (user.role !== 'admin') {
-      query.uploadedBy = user.id;
+      query.uploadedBy = user.userId;
     }
 
     const mediaFiles = await MediaFile.find(query);

@@ -21,6 +21,7 @@ export interface IChild extends Document {
     };
   };
   tokenBalance: number;
+  tokenExpiry?: Date;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -117,6 +118,10 @@ const ChildSchema = new Schema<IChild>({
     type: Number,
     default: 0,
     min: 0,
+  },
+  tokenExpiry: {
+    type: Date,
+    default: null,
   },
   isActive: {
     type: Boolean,

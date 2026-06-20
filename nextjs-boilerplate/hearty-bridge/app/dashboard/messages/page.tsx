@@ -1,6 +1,7 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useRef } from "react";
+import { useSearchParams } from "next/navigation";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -22,6 +23,9 @@ import {
 
 export default function MessagesPage() {
   const { user } = useAuth();
+  const searchParams = useSearchParams();
+  const autoStartRef = useRef(false);
+
   const [activeConversation, setActiveConversation] = useState<string | null>(null);
   const [messageText, setMessageText] = useState("");
   const [searchText, setSearchText] = useState("");
@@ -36,6 +40,41 @@ export default function MessagesPage() {
 
   const { conversations, loading: conversationsLoading, error: conversationsError, refetch: refetchConversations } = useConversations();
   const { messages, loading: messagesLoading, error: messagesError, sendMessage, refetch: refetchMessages } = useMessages(activeConversation);
+
+  // Auto-open or create conversation when navigated from "Hubungi" button
+  useEffect(() => {
+    const therapistId = searchParams.get('therapistId');
+    const childId = searchParams.get('childId');
+    if (!therapistId || conversationsLoading || autoStartRef.current) return;
+
+    autoStartRef.current = true;
+
+    // Check if a conversation with this therapist already exists
+    const existing = conversations.find((conv: any) =>
+      conv.participants?.some((p: any) => p.userId?._id === therapistId || p.userId === therapistId)
+    );
+
+    if (existing) {
+      setActiveConversation(existing._id);
+    } else {
+      // Create a new conversation
+      (async () => {
+        const token = localStorage.getItem('token');
+        const body: any = { participantIds: [user!._id, therapistId], type: 'direct' };
+        if (childId) body.childId = childId;
+        const res = await fetch('/api/conversations', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+          body: JSON.stringify(body),
+        });
+        const result = await res.json();
+        if (result.success) {
+          await refetchConversations();
+          setActiveConversation(result.data.conversation._id);
+        }
+      })();
+    }
+  }, [searchParams, conversations, conversationsLoading]);
 
   const formatTime = (timestamp: string) => {
     const date = new Date(timestamp);

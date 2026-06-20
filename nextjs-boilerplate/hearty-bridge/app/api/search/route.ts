@@ -71,7 +71,7 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
     // Apply permission filtering
     if (user.role !== 'admin') {
       searchQuery.$or = [
-        { 'permissions.viewableBy': user.id },
+        { 'permissions.viewableBy': user.userId },
         { 'permissions.roles': user.role }
       ];
     }

@@ -60,8 +60,8 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
           return NextResponse.json({ error: 'Child not found' }, { status: 404 });
         }
         
-        const hasAccess = child.parentId.toString() === user.id || 
-                         child.therapistId?.toString() === user.id;
+        const hasAccess = child.parentId.toString() === user.userId ||
+                         child.therapistId?.toString() === user.userId;
         
         if (!hasAccess) {
           return NextResponse.json({ error: 'Access denied' }, { status: 403 });
@@ -110,7 +110,7 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
 
     // For non-admin users, only show documents they uploaded or have access to
     if (user.role !== 'admin' && !childId) {
-      query.uploadedBy = user.id;
+      query.uploadedBy = user.userId;
     }
 
     // Build sort object
@@ -185,8 +185,8 @@ export const POST = withAnyAuth(async (request: NextRequest, user: any) => {
       }
       
       if (user.role !== 'admin') {
-        const hasAccess = child.parentId.toString() === user.id || 
-                         child.therapistId?.toString() === user.id;
+        const hasAccess = child.parentId.toString() === user.userId ||
+                         child.therapistId?.toString() === user.userId;
         
         if (!hasAccess) {
           return NextResponse.json({ error: 'Access denied to child' }, { status: 403 });
@@ -214,7 +214,7 @@ export const POST = withAnyAuth(async (request: NextRequest, user: any) => {
       fileSize,
       mimeType,
       childId: childId || undefined,
-      uploadedBy: user.id,
+      uploadedBy: user.userId,
       expiryDate: expiryDate ? new Date(expiryDate) : undefined,
       tags: tags || [],
       description,

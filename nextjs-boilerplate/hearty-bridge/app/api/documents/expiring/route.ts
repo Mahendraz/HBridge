@@ -42,7 +42,7 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
     // For non-admin users, only show documents they uploaded or have access to
     if (user.role !== 'admin') {
       query.$or = [
-        { uploadedBy: user.id },
+        { uploadedBy: user.userId },
         query // Include existing criteria
       ];
     }

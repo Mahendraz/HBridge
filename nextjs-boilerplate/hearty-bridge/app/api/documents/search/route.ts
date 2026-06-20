@@ -61,7 +61,7 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
     // For non-admin users, only search documents they have access to
     if (user.role !== 'admin') {
       searchQuery.$or = [
-        { uploadedBy: user.id },
+        { uploadedBy: user.userId },
         searchQuery // Include existing search criteria
       ];
     }

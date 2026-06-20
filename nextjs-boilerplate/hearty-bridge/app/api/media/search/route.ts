@@ -50,7 +50,7 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
         searchQuery.$and || {},
         {
           $or: [
-            { uploadedBy: user.id },
+            { uploadedBy: user.userId },
             { isPublic: true }
           ]
         }

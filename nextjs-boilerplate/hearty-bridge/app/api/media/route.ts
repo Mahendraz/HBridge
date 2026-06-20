@@ -51,7 +51,7 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
     if (user.role !== 'admin') {
       if (!query.isPublic) {
         query.$or = [
-          { uploadedBy: user.id },
+          { uploadedBy: user.userId },
           { isPublic: true }
         ];
       }
@@ -131,7 +131,7 @@ export const POST = withAnyAuth(async (request: NextRequest, user: any) => {
       url: fileUrl,
       type,
       childId: childId || undefined,
-      uploadedBy: user.id,
+      uploadedBy: user.userId,
       tags: tags || [],
       description,
       isPublic: isPublic || false,

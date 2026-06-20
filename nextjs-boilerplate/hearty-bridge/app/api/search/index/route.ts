@@ -27,7 +27,7 @@ export const POST = withAnyAuth(async (request: NextRequest, user: any) => {
     // Check if user has permission to index this content
     if (user.role !== 'admin') {
       // Only allow users to index content they own or have permission to modify
-      if (metadata?.uploadedBy && metadata.uploadedBy !== user.id) {
+      if (metadata?.uploadedBy && metadata.uploadedBy !== user.userId) {
         return NextResponse.json({ error: 'Access denied' }, { status: 403 });
       }
     }
@@ -39,7 +39,7 @@ export const POST = withAnyAuth(async (request: NextRequest, user: any) => {
       tags,
       {
         ...metadata,
-        indexedBy: user.id,
+        indexedBy: user.userId,
         indexedAt: new Date()
       }
     );
@@ -88,7 +88,7 @@ export const PUT = withAnyAuth(async (request: NextRequest, user: any) => {
       tags,
       {
         ...metadata,
-        updatedBy: user.id,
+        updatedBy: user.userId,
         updatedAt: new Date()
       }
     );
@@ -133,7 +133,7 @@ export const DELETE = withAnyAuth(async (request: NextRequest, user: any) => {
     // Check if user has permission to remove this content
     if (user.role !== 'admin') {
       const searchIndex = await SearchIndex.findOne({ entityId });
-      if (searchIndex && searchIndex.metadata?.uploadedBy !== user.id) {
+      if (searchIndex && searchIndex.metadata?.uploadedBy !== user.userId) {
         return NextResponse.json({ error: 'Access denied' }, { status: 403 });
       }
     }

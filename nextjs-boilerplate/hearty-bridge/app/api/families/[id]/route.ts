@@ -35,7 +35,7 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
     }
 
     // Check permission to view family
-    const canView = family.canUserAccess(new mongoose.Types.ObjectId(user.id)) || 
+    const canView = family.canUserAccess(new mongoose.Types.ObjectId(user.userId)) ||
                     user.role === 'admin';
 
     if (!canView) {
@@ -83,7 +83,7 @@ export const PUT = withAnyAuth(async (request: NextRequest, user: any) => {
 
     // Check permission to update family
     const isPrimaryParent = family.primaryParents.some(
-      parentId => parentId.toString() === user.id
+      parentId => parentId.toString() === user.userId
     );
     const canUpdate = isPrimaryParent || user.role === 'admin';
 
@@ -141,7 +141,7 @@ export const DELETE = withAnyAuth(async (request: NextRequest, user: any) => {
 
     // Check permission to delete family (only primary parents or admin)
     const isPrimaryParent = family.primaryParents.some(
-      parentId => parentId.toString() === user.id
+      parentId => parentId.toString() === user.userId
     );
     const canDelete = isPrimaryParent || user.role === 'admin';
 

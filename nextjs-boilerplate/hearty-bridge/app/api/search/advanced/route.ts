@@ -68,7 +68,7 @@ export const POST = withAnyAuth(async (request: NextRequest, user: any) => {
     if (user.role !== 'admin') {
       const permissionQuery = {
         $or: [
-          { 'permissions.viewableBy': user.id },
+          { 'permissions.viewableBy': user.userId },
           { 'permissions.roles': user.role }
         ]
       };

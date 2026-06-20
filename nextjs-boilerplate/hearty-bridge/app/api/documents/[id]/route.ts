@@ -38,7 +38,7 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
 
     if (user.role === 'admin') {
       hasAccess = true;
-    } else if (document.uploadedBy._id.toString() === user.id) {
+    } else if (document.uploadedBy._id.toString() === user.userId) {
       hasAccess = true;
     } else {
       // Check access level permissions
@@ -46,7 +46,7 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
         // Verify parent has access to the child
         if (document.childId) {
           const child = await Child.findById(document.childId);
-          hasAccess = child?.parentId.toString() === user.id;
+          hasAccess = child?.parentId.toString() === user.userId;
         } else {
           hasAccess = true;
         }
@@ -54,7 +54,7 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
         // Verify therapist has access to the child
         if (document.childId) {
           const child = await Child.findById(document.childId);
-          hasAccess = child?.therapistId?.toString() === user.id;
+          hasAccess = child?.therapistId?.toString() === user.userId;
         } else {
           hasAccess = true;
         }
@@ -105,7 +105,7 @@ export const PUT = withAnyAuth(async (request: NextRequest, user: any) => {
     }
 
     // Check permission to update document
-    const canUpdate = document.uploadedBy.toString() === user.id || user.role === 'admin';
+    const canUpdate = document.uploadedBy.toString() === user.userId || user.role === 'admin';
 
     if (!canUpdate) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
@@ -164,7 +164,7 @@ export const DELETE = withAnyAuth(async (request: NextRequest, user: any) => {
     }
 
     // Check permission to delete document
-    const canDelete = document.uploadedBy.toString() === user.id || user.role === 'admin';
+    const canDelete = document.uploadedBy.toString() === user.userId || user.role === 'admin';
 
     if (!canDelete) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });

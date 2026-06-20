@@ -609,7 +609,7 @@ export default function ReportsPage() {
     router.push(`/dashboard/reports/new?${params.toString()}`);
   };
 
-  if (!permissions.hasPermission("reports:view")) {
+  if (!permissions.hasAnyPermission(["reports:view", "reports:view_own"])) {
     return (
       <div className="p-8 text-center">
         <div className="text-gray-500 text-lg">Akses Ditolak</div>

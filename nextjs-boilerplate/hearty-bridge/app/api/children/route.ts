@@ -14,6 +14,7 @@ import {
 import connectToDatabase from '@/lib/db/mongodb';
 import Child from '@/models/Child';
 import User from '@/models/User';
+import WeeklySchedule from '@/models/WeeklySchedule';
 import mongoose from 'mongoose';
 
 /**
@@ -52,6 +53,15 @@ export const GET = withAnyAuth(
     const sortQuery = buildChildSortQuery(sortBy, sortOrder);
 
     try {
+      // For therapist: restrict to children appearing in their schedule slots
+      if (user.role === 'therapist') {
+        const slots = await WeeklySchedule.find({ therapistId: user.userId })
+          .select('patientId')
+          .lean();
+        const patientIds = [...new Set((slots as any[]).map((s: any) => s.patientId))];
+        searchQuery._id = { $in: patientIds.map((id: string) => new mongoose.Types.ObjectId(id)) };
+      }
+
       // Get total count for pagination
       const totalCount = await Child.countDocuments(searchQuery);
 
@@ -79,12 +89,52 @@ export const GET = withAnyAuth(
       const children = await childrenQuery.exec();
 
       // Format response based on user role and permissions
-      const formattedChildren = children.map(child => {
+      const formattedChildren: any[] = children.map(child => {
         const hasAccess = user.role === 'admin' || user.role === 'therapist'
           ? true
           : canAccessChild(user, child);
         return formatChildrenForResponse([child], hasAccess)[0];
       });
+
+      // Children may have no therapistId in the Child doc (assignment stored in WeeklySchedule).
+      // Look up the therapist from WeeklySchedule for any child missing therapist info.
+      const missingTherapist = formattedChildren.filter((c: any) => !c.therapist);
+      if (missingTherapist.length > 0) {
+        const childIds = missingTherapist.map((c: any) => c.id);
+        const slots = await WeeklySchedule.find({ patientId: { $in: childIds } })
+          .select('patientId therapistId')
+          .lean();
+
+        const childToTherapist: Record<string, string> = {};
+        for (const slot of slots as any[]) {
+          childToTherapist[slot.patientId.toString()] = slot.therapistId.toString();
+        }
+
+        if (Object.keys(childToTherapist).length > 0) {
+          const therapistIds = [...new Set(Object.values(childToTherapist))];
+          const therapists = await User.find({ _id: { $in: therapistIds } })
+            .select('name email profile')
+            .lean();
+          const therapistById: Record<string, any> = {};
+          for (const t of therapists as any[]) {
+            therapistById[t._id.toString()] = t;
+          }
+
+          for (const child of formattedChildren) {
+            const tId = childToTherapist[child.id];
+            if (tId && therapistById[tId]) {
+              const t = therapistById[tId];
+              child.therapist = {
+                id: t._id.toString(),
+                name: t.name,
+                email: t.email,
+                specialization: t.profile?.specialization,
+                clinic: t.profile?.clinic,
+              };
+            }
+          }
+        }
+      }
 
       return SuccessResponse.ok({
         children: formattedChildren,
