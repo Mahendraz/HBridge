@@ -50,11 +50,6 @@ interface AdminData {
   summary: { onTime: number; late: number; absent: number };
 }
 
-interface StaffData {
-  date: string;
-  record: AttendanceRecord | null;
-  myStatus: "on-time" | "late" | "absent";
-}
 
 interface HistoryRecord extends AttendanceRecord {}
 
@@ -167,7 +162,6 @@ export default function AttendancePage() {
   const [selectedDate, setSelectedDate] = useState<string>(todayWIB());
   const [adminData, setAdminData] = useState<AdminData | null>(null);
   const [weeklyRecords, setWeeklyRecords] = useState<Record<string, AttendanceRecord[]>>({});
-  const [staffData, setStaffData] = useState<StaffData | null>(null);
   const [history, setHistory] = useState<HistoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -185,42 +179,31 @@ export default function AttendancePage() {
       const token = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}` };
 
-      if (user.role === "admin") {
-        const weekDays = getWeekDays(selectedDate);
-        // Fetch selected date + all 6 week days in parallel
-        const [adminRes, ...weeklyRaw] = await Promise.all([
-          fetch(`/api/attendance?date=${selectedDate}`, { headers }),
-          ...weekDays.map((d) => fetch(`/api/attendance?date=${d}`, { headers })),
-        ]);
-        if (adminRes.ok) {
-          const r = await adminRes.json();
-          if (r.success) setAdminData(r.data);
-        }
-        const wMap: Record<string, AttendanceRecord[]> = {};
-        for (let i = 0; i < weekDays.length; i++) {
-          try {
-            const r = await weeklyRaw[i].json();
-            wMap[weekDays[i]] = r.success ? (r.data.records ?? []) : [];
-          } catch {
-            wMap[weekDays[i]] = [];
-          }
-        }
-        setWeeklyRecords(wMap);
-      } else {
-        // Therapist: own today + history
-        const [todayRes, histRes] = await Promise.all([
-          fetch(`/api/attendance?date=${selectedDate}`, { headers }),
-          fetch(`/api/attendance?history=true`, { headers }),
-        ]);
-        if (todayRes.ok) {
-          const r = await todayRes.json();
-          if (r.success) setStaffData(r.data);
-        }
-        if (histRes.ok) {
-          const r = await histRes.json();
-          if (r.success) setHistory(r.data.history || []);
+      // Admin and therapist: fetch all staff data + weekly recap + own history
+      const weekDays = getWeekDays(selectedDate);
+      const [mainRes, histRes, ...weeklyRaw] = await Promise.all([
+        fetch(`/api/attendance?date=${selectedDate}`, { headers }),
+        fetch(`/api/attendance?history=true`, { headers }),
+        ...weekDays.map((d) => fetch(`/api/attendance?date=${d}`, { headers })),
+      ]);
+      if (mainRes.ok) {
+        const r = await mainRes.json();
+        if (r.success) setAdminData(r.data);
+      }
+      if (histRes.ok) {
+        const r = await histRes.json();
+        if (r.success) setHistory(r.data.history || []);
+      }
+      const wMap: Record<string, AttendanceRecord[]> = {};
+      for (let i = 0; i < weekDays.length; i++) {
+        try {
+          const r = await weeklyRaw[i].json();
+          wMap[weekDays[i]] = r.success ? (r.data.records ?? []) : [];
+        } catch {
+          wMap[weekDays[i]] = [];
         }
       }
+      setWeeklyRecords(wMap);
     } catch {
       // silently fail
     } finally {
@@ -308,13 +291,11 @@ export default function AttendancePage() {
   const today = todayWIB();
   const isToday = selectedDate === today;
 
-  /* ─ My check-in status (for all roles) ─ */
+  /* ─ My check-in status (admin + therapist both use adminData) ─ */
   const myTodayRecord =
-    user.role === "admin"
-      ? (adminData?.date === today
-          ? (adminData.records.find((r) => r.userId === user._id) ?? null)
-          : null)
-      : (staffData?.record ?? null);
+    adminData?.date === today
+      ? (adminData.records.find((r) => r.userId === user._id) ?? null)
+      : null;
   const alreadyCheckedIn = myTodayRecord !== null;
 
   /* ─ Build unified table rows for admin ─ */
@@ -348,9 +329,7 @@ export default function AttendancePage() {
             Absensi
           </h1>
           <p className="text-sm text-gray-500 mt-0.5">
-            {user.role === "admin"
-              ? "Monitor kehadiran semua staff"
-              : "Catat kehadiran Anda hari ini"}
+            Monitor kehadiran semua staff
           </p>
         </div>
 
@@ -516,8 +495,8 @@ export default function AttendancePage() {
         </Card>
       )}
 
-      {/* ── ADMIN OVERVIEW ── */}
-      {user.role === "admin" && (
+      {/* ── STAFF OVERVIEW (admin + therapist) ── */}
+      {(user.role === "admin" || user.role === "therapist") && (
         <>
           {/* Summary cards */}
           {adminData && (
