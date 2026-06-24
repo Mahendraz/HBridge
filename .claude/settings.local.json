@@ -43,7 +43,8 @@
       "Bash(find:*)",
       "Bash(git -C /mnt/e/Work/Hendra/HBridge/nextjs-boilerplate/hearty-bridge rev-parse:*)",
       "Bash(grep:*)",
-      "Bash(node -e:*)"
+      "Bash(node -e:*)",
+      "Bash(xargs basename:*)"
     ],
     "deny": []
   }
