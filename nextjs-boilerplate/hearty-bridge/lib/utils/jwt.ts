@@ -1,11 +1,12 @@
 import * as jwt from 'jsonwebtoken';
 import { NextRequest, NextResponse } from 'next/server';
+import type { UserRole } from '@/lib/types/auth';
 
 // JWT payload interface
 export interface JWTPayload {
   userId: string;
   email: string;
-  role: 'admin' | 'therapist' | 'parent' | 'super_admin';
+  role: UserRole;
   name: string;
   iat?: number;
   exp?: number;
@@ -187,14 +188,14 @@ export const clearAuthCookies = (response: NextResponse): void => {
 /**
  * Check if user has required role
  */
-export const hasRole = (user: JWTPayload, requiredRole: 'admin' | 'therapist' | 'parent' | 'super_admin'): boolean => {
+export const hasRole = (user: JWTPayload, requiredRole: UserRole): boolean => {
   return user.role === requiredRole;
 };
 
 /**
  * Check if user has any of the required roles
  */
-export const hasAnyRole = (user: JWTPayload, requiredRoles: ('admin' | 'therapist' | 'parent' | 'super_admin')[]): boolean => {
+export const hasAnyRole = (user: JWTPayload, requiredRoles: UserRole[]): boolean => {
   return requiredRoles.includes(user.role);
 };
 
@@ -230,7 +231,7 @@ export const requireAuth = (
  * Middleware helper to protect routes with role-based access
  */
 export const requireRole = (
-  requiredRole: 'therapist' | 'parent',
+  requiredRole: UserRole,
   handler: (request: NextRequest, user: JWTPayload) => Promise<NextResponse> | NextResponse
 ) => {
   return requireAuth(async (request: NextRequest, user: JWTPayload) => {
@@ -249,7 +250,7 @@ export const requireRole = (
  * Middleware helper to protect routes with multiple allowed roles
  */
 export const requireAnyRole = (
-  requiredRoles: ('therapist' | 'parent')[],
+  requiredRoles: UserRole[],
   handler: (request: NextRequest, user: JWTPayload) => Promise<NextResponse> | NextResponse
 ) => {
   return requireAuth(async (request: NextRequest, user: JWTPayload) => {

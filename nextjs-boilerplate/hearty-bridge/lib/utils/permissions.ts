@@ -4,8 +4,9 @@
  */
 
 import React from "react";
+import type { UserRole } from "@/lib/types/auth";
 
-export type UserRole = "admin" | "therapist" | "parent" | "super_admin";
+export type { UserRole };
 
 export type Permission = 
   // Dashboard permissions

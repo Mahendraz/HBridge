@@ -1,17 +1,17 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { 
-  getUserFromRequest, 
-  hasRole, 
-  hasAnyRole, 
+import {
+  getUserFromRequest,
+  hasAnyRole,
   JWTPayload,
-  verifyAccessToken 
+  verifyAccessToken
 } from '@/lib/utils/jwt';
+import type { UserRole } from '@/lib/types/auth';
 import connectToDatabase from '@/lib/db/mongodb';
 import User from '@/models/User';
 
 // Type definitions for middleware handlers
 export type AuthenticatedHandler = (
-  request: NextRequest, 
+  request: NextRequest,
   user: JWTPayload
 ) => Promise<NextResponse> | NextResponse;
 
@@ -23,8 +23,7 @@ export type UnauthenticatedHandler = (
 export interface AuthMiddlewareOptions {
   requireActive?: boolean;
   checkDatabase?: boolean;
-  allowedRoles?: ('admin' | 'therapist' | 'parent' | 'super_admin')[];
-  requiredRole?: 'admin' | 'therapist' | 'parent' | 'super_admin';
+  allowedRoles?: UserRole[];
 }
 
 /**
@@ -48,18 +47,6 @@ export function withAuth(
             code: 'AUTH_REQUIRED'
           },
           { status: 401 }
-        );
-      }
-
-      // Check if user has required role
-      if (options.requiredRole && !hasRole(user, options.requiredRole)) {
-        return NextResponse.json(
-          { 
-            success: false,
-            error: 'Insufficient permissions',
-            code: 'INSUFFICIENT_PERMISSIONS'
-          },
-          { status: 403 }
         );
       }
 
@@ -156,7 +143,7 @@ export function withAuth(
  */
 export function withTherapistAuth(handler: AuthenticatedHandler) {
   return withAuth(handler, {
-    requiredRole: 'therapist',
+    allowedRoles: ['therapist'],
     requireActive: true,
     checkDatabase: true
   });
@@ -167,7 +154,7 @@ export function withTherapistAuth(handler: AuthenticatedHandler) {
  */
 export function withParentAuth(handler: AuthenticatedHandler) {
   return withAuth(handler, {
-    requiredRole: 'parent',
+    allowedRoles: ['parent'],
     requireActive: true,
     checkDatabase: true
   });
