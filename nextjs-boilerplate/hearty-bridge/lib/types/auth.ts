@@ -1,7 +1,7 @@
 import { z } from "zod";
 
 // User role types
-export type UserRole = "admin" | "therapist" | "parent";
+export type UserRole = "admin" | "therapist" | "parent" | "super_admin";
 
 // Registration form schema
 export const registerSchema = z.object({
@@ -9,7 +9,7 @@ export const registerSchema = z.object({
   email: z.string().email("Please enter a valid email address"),
   password: z.string().min(8, "Password must be at least 8 characters"),
   confirmPassword: z.string(),
-  role: z.enum(["admin", "therapist", "parent"], {
+  role: z.enum(["admin", "therapist", "parent", "super_admin"], {
     message: "Please select a role",
   }),
   phone: z.string().optional(),

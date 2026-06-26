@@ -23,8 +23,8 @@ export type UnauthenticatedHandler = (
 export interface AuthMiddlewareOptions {
   requireActive?: boolean;
   checkDatabase?: boolean;
-  allowedRoles?: ('admin' | 'therapist' | 'parent')[];
-  requiredRole?: 'admin' | 'therapist' | 'parent';
+  allowedRoles?: ('admin' | 'therapist' | 'parent' | 'super_admin')[];
+  requiredRole?: 'admin' | 'therapist' | 'parent' | 'super_admin';
 }
 
 /**
@@ -174,11 +174,22 @@ export function withParentAuth(handler: AuthenticatedHandler) {
 }
 
 /**
- * Middleware for admin-only routes
+ * Middleware for admin-only routes (also allows super_admin)
  */
 export function withAdminAuth(handler: AuthenticatedHandler) {
   return withAuth(handler, {
-    requiredRole: 'admin',
+    allowedRoles: ['admin', 'super_admin'],
+    requireActive: true,
+    checkDatabase: true
+  });
+}
+
+/**
+ * Middleware for super_admin-only routes
+ */
+export function withSuperAdminAuth(handler: AuthenticatedHandler) {
+  return withAuth(handler, {
+    allowedRoles: ['super_admin'],
     requireActive: true,
     checkDatabase: true
   });
@@ -189,7 +200,7 @@ export function withAdminAuth(handler: AuthenticatedHandler) {
  */
 export function withAnyAuth(handler: AuthenticatedHandler) {
   return withAuth(handler, {
-    allowedRoles: ['admin', 'therapist', 'parent'],
+    allowedRoles: ['admin', 'therapist', 'parent', 'super_admin'],
     requireActive: true,
     checkDatabase: true
   });

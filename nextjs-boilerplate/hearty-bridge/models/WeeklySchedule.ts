@@ -11,6 +11,9 @@ export interface IWeeklySchedule extends Document {
   diagnosis: string;
   notes: string;
   effectiveFrom: Date | null;
+  packageId: string | null;
+  totalSessions: number | null;
+  effectiveUntil: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -38,6 +41,9 @@ const WeeklyScheduleSchema = new Schema<IWeeklySchedule>(
     diagnosis:    { type: String, default: '', trim: true },
     notes:        { type: String, default: '', trim: true },
     effectiveFrom: { type: Date, default: null, index: true },
+    packageId:    { type: String, default: null },
+    totalSessions:{ type: Number, default: null },
+    effectiveUntil: { type: Date, default: null, index: true },
   },
   {
     timestamps: true,

@@ -15,6 +15,9 @@ export interface ISession extends Document {
   nextSteps?: string;
   location?: string;
   meetingUrl?: string;
+  packageId?: mongoose.Types.ObjectId;
+  sessionNumber?: number;
+  totalSessions?: number;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -103,6 +106,22 @@ const SessionSchema = new Schema<ISession>({
     type: String,
     trim: true
   },
+  packageId: {
+    type: Schema.Types.ObjectId,
+    ref: 'TokenTransaction',
+    default: null,
+    index: true
+  },
+  sessionNumber: {
+    type: Number,
+    default: null,
+    min: 1
+  },
+  totalSessions: {
+    type: Number,
+    default: null,
+    min: 1
+  },
   isActive: {
     type: Boolean,
     default: true
@@ -117,6 +136,7 @@ SessionSchema.index({ childId: 1, date: -1 });
 SessionSchema.index({ therapistId: 1, date: -1 });
 SessionSchema.index({ date: -1, status: 1 });
 SessionSchema.index({ isActive: 1 });
+SessionSchema.index({ packageId: 1, sessionNumber: 1 });
 
 // Static method to find sessions by child
 SessionSchema.statics.findByChild = function(childId: mongoose.Types.ObjectId): Promise<ISession[]> {

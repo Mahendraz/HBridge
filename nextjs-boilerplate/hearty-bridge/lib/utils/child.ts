@@ -28,6 +28,7 @@ export function formatChildForResponse(child: IChild, includePrivateInfo: boolea
     gender: child.gender,
     age: child.getAge(),
     isActive: child.isActive,
+    photoUrl: (child as any).photoUrl ?? null,
     tokenBalance: child.tokenBalance ?? 0,
     tokenExpiry: child.tokenExpiry ? child.tokenExpiry.toISOString() : null,
     createdAt: child.createdAt?.toISOString(),

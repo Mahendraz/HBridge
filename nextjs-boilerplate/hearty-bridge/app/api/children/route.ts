@@ -15,6 +15,9 @@ import connectToDatabase from '@/lib/db/mongodb';
 import Child from '@/models/Child';
 import User from '@/models/User';
 import WeeklySchedule from '@/models/WeeklySchedule';
+import TokenTransaction from '@/models/TokenTransaction';
+import { getR2SignedUrl } from '@/lib/services/r2-storage';
+import Session from '@/models/Session';
 import mongoose from 'mongoose';
 
 /**
@@ -135,6 +138,91 @@ export const GET = withAnyAuth(
           }
         }
       }
+
+      // Add therapy type breakdown from token transactions (sum of topup amounts per therapyType)
+      const childObjectIds = formattedChildren
+        .map((c: any) => new mongoose.Types.ObjectId(c.id));
+
+      if (childObjectIds.length > 0) {
+        const breakdowns = await TokenTransaction.aggregate([
+          {
+            $match: {
+              childId: { $in: childObjectIds },
+              type: 'topup',
+              packageType: { $ne: null },
+              therapyType: { $ne: null },
+            },
+          },
+          {
+            $group: {
+              _id: { childId: '$childId', therapyType: '$therapyType' },
+              total: { $sum: '$amount' },
+            },
+          },
+        ]);
+
+        const therapyByChild: Record<string, Record<string, number>> = {};
+        for (const b of breakdowns) {
+          const cid = b._id.childId.toString();
+          const type = b._id.therapyType as string;
+          if (!therapyByChild[cid]) therapyByChild[cid] = {};
+          therapyByChild[cid][type] = b.total;
+        }
+
+        for (const child of formattedChildren) {
+          child.therapyBalance = therapyByChild[child.id] ?? {};
+        }
+
+        // Add session progress (completed / total) per child
+        const now = new Date();
+        const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+        const monthEnd = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+
+        const sessionAgg = await Session.aggregate([
+          { $match: { childId: { $in: childObjectIds }, isActive: true } },
+          {
+            $group: {
+              _id: '$childId',
+              total: { $sum: 1 },
+              completed: { $sum: { $cond: [{ $eq: ['$status', 'completed'] }, 1, 0] } },
+              completedThisMonth: {
+                $sum: {
+                  $cond: [
+                    { $and: [
+                      { $eq: ['$status', 'completed'] },
+                      { $gte: ['$date', monthStart] },
+                      { $lt: ['$date', monthEnd] },
+                    ]},
+                    1, 0,
+                  ],
+                },
+              },
+            },
+          },
+        ]);
+        const sessionByChild: Record<string, { completed: number; total: number; completedThisMonth: number }> = {};
+        for (const s of sessionAgg) {
+          sessionByChild[s._id.toString()] = {
+            completed: s.completed,
+            total: s.total,
+            completedThisMonth: s.completedThisMonth,
+          };
+        }
+        for (const child of formattedChildren) {
+          const sp = sessionByChild[child.id] ?? null;
+          child.sessionProgress = sp ? { completed: sp.completed, total: sp.total } : null;
+          child.sessionsThisMonth = sp?.completedThisMonth ?? 0;
+        }
+      }
+
+      // Sign R2 photo keys
+      await Promise.all(
+        formattedChildren
+          .filter((c: any) => c.photoUrl && !c.photoUrl.startsWith('http'))
+          .map(async (c: any) => {
+            c.photoUrl = await getR2SignedUrl(c.photoUrl, 3600) ?? c.photoUrl;
+          })
+      );
 
       return SuccessResponse.ok({
         children: formattedChildren,

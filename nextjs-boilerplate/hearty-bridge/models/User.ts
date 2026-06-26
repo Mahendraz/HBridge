@@ -6,7 +6,7 @@ export interface IUser extends Document {
   name: string;
   email: string;
   password: string;
-  role: 'admin' | 'therapist' | 'parent';
+  role: 'admin' | 'therapist' | 'parent' | 'super_admin';
   phone?: string;
   avatar?: string;
   profile?: {
@@ -34,7 +34,7 @@ export interface IUser extends Document {
 // Interface for User model with static methods
 export interface IUserModel extends Model<IUser> {
   findByEmail(email: string): Promise<IUser | null>;
-  findActiveUsers(role?: 'admin' | 'therapist' | 'parent'): Promise<IUser[]>;
+  findActiveUsers(role?: 'admin' | 'therapist' | 'parent' | 'super_admin'): Promise<IUser[]>;
 }
 
 // User schema definition
@@ -69,8 +69,8 @@ const UserSchema = new Schema<IUser>({
     type: String,
     required: [true, 'Role is required'],
     enum: {
-      values: ['admin', 'therapist', 'parent'],
-      message: 'Role must be admin, therapist, or parent'
+      values: ['admin', 'therapist', 'parent', 'super_admin'],
+      message: 'Role must be admin, therapist, parent, or super_admin'
     }
   },
   phone: {
@@ -167,7 +167,7 @@ UserSchema.statics.findByEmail = function(email: string): Promise<IUser | null> 
 };
 
 // Static method to find active users by role
-UserSchema.statics.findActiveUsers = function(role?: 'admin' | 'therapist' | 'parent'): Promise<IUser[]> {
+UserSchema.statics.findActiveUsers = function(role?: 'admin' | 'therapist' | 'parent' | 'super_admin'): Promise<IUser[]> {
   const query: any = { isActive: true };
   if (role) {
     query.role = role;

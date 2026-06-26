@@ -6,6 +6,9 @@ export interface ITokenTransaction extends Document {
   adminId: mongoose.Types.ObjectId;
   adminName: string;
   type: 'topup' | 'deduct';
+  packageType: string | null;
+  packageId?: mongoose.Types.ObjectId | null;
+  therapyType: 'OT' | 'TW' | null;
   amount: number;
   balanceBefore: number;
   balanceAfter: number;
@@ -26,6 +29,20 @@ const TokenTransactionSchema = new Schema<ITokenTransaction>(
       type: String,
       enum: { values: ['topup', 'deduct'], message: 'Type must be topup or deduct' },
       required: [true, 'Transaction type is required'],
+    },
+    packageType: {
+      type: String,
+      default: null,
+    },
+    packageId: {
+      type: Schema.Types.ObjectId,
+      ref: 'Package',
+      default: null,
+    },
+    therapyType: {
+      type: String,
+      enum: { values: ['OT', 'TW'], message: 'therapyType must be OT or TW' },
+      default: null,
     },
     amount:        { type: Number, required: true, min: [1, 'Amount must be at least 1'] },
     balanceBefore: { type: Number, required: true, min: 0 },

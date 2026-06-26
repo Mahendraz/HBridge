@@ -1,13 +1,14 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import { withAnyAuth, withAdminAuth } from '@/lib/middleware/auth';
 import { withErrorHandling, SuccessResponse, ErrorResponse } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
 import Child from '@/models/Child';
 import TokenTransaction from '@/models/TokenTransaction';
+import Invoice from '@/models/Invoice';
+import Package from '@/models/Package';
 import mongoose from 'mongoose';
 
 function getChildId(req: NextRequest): string {
-  // URL pattern: /api/children/[id]/tokens
   const parts = new URL(req.url).pathname.split('/');
   const tokensIdx = parts.indexOf('tokens');
   return tokensIdx > 0 ? parts[tokensIdx - 1] : '';
@@ -16,7 +17,6 @@ function getChildId(req: NextRequest): string {
 /**
  * GET /api/children/[id]/tokens
  * Returns current token balance and transaction history for a child.
- * Accessible by all authenticated roles.
  */
 export const GET = withAnyAuth(
   withErrorHandling(async (req: NextRequest, user: any) => {
@@ -33,7 +33,6 @@ export const GET = withAnyAuth(
       return ErrorResponse.notFound('Child not found');
     }
 
-    // Role-based access: parent can only see their own child
     if (user.role === 'parent') {
       const fullChild = await Child.findOne({ _id: childId, isActive: true }).select('parentId').lean();
       if (!fullChild || (fullChild as any).parentId?.toString() !== user.userId) {
@@ -57,9 +56,14 @@ export const GET = withAnyAuth(
 
 /**
  * POST /api/children/[id]/tokens
- * Top-up or deduct tokens for a child.
- * Admin only.
- * Body: { type: 'topup' | 'deduct', amount: number, note?: string }
+ * Admin / Super Admin only. Two modes:
+ *
+ * 1. Assign package:  { packageId: '<Package ObjectId>' }
+ *    - Looks up Package from DB → gets sessions, price, name, therapyType
+ *    - Auto-generates Invoice record
+ *
+ * 2. Manual deduct:  { type: 'deduct', amount: number, note?: string }
+ *    - Subtracts tokens without generating sessions (manual override)
  */
 export const POST = withAdminAuth(
   withErrorHandling(async (req: NextRequest, user: any) => {
@@ -70,61 +74,118 @@ export const POST = withAdminAuth(
     }
 
     const body = await req.json();
-    const { type, amount, note } = body as {
-      type: string;
-      amount: number;
-      note?: string;
-    };
 
-    if (type !== 'topup' && type !== 'deduct') {
-      return ErrorResponse.badRequest('type must be "topup" or "deduct"');
+    // ── Manual deduct path ──
+    if (body.type === 'deduct') {
+      const parsedAmount = Math.floor(Number(body.amount ?? 1));
+      if (!Number.isFinite(parsedAmount) || parsedAmount < 1) {
+        return ErrorResponse.badRequest('amount must be ≥ 1');
+      }
+      await connectToDatabase();
+      const child = await Child.findOne({ _id: childId, isActive: true });
+      if (!child) return ErrorResponse.notFound('Child not found');
+      const balanceBefore = child.tokenBalance ?? 0;
+      if (balanceBefore - parsedAmount < 0) {
+        return ErrorResponse.badRequest('Saldo tidak mencukupi');
+      }
+      child.tokenBalance = balanceBefore - parsedAmount;
+      await child.save();
+      const tx = await TokenTransaction.create({
+        childId: new mongoose.Types.ObjectId(childId),
+        childName: child.name,
+        adminId: new mongoose.Types.ObjectId(user.userId),
+        adminName: user.name || '',
+        type: 'deduct',
+        packageType: null,
+        packageId: null,
+        amount: parsedAmount,
+        balanceBefore,
+        balanceAfter: child.tokenBalance,
+        note: (body.note as string | undefined)?.trim() || 'Pengurangan manual',
+      });
+      return SuccessResponse.created({ data: { transaction: tx, newBalance: child.tokenBalance } });
     }
 
-    const parsedAmount = Math.floor(Number(amount));
-    if (!Number.isFinite(parsedAmount) || parsedAmount < 1) {
-      return ErrorResponse.badRequest('amount must be an integer ≥ 1');
+    // ── Package assignment path ──
+    const { packageId } = body as { packageId?: string };
+
+    if (!packageId || !mongoose.isValidObjectId(packageId)) {
+      return ErrorResponse.badRequest('packageId harus berisi ID paket yang valid');
     }
 
     await connectToDatabase();
 
-    const child = await Child.findOne({ _id: childId, isActive: true });
-    if (!child) {
-      return ErrorResponse.notFound('Child not found');
+    const [child, pkg] = await Promise.all([
+      Child.findOne({ _id: childId, isActive: true }),
+      Package.findById(packageId).lean(),
+    ]);
+
+    if (!child) return ErrorResponse.notFound('Child not found');
+    if (!pkg)   return ErrorResponse.notFound('Package not found');
+    if (!(pkg as any).isActive) {
+      return ErrorResponse.badRequest('Paket ini sudah tidak aktif');
     }
+
+    const packageDoc = pkg as any;
+    const amount      = packageDoc.sessions as number;
+    const packageName = packageDoc.name as string;
+    const therapyType = packageDoc.therapyType as string;
+    const price       = packageDoc.price as number;
 
     const balanceBefore = child.tokenBalance ?? 0;
-
-    if (type === 'deduct' && balanceBefore - parsedAmount < 0) {
-      return ErrorResponse.badRequest('Saldo tidak mencukupi');
-    }
-
-    const balanceAfter =
-      type === 'topup' ? balanceBefore + parsedAmount : balanceBefore - parsedAmount;
+    const balanceAfter  = balanceBefore + amount;
 
     child.tokenBalance = balanceAfter;
     await child.save();
 
+    const txTherapyType = therapyType === 'both' ? null : (therapyType as 'OT' | 'TW');
     const transaction = await TokenTransaction.create({
-      childId: new mongoose.Types.ObjectId(childId),
-      childName: child.name,
-      adminId: new mongoose.Types.ObjectId(user.userId),
-      adminName: user.name || '',
-      type,
-      amount: parsedAmount,
+      childId:    new mongoose.Types.ObjectId(childId),
+      childName:  child.name,
+      adminId:    new mongoose.Types.ObjectId(user.userId),
+      adminName:  user.name || '',
+      type:       'topup' as const,
+      packageType: packageName,
+      packageId:  new mongoose.Types.ObjectId(packageId),
+      therapyType: txTherapyType,
+      amount,
       balanceBefore,
       balanceAfter,
-      note: note?.trim() || '',
+      note: `Paket ${packageName} (${amount} sesi)`,
+    }) as any;
+
+    // Auto-create invoice
+    const now       = new Date();
+    const monthStr  = `${now.getUTCFullYear()}${String(now.getUTCMonth() + 1).padStart(2, '0')}`;
+    const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));
+    const monthEnd   = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth() + 1, 1));
+    const invoiceCount  = await Invoice.countDocuments({ createdAt: { $gte: monthStart, $lt: monthEnd } });
+    const invoiceNumber = `INV-${monthStr}-${String(invoiceCount + 1).padStart(4, '0')}`;
+    const dueDate = new Date();
+    dueDate.setDate(dueDate.getDate() + 7);
+
+    await Invoice.create({
+      invoiceNumber,
+      childId:              new mongoose.Types.ObjectId(childId),
+      childName:            child.name,
+      parentId:             child.parentId,
+      packageTransactionId: transaction._id,
+      packageId:            new mongoose.Types.ObjectId(packageId),
+      packageType:          packageName,
+      therapyType:          therapyType === 'both' ? 'OT' : (therapyType as 'OT' | 'TW'),
+      sessions:             amount,
+      amount:               price,
+      dueDate,
+      status:               'unpaid',
+      paidAt:               null,
+      isVisibleToParent:    false,
+      notes:                '',
+      adminId:              new mongoose.Types.ObjectId(user.userId),
+      adminName:            user.name || '',
     });
 
-    return NextResponse.json(
-      {
-        success: true,
-        data: {
-          transaction,
-          newBalance: balanceAfter,
-        },
-      },
-      { status: 201 }
-    );
+    return SuccessResponse.created({
+      data: { transaction, newBalance: balanceAfter, packageName, totalSessions: amount },
+    });
   })
 );

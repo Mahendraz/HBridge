@@ -110,20 +110,29 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
       patientsByTherapist.get(tid)!.add(String(slot.patientId));
     }
 
+    const detectTherapyType = (specializations: string[]): 'OT' | 'TW' | null => {
+      const text = specializations.join(' ').toLowerCase();
+      if (text.includes('wicara') || text.includes(' tw') || text.startsWith('tw') || text === 'tw') return 'TW';
+      if (text.includes('okupasi') || text.includes(' ot') || text.startsWith('ot') || text === 'ot') return 'OT';
+      return null;
+    };
+
     const therapistsWithStats = therapists.map((therapist) => {
         const tid = String(therapist._id);
         const assignedPatients = patientsByTherapist.get(tid)?.size ?? 0;
+        const specializations = Array.isArray(therapist.profile?.specialization)
+          ? therapist.profile.specialization
+          : therapist.profile?.specialization
+            ? [therapist.profile.specialization]
+            : [];
 
         return {
           _id: therapist._id,
           name: therapist.name,
           email: therapist.email,
           phone: therapist.phone || '+1-555-0000',
-          specializations: Array.isArray(therapist.profile?.specialization)
-            ? therapist.profile.specialization
-            : therapist.profile?.specialization
-              ? [therapist.profile.specialization]
-              : ['General Therapy'],
+          specializations: specializations.length > 0 ? specializations : ['General Therapy'],
+          therapyType: detectTherapyType(specializations),
           status: therapist.isActive ? 'active' : 'inactive',
           assignedPatients: assignedPatients,
           maxPatients: 20, // Default max capacity
@@ -134,11 +143,7 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
             days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],
             hours: { start: '09:00', end: '17:00' }
           },
-          credentials: Array.isArray(therapist.profile?.specialization)
-            ? therapist.profile.specialization
-            : therapist.profile?.specialization
-              ? [therapist.profile.specialization]
-              : ['Licensed Therapist'],
+          credentials: specializations.length > 0 ? specializations : ['Licensed Therapist'],
           clinic: therapist.profile?.clinic || 'Hearty Bridge Center',
           experience: therapist.profile?.experience || 5
         };

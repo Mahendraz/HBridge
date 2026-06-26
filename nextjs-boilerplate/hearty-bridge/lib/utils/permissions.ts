@@ -5,7 +5,7 @@
 
 import React from "react";
 
-export type UserRole = "admin" | "therapist" | "parent";
+export type UserRole = "admin" | "therapist" | "parent" | "super_admin";
 
 export type Permission = 
   // Dashboard permissions
@@ -69,22 +69,83 @@ export type Permission =
   | "users:delete"
   | "users:manage_roles"
   
-  // Communication permissions
-  | "messages:view"
-  | "messages:send"
-  | "messages:view_own"
-  
   // Financial permissions
   | "billing:view"
   | "billing:manage"
   | "billing:view_own"
 
+  // Invoice permissions
+  | "invoices:manage"
+  | "invoices:view_own"
+
   // Attendance permissions
   | "attendance:view"
-  | "attendance:checkin";
+  | "attendance:checkin"
+
+  // Package management (super_admin only)
+  | "packages:view"
+  | "packages:create"
+  | "packages:edit"
+  | "packages:delete"
+
+  // Super admin financial access
+  | "financial:view_all"
+  | "financial:view_proofs";
 
 // Role-to-permissions mapping
 export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
+  super_admin: [
+    // All admin permissions
+    "dashboard:view",
+    "dashboard:analytics",
+    "patients:view",
+    "patients:create",
+    "patients:edit",
+    "patients:delete",
+    "patients:assign",
+    "therapists:view",
+    "therapists:create",
+    "therapists:edit",
+    "therapists:delete",
+    "therapists:invite",
+    "therapists:assign_patients",
+    "schedules:view",
+    "schedules:edit",
+    "schedules:create",
+    "schedules:manage_all",
+    "reports:view",
+    "reports:create",
+    "reports:view_all",
+    "reports:export",
+    "reports:system_analytics",
+    "sessions:view",
+    "sessions:create",
+    "sessions:edit",
+    "families:view",
+    "families:create",
+    "families:edit",
+    "settings:view",
+    "settings:edit",
+    "settings:system",
+    "users:view",
+    "users:create",
+    "users:edit",
+    "users:delete",
+    "users:manage_roles",
+    "billing:view",
+    "billing:manage",
+    "invoices:manage",
+    "attendance:view",
+    "attendance:checkin",
+    // Super admin exclusive
+    "packages:view",
+    "packages:create",
+    "packages:edit",
+    "packages:delete",
+    "financial:view_all",
+    "financial:view_proofs",
+  ],
+
   admin: [
     // Dashboard
     "dashboard:view",
@@ -140,13 +201,12 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "users:delete",
     "users:manage_roles",
     
-    // Communication
-    "messages:view",
-    "messages:send",
-    
     // Financial
     "billing:view",
     "billing:manage",
+
+    // Invoices
+    "invoices:manage",
 
     // Attendance
     "attendance:view",
@@ -178,10 +238,6 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     // Settings (limited)
     "settings:view",
     
-    // Communication (assigned patients/families)
-    "messages:view_own",
-    "messages:send",
-
     // Attendance
     "attendance:view",
     "attendance:checkin"
@@ -210,12 +266,11 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     // Settings (limited)
     "settings:view",
     
-    // Communication with assigned therapists
-    "messages:view_own",
-    "messages:send",
-    
     // Own billing
-    "billing:view_own"
+    "billing:view_own",
+
+    // Invoices
+    "invoices:view_own"
   ]
 };
 
@@ -381,6 +436,63 @@ export class PermissionChecker {
       icon: string;
       permissions: Permission[];
     }>> = {
+      super_admin: [
+        {
+          name: "Dashboard",
+          href: "/dashboard",
+          icon: "HomeIcon",
+          permissions: ["dashboard:view"]
+        },
+        {
+          name: "Pasien",
+          href: "/dashboard/patients",
+          icon: "UserIcon",
+          permissions: ["patients:view"]
+        },
+        {
+          name: "Terapis",
+          href: "/dashboard/therapists",
+          icon: "UsersIcon",
+          permissions: ["therapists:view"]
+        },
+        {
+          name: "Jadwal",
+          href: "/dashboard/schedules",
+          icon: "CalendarIcon",
+          permissions: ["schedules:manage_all"]
+        },
+        {
+          name: "Laporan",
+          href: "/dashboard/reports",
+          icon: "BarChart3Icon",
+          permissions: ["reports:view_all"]
+        },
+        {
+          name: "Absensi",
+          href: "/dashboard/attendance",
+          icon: "ClipboardCheckIcon",
+          permissions: ["attendance:view"]
+        },
+        {
+          name: "Invoicing",
+          href: "/dashboard/invoices",
+          icon: "ReceiptIcon",
+          permissions: ["invoices:manage"]
+        },
+        {
+          name: "Kelola Paket",
+          href: "/dashboard/super-admin/packages",
+          icon: "PackageIcon",
+          permissions: ["packages:view"]
+        },
+        {
+          name: "Laporan Keuangan",
+          href: "/dashboard/super-admin/financial",
+          icon: "DollarSignIcon",
+          permissions: ["financial:view_all"]
+        },
+      ],
+
       admin: [
         {
           name: "Dashboard",
@@ -417,6 +529,12 @@ export class PermissionChecker {
           href: "/dashboard/attendance",
           icon: "ClipboardCheckIcon",
           permissions: ["attendance:view"]
+        },
+        {
+          name: "Invoicing",
+          href: "/dashboard/invoices",
+          icon: "ReceiptIcon",
+          permissions: ["invoices:manage"]
         }
       ],
       therapist: [
@@ -443,12 +561,6 @@ export class PermissionChecker {
           href: "/dashboard/reports",
           icon: "FileTextIcon",
           permissions: ["reports:view_own"]
-        },
-        {
-          name: "Pesan",
-          href: "/dashboard/messages",
-          icon: "MailIcon",
-          permissions: ["messages:view_own"]
         },
         {
           name: "Absensi",
@@ -483,10 +595,10 @@ export class PermissionChecker {
           permissions: ["reports:view_own"]
         },
         {
-          name: "Pesan",
-          href: "/dashboard/messages",
-          icon: "MailIcon",
-          permissions: ["messages:view_own"]
+          name: "Invoice",
+          href: "/dashboard/invoices",
+          icon: "ReceiptIcon",
+          permissions: ["invoices:view_own"]
         }
       ]
     };
@@ -557,10 +669,11 @@ export class PermissionChecker {
     }
 
     switch (this.userRole) {
+      case 'super_admin':
       case 'admin':
-        // Admins can see everything
+        // Admins and super_admins can see everything
         return data;
-        
+
       case 'therapist':
         // Therapists only see assigned patients/sessions
         return data.filter(item => 
@@ -583,6 +696,8 @@ export class PermissionChecker {
    */
   getDashboardTitle(): string {
     switch (this.userRole) {
+      case 'super_admin':
+        return 'Super Administrasi';
       case 'admin':
         return 'Administrasi Sistem';
       case 'therapist':
@@ -599,9 +714,11 @@ export class PermissionChecker {
    */
   getDashboardDescription(): string {
     switch (this.userRole) {
+      case 'super_admin':
+        return 'Manajemen penuh sistem, paket, dan laporan keuangan';
       case 'admin':
         return 'Manajemen sistem komprehensif dan analitik';
-      case 'therapist': 
+      case 'therapist':
         return 'Kelola pasien dan sesi terapi yang ditugaskan';
       case 'parent':
         return 'Pantau perkembangan terapi dan janji temu anak Anda';

@@ -20,6 +20,7 @@ export interface IChild extends Document {
       relationship: string;
     };
   };
+  photoUrl?: string | null;
   tokenBalance: number;
   tokenExpiry?: Date;
   isActive: boolean;
@@ -114,6 +115,7 @@ const ChildSchema = new Schema<IChild>({
       }
     }
   },
+  photoUrl: { type: String, default: null },
   tokenBalance: {
     type: Number,
     default: 0,

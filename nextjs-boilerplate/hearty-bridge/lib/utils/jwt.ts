@@ -5,7 +5,7 @@ import { NextRequest, NextResponse } from 'next/server';
 export interface JWTPayload {
   userId: string;
   email: string;
-  role: 'admin' | 'therapist' | 'parent';
+  role: 'admin' | 'therapist' | 'parent' | 'super_admin';
   name: string;
   iat?: number;
   exp?: number;
@@ -187,14 +187,14 @@ export const clearAuthCookies = (response: NextResponse): void => {
 /**
  * Check if user has required role
  */
-export const hasRole = (user: JWTPayload, requiredRole: 'admin' | 'therapist' | 'parent'): boolean => {
+export const hasRole = (user: JWTPayload, requiredRole: 'admin' | 'therapist' | 'parent' | 'super_admin'): boolean => {
   return user.role === requiredRole;
 };
 
 /**
  * Check if user has any of the required roles
  */
-export const hasAnyRole = (user: JWTPayload, requiredRoles: ('admin' | 'therapist' | 'parent')[]): boolean => {
+export const hasAnyRole = (user: JWTPayload, requiredRoles: ('admin' | 'therapist' | 'parent' | 'super_admin')[]): boolean => {
   return requiredRoles.includes(user.role);
 };
 

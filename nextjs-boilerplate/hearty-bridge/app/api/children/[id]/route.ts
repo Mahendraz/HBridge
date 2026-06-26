@@ -13,6 +13,7 @@ import {
 import connectToDatabase from '@/lib/db/mongodb';
 import Child from '@/models/Child';
 import mongoose from 'mongoose';
+import { getR2SignedUrl } from '@/lib/services/r2-storage';
 
 /**
  * GET /api/children/[id]
@@ -72,6 +73,11 @@ export const GET = withAnyAuth(
 
       // Format response with full details for authorized users
       const formattedChild = formatChildForResponse(child, true);
+
+      // Sign R2 key for photo if present
+      if (formattedChild.photoUrl && !formattedChild.photoUrl.startsWith('http')) {
+        formattedChild.photoUrl = await getR2SignedUrl(formattedChild.photoUrl, 3600) ?? formattedChild.photoUrl;
+      }
 
       return SuccessResponse.ok(
         { child: formattedChild },

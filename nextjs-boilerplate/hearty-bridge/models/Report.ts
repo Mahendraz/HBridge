@@ -10,6 +10,19 @@ export interface IReportMediaFile {
   uploadedAt: Date;
 }
 
+export interface IReportSeenBy {
+  userId:   mongoose.Types.ObjectId;
+  userName: string;
+  role:     string;
+  seenAt:   Date;
+}
+
+export interface IReportReaction {
+  emoji:    string;
+  userId:   mongoose.Types.ObjectId;
+  userName: string;
+}
+
 export interface IReport extends Document {
   title: string;
   description: string;
@@ -27,6 +40,8 @@ export interface IReport extends Document {
   tags: string[];
   fileUrl?: string;
   isActive: boolean;
+  seenBy: IReportSeenBy[];
+  reactions: IReportReaction[];
   createdAt: Date;
   updatedAt: Date;
 }
@@ -84,6 +99,23 @@ const ReportSchema = new Schema<IReport>(
     tags:          [{ type: String, trim: true }],
     fileUrl:       { type: String },
     isActive:      { type: Boolean, default: true },
+    seenBy: {
+      type: [{
+        userId:   { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        userName: { type: String, default: '' },
+        role:     { type: String, default: '' },
+        seenAt:   { type: Date, default: Date.now },
+      }],
+      default: [],
+    },
+    reactions: {
+      type: [{
+        emoji:    { type: String, required: true },
+        userId:   { type: Schema.Types.ObjectId, ref: 'User', required: true },
+        userName: { type: String, default: '' },
+      }],
+      default: [],
+    },
   },
   {
     timestamps: true,

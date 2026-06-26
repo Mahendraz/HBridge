@@ -15,8 +15,8 @@ import {
 export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
   logRequest('GET', '/api/admin/activity');
 
-  // Check if user is admin
-  if (user.role !== 'admin') {
+  // Check if user is admin or super_admin
+  if (user.role !== 'admin' && user.role !== 'super_admin') {
     return ErrorResponse.forbidden("Access denied. Admin role required.");
   }
 

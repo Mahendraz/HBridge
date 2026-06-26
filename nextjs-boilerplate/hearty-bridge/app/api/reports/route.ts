@@ -3,6 +3,7 @@ import { withAnyAuth } from '@/lib/middleware/auth';
 import { withErrorHandling } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
 import { Report } from '@/models';
+import ReportComment from '@/models/ReportComment';
 import mongoose from 'mongoose';
 import { getR2SignedUrl } from '@/lib/services/r2-storage';
 
@@ -71,9 +72,30 @@ export const GET = withAnyAuth(
 
     const reportsWithUrls = await injectSignedUrls(reports);
 
+    // Inject unresolved comment count per report
+    const reportIds = (reports as any[]).map((r) => r._id);
+    const commentCounts = await ReportComment.aggregate([
+      {
+        $match: {
+          reportId: { $in: reportIds },
+          isResolved: false,
+          isActive: true,
+          parentCommentId: null,
+        },
+      },
+      { $group: { _id: '$reportId', count: { $sum: 1 } } },
+    ]);
+    const countMap = new Map<string, number>(
+      commentCounts.map((c: any) => [c._id.toString(), c.count])
+    );
+    const enriched = reportsWithUrls.map((r: any) => ({
+      ...r,
+      unresolvedCommentCount: countMap.get(r._id?.toString() ?? '') ?? 0,
+    }));
+
     return NextResponse.json({
       success: true,
-      data: reportsWithUrls,
+      data: enriched,
       total,
       page,
       limit,

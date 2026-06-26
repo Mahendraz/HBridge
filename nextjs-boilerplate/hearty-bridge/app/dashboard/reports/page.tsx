@@ -44,6 +44,10 @@ import {
   XIcon,
   ZoomInIcon,
   ExternalLinkIcon,
+  MessageCircleIcon,
+  CheckCircle2Icon,
+  CornerDownRightIcon,
+  SendIcon,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -67,6 +71,34 @@ interface ReportMediaFile {
   uploadedAt: string;
 }
 
+interface ReportSeenBy {
+  userId: string;
+  userName: string;
+  role: string;
+  seenAt: string;
+}
+
+interface ReportReaction {
+  emoji: string;
+  userId: string;
+  userName: string;
+}
+
+interface ReportComment {
+  _id: string;
+  reportId: string;
+  authorId: string;
+  authorName: string;
+  authorRole: 'parent' | 'therapist' | 'admin';
+  text: string;
+  parentCommentId: string | null;
+  isResolved: boolean;
+  resolvedAt?: string | null;
+  resolvedByName?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
 interface Report {
   _id: string;
   title: string;
@@ -84,6 +116,9 @@ interface Report {
   tags?: string[];
   fileUrl?: string;
   mediaFiles?: ReportMediaFile[];
+  seenBy?: ReportSeenBy[];
+  reactions?: ReportReaction[];
+  unresolvedCommentCount?: number;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -393,19 +428,115 @@ function Lightbox({
   );
 }
 
+const EMOJIS = ['👍', '❤️', '🎉', '😮', '😢'];
+
+function relativeTime(iso: string): string {
+  const diff = Date.now() - new Date(iso).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'baru saja';
+  if (m < 60) return `${m} menit lalu`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h} jam lalu`;
+  const d = Math.floor(h / 24);
+  return `${d} hari lalu`;
+}
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Read-only view dialog
 // ─────────────────────────────────────────────────────────────────────────────
 function ReportViewDialog({
-  report,
+  report: initialReport,
   onClose,
 }: {
   report: Report;
   onClose: () => void;
 }) {
+  const { user } = useAuth();
   const [lightboxIdx, setLightboxIdx] = React.useState<number | null>(null);
+  const [reactions, setReactions] = React.useState<ReportReaction[]>(initialReport.reactions ?? []);
+  const [seenBy, setSeenBy] = React.useState<ReportSeenBy[]>(initialReport.seenBy ?? []);
+  const [comments, setComments] = React.useState<ReportComment[]>([]);
+  const [commentsLoading, setCommentsLoading] = React.useState(true);
+  const [newCommentText, setNewCommentText] = React.useState('');
+  const [replyingTo, setReplyingTo] = React.useState<string | null>(null);
+  const [replyText, setReplyText] = React.useState('');
+  const [submitting, setSubmitting] = React.useState(false);
+  const [commentError, setCommentError] = React.useState<string | null>(null);
+
+  const token = typeof window !== 'undefined' ? localStorage.getItem('token') || '' : '';
+  const report = initialReport;
+
   // Only images go into the lightbox; videos keep their external link
   const imageFiles = (report.mediaFiles ?? []).filter((m) => m.fileType === "image");
+
+  React.useEffect(() => {
+    // Mark as seen (fire-and-forget)
+    fetch(`/api/reports/${report._id}/seen`, {
+      method: 'POST',
+      headers: { Authorization: `Bearer ${token}` },
+    }).catch(() => {});
+
+    // Load comments
+    setCommentsLoading(true);
+    fetch(`/api/reports/${report._id}/comments`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => setComments(d?.comments ?? []))
+      .catch(() => {})
+      .finally(() => setCommentsLoading(false));
+  }, [report._id, token]);
+
+  const handleReaction = async (emoji: string) => {
+    const res = await fetch(`/api/reports/${report._id}/reactions`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ emoji }),
+    });
+    const data = await res.json().catch(() => null);
+    if (res.ok) setReactions(data?.reactions ?? reactions);
+  };
+
+  const handleSubmitComment = async (parentCommentId?: string) => {
+    const text = parentCommentId ? replyText : newCommentText;
+    if (!text.trim()) return;
+    setSubmitting(true);
+    setCommentError(null);
+    try {
+      const res = await fetch(`/api/reports/${report._id}/comments`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ text: text.trim(), parentCommentId: parentCommentId ?? null }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || 'Gagal mengirim komentar');
+      if (data?.comment) setComments((prev) => [...prev, data.comment]);
+      if (parentCommentId) { setReplyingTo(null); setReplyText(''); }
+      else setNewCommentText('');
+    } catch (e) {
+      setCommentError(e instanceof Error ? e.message : 'Terjadi kesalahan');
+    } finally {
+      setSubmitting(false);
+    }
+  };
+
+  const handleToggleResolve = async (commentId: string, isResolved: boolean) => {
+    const res = await fetch(`/api/reports/${report._id}/comments/${commentId}`, {
+      method: 'PATCH',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ isResolved: !isResolved }),
+    });
+    const data = await res.json().catch(() => null);
+    if (res.ok && data?.comment) {
+      setComments((prev) => prev.map((c) => c._id === commentId ? { ...c, ...data.comment } : c));
+    }
+  };
+
+  const canResolve = user?.role === 'admin' || (user?.role === 'therapist' && report.therapistId === user?._id);
+
+  // Group: root comments + their replies
+  const rootComments = comments.filter((c) => !c.parentCommentId);
+  const repliesFor = (id: string) => comments.filter((c) => c.parentCommentId === id);
 
   return (
     <>
@@ -562,6 +693,189 @@ function ReportViewDialog({
                 </div>
               </div>
             )}
+
+            {/* ── Reactions ── */}
+            <div className="pt-4 border-t border-gray-100">
+              <p className="text-xs text-gray-500 mb-2">Reaksi</p>
+              <div className="flex flex-wrap gap-1.5">
+                {EMOJIS.map((emoji) => {
+                  const count = reactions.filter((r) => r.emoji === emoji).length;
+                  const mine = reactions.some((r) => r.emoji === emoji && r.userId === user?._id);
+                  return (
+                    <button
+                      key={emoji}
+                      onClick={() => handleReaction(emoji)}
+                      className={`inline-flex items-center gap-1 px-2.5 py-1 rounded-full text-sm border transition-colors ${
+                        mine
+                          ? 'bg-teal-50 border-teal-400 text-teal-700'
+                          : 'bg-gray-50 border-gray-200 hover:bg-gray-100 text-gray-700'
+                      }`}
+                    >
+                      {emoji}
+                      {count > 0 && <span className="text-xs font-medium">{count}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            </div>
+
+            {/* ── Seen by ── */}
+            {seenBy.length > 0 && (
+              <div className="pt-3 border-t border-gray-100">
+                <p className="text-xs text-gray-400">
+                  Dilihat oleh:{' '}
+                  {seenBy.map((s, i) => (
+                    <span key={s.userId}>
+                      {i > 0 && ' • '}
+                      <span className="font-medium text-gray-600">{s.userName}</span>
+                      <span className="text-gray-400"> ({s.role})</span>
+                    </span>
+                  ))}
+                </p>
+              </div>
+            )}
+
+            {/* ── Comments ── */}
+            <div className="pt-4 border-t border-gray-100 space-y-3">
+              <p className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+                <MessageCircleIcon className="h-3.5 w-3.5 text-teal-600" />
+                Komentar {comments.length > 0 && `(${comments.length})`}
+              </p>
+
+              {commentsLoading ? (
+                <div className="flex items-center justify-center py-6">
+                  <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-teal-600" />
+                </div>
+              ) : rootComments.length === 0 ? (
+                <p className="text-xs text-gray-400 text-center py-4">Belum ada komentar. Jadilah yang pertama!</p>
+              ) : (
+                <div className="space-y-3">
+                  {rootComments.map((comment) => {
+                    const replies = repliesFor(comment._id);
+                    return (
+                      <div
+                        key={comment._id}
+                        className={`rounded-xl border p-3 transition-colors ${
+                          comment.isResolved ? 'border-gray-100 bg-gray-50 opacity-60' : 'border-gray-200 bg-white'
+                        }`}
+                      >
+                        {/* Comment header */}
+                        <div className="flex items-start justify-between gap-2 mb-1.5">
+                          <div className="flex items-center gap-2">
+                            <div className="h-6 w-6 rounded-full bg-teal-600 flex items-center justify-center text-white text-[10px] font-bold flex-shrink-0">
+                              {comment.authorName.charAt(0).toUpperCase()}
+                            </div>
+                            <span className="text-xs font-semibold text-gray-800">{comment.authorName}</span>
+                            <span className="text-[10px] text-gray-400 capitalize">{comment.authorRole}</span>
+                            <span className="text-[10px] text-gray-400">{relativeTime(comment.createdAt)}</span>
+                          </div>
+                          {comment.isResolved && (
+                            <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
+                              <CheckCircle2Icon className="h-3 w-3" /> Selesai
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Text */}
+                        <p className="text-sm text-gray-700 whitespace-pre-wrap ml-8">{comment.text}</p>
+
+                        {/* Actions */}
+                        <div className="flex items-center gap-3 mt-2 ml-8">
+                          <button
+                            onClick={() => { setReplyingTo(comment._id); setReplyText(''); }}
+                            className="text-[11px] text-teal-600 hover:text-teal-800 font-medium flex items-center gap-0.5"
+                          >
+                            <CornerDownRightIcon className="h-3 w-3" /> Balas
+                          </button>
+                          {canResolve && (
+                            <button
+                              onClick={() => handleToggleResolve(comment._id, comment.isResolved)}
+                              className={`text-[11px] font-medium flex items-center gap-0.5 ${
+                                comment.isResolved
+                                  ? 'text-gray-500 hover:text-gray-700'
+                                  : 'text-amber-600 hover:text-amber-800'
+                              }`}
+                            >
+                              <CheckCircle2Icon className="h-3 w-3" />
+                              {comment.isResolved ? 'Buka Kembali' : 'Tandai Selesai'}
+                            </button>
+                          )}
+                        </div>
+
+                        {/* Inline reply box */}
+                        {replyingTo === comment._id && (
+                          <div className="mt-2 ml-8 flex gap-2">
+                            <input
+                              autoFocus
+                              value={replyText}
+                              onChange={(e) => setReplyText(e.target.value)}
+                              onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmitComment(comment._id); } }}
+                              placeholder="Tulis balasan..."
+                              className="flex-1 text-xs border border-gray-200 rounded-lg px-3 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                            />
+                            <button
+                              onClick={() => handleSubmitComment(comment._id)}
+                              disabled={!replyText.trim() || submitting}
+                              className="px-3 py-1.5 bg-teal-600 text-white text-xs rounded-lg hover:bg-teal-700 disabled:opacity-40"
+                            >
+                              <SendIcon className="h-3 w-3" />
+                            </button>
+                            <button
+                              onClick={() => setReplyingTo(null)}
+                              className="px-2 py-1.5 bg-gray-100 text-gray-600 text-xs rounded-lg hover:bg-gray-200"
+                            >
+                              <XIcon className="h-3 w-3" />
+                            </button>
+                          </div>
+                        )}
+
+                        {/* Replies */}
+                        {replies.length > 0 && (
+                          <div className="mt-2 ml-8 space-y-2">
+                            {replies.map((reply) => (
+                              <div key={reply._id} className="flex gap-2">
+                                <CornerDownRightIcon className="h-3.5 w-3.5 text-gray-300 flex-shrink-0 mt-0.5" />
+                                <div className="flex-1 bg-gray-50 rounded-lg px-3 py-2">
+                                  <div className="flex items-center gap-1.5 mb-0.5">
+                                    <span className="text-xs font-semibold text-gray-700">{reply.authorName}</span>
+                                    <span className="text-[10px] text-gray-400 capitalize">{reply.authorRole}</span>
+                                    <span className="text-[10px] text-gray-400">{relativeTime(reply.createdAt)}</span>
+                                  </div>
+                                  <p className="text-xs text-gray-700 whitespace-pre-wrap">{reply.text}</p>
+                                </div>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+
+              {/* New comment box */}
+              {commentError && (
+                <p className="text-xs text-red-600 bg-red-50 px-3 py-2 rounded-lg">{commentError}</p>
+              )}
+              <div className="flex gap-2 pt-1">
+                <textarea
+                  value={newCommentText}
+                  onChange={(e) => setNewCommentText(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleSubmitComment(); } }}
+                  placeholder="Tulis komentar... (Enter untuk kirim)"
+                  rows={2}
+                  className="flex-1 text-sm border border-gray-200 rounded-xl px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
+                />
+                <button
+                  onClick={() => handleSubmitComment()}
+                  disabled={!newCommentText.trim() || submitting}
+                  className="self-end px-4 py-2 bg-teal-600 text-white text-sm font-semibold rounded-xl hover:bg-teal-700 disabled:opacity-40 transition-colors flex items-center gap-1.5"
+                >
+                  <SendIcon className="h-3.5 w-3.5" />
+                  Kirim
+                </button>
+              </div>
+            </div>
           </div>
 
           <div className="flex justify-end mt-6 pt-4 border-t border-gray-200">
@@ -711,6 +1025,15 @@ export default function ReportsPage() {
                       <ImageIcon className="h-3 w-3 mr-1 inline" />
                     )}
                     {report.mediaFiles!.length} media
+                  </Badge>
+                )}
+                {(report.unresolvedCommentCount ?? 0) > 0 && (
+                  <Badge
+                    variant="outline"
+                    className="text-xs bg-amber-50 text-amber-700 border-amber-200"
+                  >
+                    <MessageCircleIcon className="h-3 w-3 mr-1 inline" />
+                    {report.unresolvedCommentCount} komentar
                   </Badge>
                 )}
               </div>

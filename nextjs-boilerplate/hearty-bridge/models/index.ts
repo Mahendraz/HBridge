@@ -10,3 +10,6 @@ export { SearchIndex, ActivityLog, type ISearchIndex, type ISearchIndexModel, ty
 export { default as Report, type IReport, type IReportModel, type IReportMediaFile } from './Report';
 export { default as TokenTransaction, type ITokenTransaction, type ITokenTransactionModel } from './TokenTransaction';
 export { default as Attendance, type IAttendance, type IAttendanceModel } from './Attendance';
+export { default as Invoice, type IInvoice, type IInvoiceModel } from './Invoice';
+export { default as ReportComment, type IReportComment, type IReportCommentModel } from './ReportComment';
+export { default as Package, type IPackage, type IPackageModel } from './Package';

@@ -44,7 +44,10 @@
       "Bash(git -C /mnt/e/Work/Hendra/HBridge/nextjs-boilerplate/hearty-bridge rev-parse:*)",
       "Bash(grep:*)",
       "Bash(node -e:*)",
-      "Bash(xargs basename:*)"
+      "Bash(xargs basename:*)",
+      "PowerShell(try { $r = Invoke-WebRequest -Uri \"http://localhost:3000\" -TimeoutSec 5 -UseBasicParsing; \"Running! Status: $\\($r.StatusCode\\)\" } catch { \"Belum jalan: $_\" })",
+      "PowerShell(Start-Process powershell -ArgumentList \"-NoExit\", \"-Command\", \"cd 'F:\\\\Kerja\\\\HB\\\\HBridge\\\\nextjs-boilerplate\\\\hearty-bridge'; npm run dev\" -WorkingDirectory \"F:\\\\Kerja\\\\HB\\\\HBridge\\\\nextjs-boilerplate\\\\hearty-bridge\")",
+      "Skill(claude-in-chrome)"
     ],
     "deny": []
   }

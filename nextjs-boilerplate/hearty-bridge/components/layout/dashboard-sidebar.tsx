@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -20,7 +20,10 @@ import {
   UserIcon,
   BarChart3Icon,
   MailIcon,
-  ClipboardCheckIcon
+  ClipboardCheckIcon,
+  ReceiptIcon,
+  PackageIcon,
+  DollarSignIcon,
 } from "lucide-react";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { UserRole } from "@/lib/types/auth";
@@ -39,7 +42,10 @@ const iconMap = {
   BabyIcon,
   FileTextIcon,
   ShieldCheckIcon,
-  ClipboardCheckIcon
+  ClipboardCheckIcon,
+  ReceiptIcon,
+  PackageIcon,
+  DollarSignIcon,
 };
 
 interface DashboardSidebarProps {
@@ -48,8 +54,21 @@ interface DashboardSidebarProps {
 
 export function DashboardSidebar({ className }: DashboardSidebarProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [commentBadge, setCommentBadge] = useState(0);
   const { user, logout } = useAuth();
   const pathname = usePathname();
+
+  useEffect(() => {
+    if (!user || (user.role !== 'admin' && user.role !== 'therapist')) return;
+    const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+    if (!token) return;
+    fetch('/api/reports/comments/unresolved-count', {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((d) => setCommentBadge(d?.count ?? 0))
+      .catch(() => {});
+  }, [user, pathname]);
 
   if (!user) return null;
 
@@ -86,7 +105,7 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
               {user.name}
             </p>
             <p className="text-xs text-gray-500 capitalize">
-              {user.role}
+              {user.role === 'super_admin' ? 'Super Admin' : user.role}
             </p>
           </div>
         </div>
@@ -98,6 +117,7 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
           const Icon = iconMap[item.icon as keyof typeof iconMap] || HomeIcon;
           const current = isCurrentPage(item.href);
           
+          const showBadge = item.href === '/dashboard/reports' && commentBadge > 0;
           return (
             <Link
               key={item.name}
@@ -115,6 +135,11 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
                 }`}
               />
               {item.name}
+              {showBadge && (
+                <span className="ml-auto text-[10px] font-bold bg-red-500 text-white rounded-full px-1.5 py-0.5 leading-none">
+                  {commentBadge > 99 ? '99+' : commentBadge}
+                </span>
+              )}
             </Link>
           );
         })}

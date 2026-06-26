@@ -20,6 +20,7 @@ import {
   AlertCircleIcon,
   ChevronLeftIcon,
   ChevronRightIcon,
+  CalendarIcon,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -125,6 +126,13 @@ interface WeeklySlot {
   diagnosis: string;
   notes: string;
   effectiveFrom?: string | null;
+  packageId?: string | null;
+  totalSessions?: number | null;
+  effectiveUntil?: string | null;
+  sessionProgress?: { completed: number; total: number; sessionNumber: number | null } | null;
+  sessionId?: string | null;
+  sessionStatus?: string | null;
+  _type?: 'session' | 'weekly';
 }
 
 interface PatientOption {
@@ -133,11 +141,26 @@ interface PatientOption {
   diagnosis: string;
   assignedTherapistId?: string;
   assignedTherapistName?: string;
+  tokenBalance?: number;
+  therapyBalance?: Record<string, number>;
 }
 
 interface TherapistOption {
   _id: string;
   name: string;
+  therapyType?: 'OT' | 'TW' | null;
+}
+
+/** Format therapy balance breakdown for patient dropdown labels.
+ * e.g. { OT: 8 } → "8 sesi OT"
+ * e.g. { OT: 8, TW: 12 } → "8 sesi OT · 12 sesi TW"
+ * Falls back to total tokenBalance if no breakdown available.
+ */
+function formatTherapyLabel(p: PatientOption): string {
+  const breakdown = p.therapyBalance ?? {};
+  const entries = Object.entries(breakdown).filter(([, v]) => v > 0);
+  if (entries.length === 0) return `${p.tokenBalance ?? 0} sesi tersisa`;
+  return entries.map(([type, count]) => `${count} sesi ${type}`).join(' · ');
 }
 
 // ---------------------------------------------------------------------------
@@ -150,6 +173,7 @@ function SlotCard({
   isParentView,
   weekStart,
   reportMap,
+  patientPhotoUrl,
   onClick,
   onOpenReportModal,
 }: {
@@ -158,12 +182,15 @@ function SlotCard({
   isParentView: boolean;
   weekStart: string;
   reportMap: Record<string, string>;
+  patientPhotoUrl?: string | null;
   onClick: () => void;
   onOpenReportModal: (slot: WeeklySlot, sessionDate: string) => void;
 }) {
   const highlight = isOwn || isParentView;
   const sessionDate = slotSessionDate(weekStart, slot.day);
   const hasReport = !!reportMap[`${slot.patientId}_${sessionDate}`];
+  const sp = slot.sessionProgress;
+  const currentNum = sp?.sessionNumber ?? (sp ? sp.completed + 1 : null);
 
   return (
     <div
@@ -174,9 +201,27 @@ function SlotCard({
       }`}
       onClick={onClick}
     >
-      <p className="font-semibold text-gray-900 truncate leading-snug">
-        {slot.patientName}
-      </p>
+      <div className="flex items-start justify-between gap-1">
+        <div className="flex items-center gap-1.5 flex-1 min-w-0">
+          <div className="w-5 h-5 rounded-full overflow-hidden bg-teal-100 border border-teal-200 flex items-center justify-center shrink-0 relative">
+            <span className="text-[9px] font-bold text-teal-600 leading-none">
+              {slot.patientName.charAt(0).toUpperCase()}
+            </span>
+            {patientPhotoUrl && (
+              // eslint-disable-next-line @next/next/no-img-element
+              <img src={patientPhotoUrl} alt="" className="absolute inset-0 w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+            )}
+          </div>
+          <p className="font-semibold text-gray-900 truncate leading-snug">
+            {slot.patientName}{slot.therapyType ? ` (${slot.therapyType})` : ''}
+          </p>
+        </div>
+        {sp && currentNum !== null && (
+          <span className="flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-600 text-white leading-none">
+            {currentNum}/{sp.total}
+          </span>
+        )}
+      </div>
       <p
         className={`truncate text-[11px] leading-snug mt-0.5 ${
           highlight ? "text-teal-700" : "text-blue-700"
@@ -184,12 +229,18 @@ function SlotCard({
       >
         {slot.therapistName.replace(/,.*/, "")}
       </p>
-      <p className="text-gray-500 truncate text-[11px] leading-snug">
-        {slot.therapyType}
-      </p>
-      {slot.diagnosis && (
-        <span className="inline-block mt-1 px-1.5 py-0.5 bg-gray-100 text-gray-600 rounded text-[10px] leading-none">
-          {slot.diagnosis}
+      {/* Session status badge for package slots */}
+      {slot.sessionId && (
+        <span className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-medium leading-none ${
+          slot.sessionStatus === 'completed' ? 'bg-green-100 text-green-700' :
+          slot.sessionStatus === 'no-show' ? 'bg-red-100 text-red-700' :
+          slot.sessionStatus === 'cancelled' ? 'bg-gray-100 text-gray-500' :
+          'bg-sky-100 text-sky-700'
+        }`}>
+          {slot.sessionStatus === 'completed' ? 'Terlaksana' :
+           slot.sessionStatus === 'no-show' ? 'Tidak hadir' :
+           slot.sessionStatus === 'cancelled' ? 'Dibatalkan' :
+           'Terjadwal'}
         </span>
       )}
 
@@ -225,6 +276,7 @@ interface SlotModalProps {
   onClose: () => void;
   onSave: (data: Partial<WeeklySlot> & { effectiveFrom: string }) => Promise<void>;
   onDelete?: () => Promise<void>;
+  onAssignPackage?: (slot: Partial<WeeklySlot>) => void;
 }
 
 function SlotModal({
@@ -235,6 +287,7 @@ function SlotModal({
   onClose,
   onSave,
   onDelete,
+  onAssignPackage,
 }: SlotModalProps) {
   const [form, setForm] = useState<Partial<WeeklySlot>>({
     _id: slot._id || "",
@@ -252,6 +305,33 @@ function SlotModal({
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [patientTherapyTypes, setPatientTherapyTypes] = useState<string[]>(
+    slot.therapyType ? [slot.therapyType] : []
+  );
+
+  useEffect(() => {
+    if (!form.patientId) {
+      setPatientTherapyTypes([]);
+      return;
+    }
+    const token = localStorage.getItem('token');
+    fetch(`/api/children/${form.patientId}/tokens`, {
+      headers: { Authorization: `Bearer ${token ?? ''}` },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data) return;
+        const types: string[] = Array.from(
+          new Set<string>(
+            (data.data?.transactions ?? [])
+              .filter((t: any) => t.type === 'topup' && t.packageType && t.therapyType)
+              .map((t: any) => t.therapyType as string)
+          )
+        );
+        setPatientTherapyTypes(types);
+      })
+      .catch(() => setPatientTherapyTypes([]));
+  }, [form.patientId]);
 
   const thisWeek = weekStart;
   const nextWeek = addWeeks(weekStart, 1);
@@ -293,7 +373,7 @@ function SlotModal({
     setDeleting(false);
   };
 
-  const isValid = Boolean(form.patientId && form.therapistId && form.day && form.therapyType?.trim());
+  const isValid = Boolean(form.patientId && form.therapistId && form.day);
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -349,7 +429,7 @@ function SlotModal({
             </div>
           </div>
 
-          {/* Patient */}
+          {/* Patient — only those with active package (tokenBalance > 0) */}
           <div>
             <label className="text-xs font-medium text-gray-700 mb-1 block">
               <UserIcon className="inline h-3 w-3 mr-1" />
@@ -361,46 +441,54 @@ function SlotModal({
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
             >
               <option value="">Pilih pasien...</option>
-              {patients.map((p) => (
-                <option key={p._id} value={p._id}>
-                  {p.name} — {p.diagnosis}
-                </option>
-              ))}
+              {patients
+                .filter((p) => (p.tokenBalance ?? 0) > 0)
+                .map((p) => (
+                  <option key={p._id} value={p._id}>
+                    {p.name} ({formatTherapyLabel(p)})
+                  </option>
+                ))}
             </select>
+            {patients.filter((p) => (p.tokenBalance ?? 0) > 0).length === 0 && (
+              <p className="text-xs text-amber-600 mt-1">
+                Tidak ada pasien dengan paket aktif. Assign paket terlebih dahulu di halaman detail pasien.
+              </p>
+            )}
           </div>
 
-          {/* Therapist */}
+          {/* Therapist — filtered by patient's active package therapyType, disabled until patient selected */}
           <div>
-            <label className="text-xs font-medium text-gray-700 mb-1 block">
-              <StethoscopeIcon className="inline h-3 w-3 mr-1" />
+            <label className={`text-xs font-medium mb-1 flex items-center gap-1.5 ${form.patientId ? 'text-gray-700' : 'text-gray-400'}`}>
+              <StethoscopeIcon className="inline h-3 w-3" />
               Terapis
+              {patientTherapyTypes.map((type) => (
+                <span key={type} className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
+                  type === 'OT' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
+                }`}>
+                  {type}
+                </span>
+              ))}
             </label>
             <select
               value={form.therapistId}
               onChange={(e) => handleTherapistChange(e.target.value)}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              disabled={!form.patientId}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
             >
               <option value="">Pilih terapis...</option>
-              {therapists.map((t) => (
+              {(patientTherapyTypes.length > 0
+                ? therapists.filter((t) => t.therapyType == null || patientTherapyTypes.includes(t.therapyType!))
+                : therapists
+              ).map((t) => (
                 <option key={t._id} value={t._id}>{t.name}</option>
               ))}
             </select>
-          </div>
-
-          {/* Therapy type */}
-          <div>
-            <label className="text-xs font-medium text-gray-700 mb-1 block">
-              Jenis Terapi <span className="text-red-500">*</span>
-            </label>
-            <select
-              value={form.therapyType || ""}
-              onChange={(e) => setForm((f) => ({ ...f, therapyType: e.target.value }))}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-            >
-              <option value="">Pilih jenis terapi...</option>
-              <option value="OT">OT (Terapi Okupasi)</option>
-              <option value="TW">TW (Terapi Wicara)</option>
-            </select>
+            {patientTherapyTypes.length > 0 &&
+              therapists.filter((t) => patientTherapyTypes.includes(t.therapyType!)).length === 0 && (
+              <p className="text-xs text-amber-600 mt-1">
+                Belum ada terapis {patientTherapyTypes.join('/')} terdaftar.
+              </p>
+            )}
           </div>
 
           {/* Notes */}
@@ -456,18 +544,18 @@ function SlotModal({
 
         {/* Footer buttons */}
         <div className="flex justify-between mt-4 pt-4 border-t border-gray-100">
-          {slot._id && onDelete ? (
-            <Button
-              variant="outline"
-              className="text-red-600 border-red-200 hover:bg-red-50"
-              onClick={handleDelete}
-              disabled={deleting}
-            >
-              {deleting ? "Menghapus..." : "Hapus Slot"}
-            </Button>
-          ) : (
-            <div />
-          )}
+          <div className="flex gap-2">
+            {slot._id && onDelete && (
+              <Button
+                variant="outline"
+                className="text-red-600 border-red-200 hover:bg-red-50"
+                onClick={handleDelete}
+                disabled={deleting}
+              >
+                {deleting ? "Menghapus..." : "Hapus Slot"}
+              </Button>
+            )}
+          </div>
           <div className="flex gap-2">
             <Button variant="outline" onClick={onClose} disabled={saving}>
               Batal
@@ -476,6 +564,304 @@ function SlotModal({
               {saving ? "Menyimpan..." : "Simpan"}
             </Button>
           </div>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// PackageSessionModal — schedule first session for a package; rest auto-generate
+// ---------------------------------------------------------------------------
+
+const PACKAGE_META: Record<string, { label: string; emoji: string; color: string }> = {
+  gold:     { label: "Gold",     emoji: "🥇", color: "bg-yellow-50 border-yellow-300 text-yellow-800" },
+  platinum: { label: "Platinum", emoji: "🥈", color: "bg-slate-50 border-slate-300 text-slate-800" },
+  diamond:  { label: "Diamond",  emoji: "💎", color: "bg-sky-50 border-sky-300 text-sky-800" },
+};
+
+interface ActivePackageInfo {
+  packageType: string;
+  therapyType: 'OT' | 'TW' | null;
+  totalSessions: number;
+  balance: number;
+  usedSessions: number;
+  note: string;
+  createdAt: string;
+}
+
+function PackageSessionModal({
+  patients,
+  therapists,
+  weekStart,
+  onClose,
+  onSave,
+}: {
+  patients: PatientOption[];
+  therapists: TherapistOption[];
+  weekStart: string;
+  onClose: () => void;
+  onSave: (childId: string, date: string, hour: number, therapistId: string) => Promise<void>;
+}) {
+  const [selectedPatientId, setSelectedPatientId] = useState("");
+  const [selectedTherapistId, setSelectedTherapistId] = useState("");
+  const [date, setDate] = useState(weekStart);
+  const [hour, setHour] = useState<number>(9);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [packageInfo, setPackageInfo] = useState<ActivePackageInfo | null>(null);
+  const [packageLoading, setPackageLoading] = useState(false);
+
+  const eligiblePatients = patients.filter((p) => (p.tokenBalance ?? 0) > 0);
+  const selectedPatient = eligiblePatients.find((p) => p._id === selectedPatientId);
+
+  // Fetch active package info when patient changes
+  useEffect(() => {
+    if (!selectedPatientId) {
+      setPackageInfo(null);
+      setSelectedTherapistId("");
+      return;
+    }
+    setPackageLoading(true);
+    setPackageInfo(null);
+    setSelectedTherapistId("");
+    const token = localStorage.getItem("token");
+    fetch(`/api/children/${selectedPatientId}/tokens`, {
+      headers: { Authorization: `Bearer ${token}` },
+    })
+      .then((r) => r.json())
+      .then((res) => {
+        const transactions: any[] = res.data?.transactions ?? [];
+        const balance: number = res.data?.balance ?? 0;
+        const activeTx = transactions.find(
+          (t) => t.type === "topup" && t.packageType
+        );
+        if (activeTx) {
+          setPackageInfo({
+            packageType: activeTx.packageType,
+            therapyType: activeTx.therapyType ?? null,
+            totalSessions: activeTx.amount,
+            balance,
+            usedSessions: activeTx.amount - balance,
+            note: activeTx.note ?? "",
+            createdAt: activeTx.createdAt ?? "",
+          });
+        } else {
+          setPackageInfo(null);
+        }
+      })
+      .catch(() => setPackageInfo(null))
+      .finally(() => setPackageLoading(false));
+  }, [selectedPatientId]);
+
+  const handleSave = async () => {
+    if (!selectedPatientId || !date || !selectedTherapistId) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave(selectedPatientId, date, hour, selectedTherapistId);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal menjadwalkan sesi");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const eligibleTherapists = packageInfo?.therapyType
+    ? therapists.filter(
+        (t) => t.therapyType == null || t.therapyType === packageInfo.therapyType
+      )
+    : therapists;
+
+  const pkgMeta = packageInfo ? PACKAGE_META[packageInfo.packageType] : null;
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent size="md">
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Tambah Sesi Paket</DialogTitle>
+            <button
+              onClick={onClose}
+              className="text-gray-400 hover:text-gray-600 transition-colors"
+            >
+              <XIcon className="h-5 w-5" />
+            </button>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-4 mt-4">
+          {error && (
+            <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">
+            Tentukan jadwal sesi pertama. Sesi 2 hingga sesi terakhir akan <strong>otomatis dibuat</strong> setiap minggu pada hari yang sama.
+          </div>
+
+          {/* Patient */}
+          <div>
+            <label className="text-xs font-medium text-gray-700 mb-1 block">
+              <UserIcon className="inline h-3 w-3 mr-1" />
+              Pasien (paket aktif)
+            </label>
+            <select
+              value={selectedPatientId}
+              onChange={(e) => setSelectedPatientId(e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            >
+              <option value="">Pilih pasien...</option>
+              {eligiblePatients.map((p) => (
+                <option key={p._id} value={p._id}>
+                  {p.name} ({formatTherapyLabel(p)})
+                </option>
+              ))}
+            </select>
+            {eligiblePatients.length === 0 && (
+              <p className="text-xs text-amber-600 mt-1">
+                Tidak ada pasien dengan paket aktif. Assign paket di halaman detail pasien terlebih dahulu.
+              </p>
+            )}
+          </div>
+
+          {/* Active package preview */}
+          {selectedPatientId && (
+            <div>
+              {packageLoading ? (
+                <div className="rounded-lg border border-gray-200 p-3 text-xs text-gray-400 text-center">
+                  Memuat info paket...
+                </div>
+              ) : packageInfo && pkgMeta ? (
+                <div className={`rounded-lg border p-3 ${pkgMeta.color}`}>
+                  <div className="flex items-center justify-between mb-1.5">
+                    <span className="font-bold text-sm">
+                      {pkgMeta.emoji} Paket {pkgMeta.label}
+                    </span>
+                    <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-white/60 border border-current">
+                      Aktif
+                    </span>
+                  </div>
+                  {packageInfo.therapyType && (
+                    <p className="text-xs font-semibold mb-2 opacity-80">
+                      {packageInfo.therapyType === 'OT'
+                        ? '🖐 Paket ini untuk Terapi Okupasi (OT)'
+                        : '🗣 Paket ini untuk Terapi Wicara (TW)'}
+                    </p>
+                  )}
+                  <div className="grid grid-cols-3 gap-2 text-center">
+                    <div className="rounded bg-white/50 px-2 py-1.5">
+                      <p className="text-[10px] leading-tight opacity-70">Total Sesi</p>
+                      <p className="font-bold text-base leading-tight">{packageInfo.totalSessions}</p>
+                    </div>
+                    <div className="rounded bg-white/50 px-2 py-1.5">
+                      <p className="text-[10px] leading-tight opacity-70">Terpakai</p>
+                      <p className="font-bold text-base leading-tight">{packageInfo.usedSessions}</p>
+                    </div>
+                    <div className="rounded bg-white/50 px-2 py-1.5">
+                      <p className="text-[10px] leading-tight opacity-70">Sisa</p>
+                      <p className="font-bold text-base leading-tight">{packageInfo.balance}</p>
+                    </div>
+                  </div>
+                  {packageInfo.createdAt && (
+                    <p className="text-[10px] opacity-60 mt-2">
+                      Assigned:{" "}
+                      {new Date(packageInfo.createdAt).toLocaleDateString("id-ID", {
+                        day: "numeric", month: "short", year: "numeric",
+                      })}
+                    </p>
+                  )}
+                </div>
+              ) : (
+                <div className="rounded-lg border border-red-200 bg-red-50 p-3 text-xs text-red-700">
+                  Tidak ada paket aktif ditemukan untuk pasien ini.
+                </div>
+              )}
+            </div>
+          )}
+
+          {/* Therapist — filtered by package therapyType, no need to re-select therapy type */}
+          {selectedPatientId && packageInfo && (
+            <div>
+              <label className="text-xs font-medium text-gray-700 mb-1 block">
+                <StethoscopeIcon className="inline h-3 w-3 mr-1" />
+                Pilih Terapis
+              </label>
+              <select
+                value={selectedTherapistId}
+                onChange={(e) => setSelectedTherapistId(e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              >
+                <option value="">Pilih terapis...</option>
+                {eligibleTherapists.map((t) => (
+                  <option key={t._id} value={t._id}>{t.name}</option>
+                ))}
+              </select>
+              {eligibleTherapists.length === 0 && (
+                <p className="text-xs text-amber-600 mt-1">
+                  Belum ada terapis {packageInfo.therapyType} terdaftar.
+                </p>
+              )}
+            </div>
+          )}
+
+          {/* Date */}
+          <div>
+            <label className="text-xs font-medium text-gray-700 mb-1 block">
+              Tanggal Sesi Pertama
+            </label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Hour */}
+          <div>
+            <label className="text-xs font-medium text-gray-700 mb-1 block">
+              <ClockIcon className="inline h-3 w-3 mr-1" />
+              Jam
+            </label>
+            <select
+              value={hour}
+              onChange={(e) => setHour(Number(e.target.value))}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            >
+              {HOURS.map((h) => (
+                <option key={h} value={h}>
+                  {String(h).padStart(2, "0")}:00 – {String(h + 1).padStart(2, "0")}:00
+                </option>
+              ))}
+            </select>
+          </div>
+
+          {/* Schedule summary */}
+          {selectedPatient && packageInfo && date && (
+            <div className="rounded-lg bg-teal-50 border border-teal-200 p-3 text-xs text-teal-800">
+              <p className="font-semibold mb-1">Ringkasan jadwal yang akan dibuat:</p>
+              <p>
+                📅 Sesi 1/{packageInfo.balance} → {new Date(date + "T00:00:00Z").toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" })}
+              </p>
+              <p className="text-teal-600 mt-0.5">
+                🔁 Sesi 2/{packageInfo.balance} s/d {packageInfo.balance}/{packageInfo.balance} → otomatis setiap minggu (hari yang sama)
+              </p>
+            </div>
+          )}
+        </div>
+
+        <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-gray-100">
+          <Button variant="outline" onClick={onClose} disabled={saving}>
+            Batal
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={!selectedPatientId || !date || !selectedTherapistId || saving || eligiblePatients.length === 0 || !packageInfo}
+          >
+            {saving ? "Menjadwalkan..." : "Buat Jadwal Sesi"}
+          </Button>
         </div>
       </DialogContent>
     </Dialog>
@@ -499,6 +885,18 @@ export default function SchedulesPage() {
   const [editingSlot, setEditingSlot] = useState<Partial<WeeklySlot> | null>(null);
   const [allPatients, setAllPatients] = useState<PatientOption[]>([]);
   const [allTherapists, setAllTherapists] = useState<TherapistOption[]>([]);
+  const [patientPhotoMap, setPatientPhotoMap] = useState<Record<string, string>>({});
+
+  // Reschedule modal state
+  const [rescheduleSlot, setRescheduleSlot] = useState<WeeklySlot | null>(null);
+  const [rescheduleDate, setRescheduleDate] = useState("");
+  const [rescheduleLoading, setRescheduleLoading] = useState(false);
+  const [rescheduleError, setRescheduleError] = useState<string | null>(null);
+  const [markStatusLoading, setMarkStatusLoading] = useState(false);
+
+  // Package session modal state
+  const [showPackageModal, setShowPackageModal] = useState(false);
+
 
   const weekDates = getWeekDates(weekStart);
   const todayStr = getTodayStr();
@@ -569,16 +967,47 @@ export default function SchedulesPage() {
             diagnosis: c.medicalInfo?.conditions?.join(", ") || "",
             assignedTherapistId: c.therapist?.id || "",
             assignedTherapistName: c.therapist?.name || "",
+            tokenBalance: c.tokenBalance ?? 0,
+            therapyBalance: c.therapyBalance ?? {},
           }))
         );
+        // Build photo map from the same response
+        const map: Record<string, string> = {};
+        for (const c of rawChildren) {
+          if (c.photoUrl && c.id) map[c.id] = c.photoUrl;
+        }
+        setPatientPhotoMap(map);
       }
       if (tRes.ok) {
         const tr = await tRes.json();
         const rawTherapists: any[] = tr.therapists || [];
-        setAllTherapists(rawTherapists.map((t) => ({ _id: t._id?.toString() ?? "", name: t.name })));
+        setAllTherapists(rawTherapists.map((t) => ({
+          _id: t._id?.toString() ?? "",
+          name: t.name,
+          therapyType: t.therapyType ?? null,
+        })));
       }
     } catch (err) {
       console.error("Error fetching dropdown data:", err);
+    }
+  }, []);
+
+  // For therapist and parent: fetch children to build photo map
+  const fetchPhotoMap = useCallback(async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch("/api/children?limit=200", { headers: { Authorization: `Bearer ${token}` } });
+      if (res.ok) {
+        const pr = await res.json();
+        const rawChildren: any[] = pr.children || [];
+        const map: Record<string, string> = {};
+        for (const c of rawChildren) {
+          if (c.photoUrl && c.id) map[c.id] = c.photoUrl;
+        }
+        setPatientPhotoMap(map);
+      }
+    } catch {
+      // silently fail — photos just won't show
     }
   }, []);
 
@@ -586,8 +1015,9 @@ export default function SchedulesPage() {
     if (user) {
       fetchSlots();
       if (user.role === "admin") fetchDropdownData();
+      else fetchPhotoMap();
     }
-  }, [user, weekStart, fetchSlots, fetchDropdownData]);
+  }, [user, weekStart, fetchSlots, fetchDropdownData, fetchPhotoMap]);
 
   // ---- Mutations ----
 
@@ -621,6 +1051,75 @@ export default function SchedulesPage() {
     }
   };
 
+  // ---- Reschedule handler ----
+
+  const handleReschedule = async () => {
+    if (!rescheduleSlot?.sessionId || !rescheduleDate) return;
+    setRescheduleLoading(true);
+    setRescheduleError(null);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/sessions/${rescheduleSlot.sessionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ date: rescheduleDate }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Gagal reschedule (${res.status})`);
+      }
+      setRescheduleSlot(null);
+      setRescheduleDate("");
+      await fetchSlots();
+    } catch (e) {
+      setRescheduleError(e instanceof Error ? e.message : "Gagal reschedule");
+    } finally {
+      setRescheduleLoading(false);
+    }
+  };
+
+  const handleMarkStatus = async (status: 'completed' | 'no-show' | 'cancelled') => {
+    if (!rescheduleSlot?.sessionId) return;
+    setMarkStatusLoading(true);
+    setRescheduleError(null);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/sessions/${rescheduleSlot.sessionId}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status }),
+      });
+      if (!res.ok) {
+        const err = await res.json().catch(() => ({}));
+        throw new Error(err.error || `Gagal mengubah status (${res.status})`);
+      }
+      setRescheduleSlot(null);
+      setRescheduleDate("");
+      await fetchSlots();
+    } catch (e) {
+      setRescheduleError(e instanceof Error ? e.message : "Gagal mengubah status");
+    } finally {
+      setMarkStatusLoading(false);
+    }
+  };
+
+  // ---- Package session creation ----
+
+  const handleCreatePackageSessions = async (childId: string, date: string, hour: number, therapistId: string) => {
+    const token = localStorage.getItem("token");
+    const res = await fetch(`/api/children/${childId}/sessions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ packageMode: true, date, hour, therapistId }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Gagal menjadwalkan sesi (${res.status})`);
+    }
+    setShowPackageModal(false);
+    await fetchSlots();
+  };
+
   // ---- Modal helpers ----
 
   const openNewSlot = (day?: string, hour?: number) => {
@@ -629,8 +1128,16 @@ export default function SchedulesPage() {
   };
 
   const openEditSlot = (slot: WeeklySlot) => {
-    setEditingSlot(slot);
-    setShowModal(true);
+    if (slot.packageId && slot.sessionId) {
+      // Package-bound slot with a session this week → open reschedule modal
+      setRescheduleSlot(slot);
+      const currentDate = slotSessionDate(weekStart, slot.day);
+      setRescheduleDate(currentDate);
+    } else {
+      // Non-package slot or no session this week → open standard slot editor
+      setEditingSlot(slot);
+      setShowModal(true);
+    }
   };
 
   const closeModal = () => {
@@ -684,10 +1191,12 @@ export default function SchedulesPage() {
           </p>
         </div>
         {user?.role === "admin" && (
-          <Button onClick={() => openNewSlot()}>
-            <PlusIcon className="h-4 w-4 mr-2" />
-            Tambah Slot
-          </Button>
+          <div className="flex gap-2">
+            <Button onClick={() => openNewSlot()}>
+              <PlusIcon className="h-4 w-4 mr-2" />
+              Tambah Slot
+            </Button>
+          </div>
         )}
       </div>
 
@@ -821,6 +1330,7 @@ export default function SchedulesPage() {
                               isParentView={user?.role === "parent"}
                               weekStart={weekStart}
                               reportMap={reportMap}
+                              patientPhotoUrl={patientPhotoMap[slot.patientId] ?? null}
                               onClick={() => {
                                 if (user?.role === "admin") openEditSlot(slot);
                               }}
@@ -895,6 +1405,17 @@ export default function SchedulesPage() {
         </div>
       </div>
 
+      {/* Package session modal (admin only) */}
+      {showPackageModal && (
+        <PackageSessionModal
+          patients={allPatients}
+          therapists={allTherapists}
+          weekStart={weekStart}
+          onClose={() => setShowPackageModal(false)}
+          onSave={handleCreatePackageSessions}
+        />
+      )}
+
       {/* Slot modal (admin only) */}
       {showModal && editingSlot !== null && (
         <SlotModal
@@ -907,6 +1428,91 @@ export default function SchedulesPage() {
           onDelete={editingSlot._id ? handleDelete : undefined}
         />
       )}
+
+      {/* Kelola Sesi modal */}
+      {rescheduleSlot && (
+        <Dialog open onOpenChange={(o) => { if (!o) { setRescheduleSlot(null); setRescheduleDate(""); setRescheduleError(null); } }}>
+          <DialogContent size="sm">
+            <DialogHeader>
+              <div className="flex items-center justify-between">
+                <DialogTitle>Kelola Sesi</DialogTitle>
+                <button onClick={() => { setRescheduleSlot(null); setRescheduleDate(""); }} className="text-gray-400 hover:text-gray-600"><XIcon className="h-4 w-4" /></button>
+              </div>
+            </DialogHeader>
+            <div className="mt-4 space-y-4">
+              <div className="rounded-lg bg-teal-50 border border-teal-100 p-3 text-sm">
+                <p className="font-semibold text-teal-800">{rescheduleSlot.patientName}</p>
+                <p className="text-teal-600 text-xs mt-0.5">{rescheduleSlot.therapistName}</p>
+                {rescheduleSlot.sessionProgress && rescheduleSlot.sessionProgress.sessionNumber && (
+                  <p className="text-teal-700 text-xs mt-1 font-medium">
+                    Sesi ke-{rescheduleSlot.sessionProgress.sessionNumber} dari {rescheduleSlot.sessionProgress.total}
+                  </p>
+                )}
+                {rescheduleSlot.sessionStatus && rescheduleSlot.sessionStatus !== 'scheduled' && (
+                  <span className={`inline-block mt-1.5 px-2 py-0.5 rounded text-[10px] font-semibold ${
+                    rescheduleSlot.sessionStatus === 'completed' ? 'bg-green-100 text-green-700' :
+                    rescheduleSlot.sessionStatus === 'no-show' ? 'bg-red-100 text-red-700' :
+                    'bg-gray-100 text-gray-500'
+                  }`}>
+                    {rescheduleSlot.sessionStatus === 'completed' ? 'Terlaksana' :
+                     rescheduleSlot.sessionStatus === 'no-show' ? 'Tidak hadir' : 'Dibatalkan'}
+                  </span>
+                )}
+              </div>
+
+              {/* Status actions */}
+              <div>
+                <p className="text-xs font-medium text-gray-500 mb-2">Ubah Status Sesi</p>
+                <div className="flex gap-2 flex-wrap">
+                  <button
+                    onClick={() => handleMarkStatus('completed')}
+                    disabled={markStatusLoading || rescheduleSlot.sessionStatus === 'completed'}
+                    className="flex-1 px-3 py-2 rounded-md text-xs font-semibold bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    ✓ Terlaksana
+                  </button>
+                  <button
+                    onClick={() => handleMarkStatus('no-show')}
+                    disabled={markStatusLoading || rescheduleSlot.sessionStatus === 'no-show'}
+                    className="flex-1 px-3 py-2 rounded-md text-xs font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    ✕ Tidak Hadir
+                  </button>
+                  <button
+                    onClick={() => handleMarkStatus('cancelled')}
+                    disabled={markStatusLoading || rescheduleSlot.sessionStatus === 'cancelled'}
+                    className="flex-1 px-3 py-2 rounded-md text-xs font-semibold bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+                  >
+                    — Dibatalkan
+                  </button>
+                </div>
+              </div>
+
+              <div className="border-t border-gray-100 pt-3 space-y-3">
+                {rescheduleError && (
+                  <p className="text-red-600 text-sm bg-red-50 rounded p-2">{rescheduleError}</p>
+                )}
+                <div>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">Pindahkan Tanggal Sesi</label>
+                  <input
+                    type="date"
+                    value={rescheduleDate}
+                    onChange={(e) => setRescheduleDate(e.target.value)}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                  />
+                </div>
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => { setRescheduleSlot(null); setRescheduleDate(""); }} disabled={rescheduleLoading || markStatusLoading}>Batal</Button>
+                  <Button onClick={handleReschedule} disabled={!rescheduleDate || rescheduleLoading || markStatusLoading}>
+                    {rescheduleLoading ? "Menyimpan..." : "Pindahkan Sesi"}
+                  </Button>
+                </div>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
 
     </div>
   );

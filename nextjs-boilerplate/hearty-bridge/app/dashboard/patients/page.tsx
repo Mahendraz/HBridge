@@ -67,8 +67,11 @@ interface Patient {
   lastSession?: string;
   nextSession?: string;
   progressScore?: number;
+  photoUrl?: string | null;
   tokenBalance?: number;
   tokenExpiry?: string | null;
+  sessionProgress?: { completed: number; total: number } | null;
+  therapyBalance?: Record<string, number>;
   createdAt?: string;
 }
 
@@ -172,12 +175,15 @@ export default function UnifiedPatientsPage() {
               }
             ] : [],
             notes: child.notes || '',
-            sessionsThisMonth: child.sessionsThisMonth || ((child.therapist || child.therapistId) ? 6 : 0),
+            sessionsThisMonth: child.sessionsThisMonth ?? 0,
             lastSession: child.lastSession,
             nextSession: child.nextSession,
             progressScore: child.progressScore || 0,
+            photoUrl: child.photoUrl ?? null,
             tokenBalance: child.tokenBalance ?? 0,
             tokenExpiry: child.tokenExpiry ?? null,
+            sessionProgress: child.sessionProgress ?? null,
+            therapyBalance: child.therapyBalance ?? {},
             createdAt: child.createdAt
           };
           });
@@ -378,20 +384,6 @@ export default function UnifiedPatientsPage() {
     }
   };
 
-  const getProgressColor = (progress: number) => {
-    if (progress >= 80) return "text-green-600";
-    if (progress >= 60) return "text-teal-600";
-    if (progress >= 40) return "text-yellow-600";
-    return "text-red-600";
-  };
-
-  const getProgressBgColor = (progress: number) => {
-    if (progress >= 80) return "bg-green-600";
-    if (progress >= 60) return "bg-teal-600";
-    if (progress >= 40) return "bg-yellow-600";
-    return "bg-red-600";
-  };
-
   const calculateAge = (birthDate: string) => {
     const today = new Date();
     const birth = new Date(birthDate);
@@ -457,22 +449,12 @@ export default function UnifiedPatientsPage() {
                   <ClockIcon className="h-6 w-6 text-amber-600" />
                 </div>
                 <h3 className="text-2xl font-bold text-gray-900">
-                  {filteredPatients.reduce((sum, p) => sum + (p.tokenBalance || 0), 0)}
+                  {filteredPatients.reduce((sum, p) => sum + (p.sessionProgress?.completed || 0), 0)}
+                  <span className="text-lg text-gray-400">
+                    /{filteredPatients.reduce((sum, p) => sum + (p.tokenBalance || 0), 0)}
+                  </span>
                 </h3>
-                <p className="text-gray-600">Sesi yang Tersisa</p>
-                {(() => {
-                  const expiries = filteredPatients
-                    .map(p => p.tokenExpiry)
-                    .filter((d): d is string => !!d)
-                    .map(d => new Date(d))
-                    .sort((a, b) => a.getTime() - b.getTime());
-                  if (expiries.length === 0) return null;
-                  return (
-                    <p className="text-xs text-amber-600 mt-1">
-                      Expire: {expiries[0].toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })}
-                    </p>
-                  );
-                })()}
+                <p className="text-gray-600">Sesi Terlaksana / Dibeli</p>
               </div>
             </CardContent>
           </Card>
@@ -566,8 +548,11 @@ export default function UnifiedPatientsPage() {
               <CardHeader className="bg-gradient-to-r from-green-50 to-teal-50">
                 <div className="flex justify-between items-start">
                   <div className="flex items-center space-x-4">
-                    <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center">
-                      <BabyIcon className="h-8 w-8 text-teal-600" />
+                    <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-teal-200 bg-teal-50 flex items-center justify-center shrink-0 relative">
+                      <span className="text-2xl font-bold text-teal-600">{child.name.charAt(0).toUpperCase()}</span>
+                      {child.photoUrl && (
+                        <img src={child.photoUrl} alt={child.name} className="absolute inset-0 w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                      )}
                     </div>
                     <div>
                       <CardTitle className="text-xl text-gray-900">{child.name}</CardTitle>
@@ -581,11 +566,13 @@ export default function UnifiedPatientsPage() {
                           {child.diagnosis}
                         </Badge>
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                          (child.tokenBalance ?? 0) > 0
-                            ? 'bg-yellow-100 text-yellow-800'
-                            : 'bg-red-100 text-red-800'
+                          child.sessionProgress
+                            ? 'bg-teal-100 text-teal-800'
+                            : 'bg-gray-100 text-gray-500'
                         }`}>
-                          {child.tokenBalance ?? 0} Token
+                          {child.sessionProgress
+                            ? `${child.sessionProgress.completed}/${child.sessionProgress.total} sesi`
+                            : 'Belum ada sesi'}
                         </span>
                       </div>
                     </div>
@@ -624,45 +611,30 @@ export default function UnifiedPatientsPage() {
                   </Button>
                 </div>
 
-                {/* Current Programs */}
-                {child.currentPrograms && (
-                  <div>
-                    <h3 className="font-semibold text-gray-900 mb-3">Program Terapi Saat Ini</h3>
-                    <div className="space-y-3">
-                      {child.currentPrograms.map((program) => (
-                        <div key={program.id} className="border rounded-lg p-4">
-                          <div className="flex justify-between items-start mb-3">
-                            <div>
-                              <h4 className="font-medium text-gray-900">{program.name}</h4>
-                              <p className="text-sm text-gray-600">Frekuensi: {program.frequency}</p>
-                            </div>
-                            <div className="text-right">
-                              <span className={`text-lg font-bold ${getProgressColor(program.progress)}`}>
-                                {program.progress}%
-                              </span>
-                              <p className="text-xs text-gray-500">Progress</p>
-                            </div>
-                          </div>
-
-                          <div className="w-full bg-gray-200 rounded-full h-2 mb-3">
-                            <div
-                              className={`h-2 rounded-full transition-all duration-300 ${getProgressBgColor(program.progress)}`}
-                              style={{ width: `${program.progress}%` }}
-                            ></div>
-                          </div>
-
-                          <div className="flex justify-between items-center text-sm">
-                            <div className="flex items-center text-gray-600">
-                              <ClockIcon className="h-3 w-3 mr-1" />
-                              Sesi berikutnya: {new Date(program.nextSession).toLocaleDateString('id-ID')}
-                            </div>
-                            <Button size="sm" variant="outline">Lihat Detail</Button>
-                          </div>
+                {/* Active packages */}
+                <div>
+                  <h3 className="font-semibold text-gray-900 mb-3">Paket Terapi Aktif</h3>
+                  {child.therapyBalance && Object.keys(child.therapyBalance).length > 0 ? (
+                    <div className="flex flex-wrap gap-3">
+                      {Object.entries(child.therapyBalance).map(([type, total]) => (
+                        <div key={type} className="flex-1 min-w-[120px] rounded-xl border border-teal-100 bg-teal-50 p-3 text-center">
+                          <p className="text-xs font-semibold text-teal-600 uppercase tracking-wide mb-1">{type}</p>
+                          <p className="text-2xl font-bold text-teal-800">{total}</p>
+                          <p className="text-xs text-teal-600">sesi dibeli</p>
+                          {child.sessionProgress && (
+                            <p className="text-xs text-gray-500 mt-1">
+                              {child.sessionProgress.completed} terlaksana
+                            </p>
+                          )}
                         </div>
                       ))}
                     </div>
-                  </div>
-                )}
+                  ) : (
+                    <div className="rounded-xl border-2 border-dashed border-gray-200 py-6 text-center">
+                      <p className="text-sm text-gray-400">Belum ada paket terapi aktif</p>
+                    </div>
+                  )}
+                </div>
 
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-2 pt-4 border-t">
@@ -741,7 +713,12 @@ export default function UnifiedPatientsPage() {
                         {children.map(child => (
                           <div key={child.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
                             <div className="flex items-center space-x-3">
-                              <BabyIcon className="h-5 w-5 text-teal-500" />
+                              <div className="w-9 h-9 rounded-full overflow-hidden border border-teal-200 bg-teal-50 flex items-center justify-center shrink-0 relative">
+                                <span className="text-sm font-bold text-teal-600">{child.name.charAt(0).toUpperCase()}</span>
+                                {child.photoUrl && (
+                                  <img src={child.photoUrl} alt={child.name} className="absolute inset-0 w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
+                                )}
+                              </div>
                               <div>
                                 <p className="font-medium text-sm text-gray-900">{child.name}</p>
                                 <p className="text-xs text-gray-500">
@@ -751,11 +728,13 @@ export default function UnifiedPatientsPage() {
                             </div>
                             <div className="flex items-center gap-2">
                               <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
-                                (child.tokenBalance ?? 0) > 0
-                                  ? 'bg-yellow-100 text-yellow-800'
-                                  : 'bg-red-100 text-red-800'
+                                child.sessionProgress
+                                  ? 'bg-teal-100 text-teal-800'
+                                  : 'bg-gray-100 text-gray-500'
                               }`}>
-                                {child.tokenBalance ?? 0} Token
+                                {child.sessionProgress
+                                  ? `${child.sessionProgress.completed}/${child.sessionProgress.total} sesi`
+                                  : 'Belum ada sesi'}
                               </span>
                               <Badge variant={child.status === 'active' ? 'default' : 'secondary'}>
                                 {child.status === 'active' ? 'Aktif' : child.status === 'inactive' ? 'Tidak Aktif' : 'Tertunda'}
