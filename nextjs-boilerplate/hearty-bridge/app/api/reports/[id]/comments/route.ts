@@ -13,7 +13,7 @@ function getReportId(req: NextRequest): string {
 }
 
 async function canAccess(report: any, user: any): Promise<boolean> {
-  if (user.role === 'admin') return true;
+  if (user.role === 'admin' || user.role === 'super_admin') return true;
   if (user.role === 'therapist') return report.therapistId?.toString() === user.userId;
   if (user.role === 'parent') {
     const Child = mongoose.models.Child ||

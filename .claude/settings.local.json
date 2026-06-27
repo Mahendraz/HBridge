@@ -57,7 +57,8 @@
       "WebFetch",
       "Read",
       "Glob",
-      "Grep"
+      "Grep",
+      "Bash(python3 -c \"import sys, re; content = sys.stdin.read\\(\\); text = re.sub\\(r'<[^>]+>', ' ', content\\); print\\(text[:3000]\\)\")"
     ],
     "deny": []
   }

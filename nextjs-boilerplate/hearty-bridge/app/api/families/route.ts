@@ -13,7 +13,7 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
 
     let families;
     
-    if (user.role === 'admin') {
+    if (user.role === 'admin' || user.role === 'super_admin') {
       // Admins can see all families
       families = await Family.find({})
         .populate('primaryParents', 'name email')
@@ -54,7 +54,7 @@ export const POST = withAnyAuth(async (request: NextRequest, user: any) => {
     const { familyName, primaryParents, children, settings } = validationResult.data;
 
     // Verify that the user is one of the primary parents or is an admin
-    if (user.role !== 'admin' && !primaryParents.includes(user.userId)) {
+    if (user.role !== 'admin' && user.role !== 'super_admin' && !primaryParents.includes(user.userId)) {
       return NextResponse.json({ 
         error: 'You can only create families where you are a primary parent' 
       }, { status: 403 });

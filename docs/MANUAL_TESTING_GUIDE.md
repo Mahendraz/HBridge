@@ -7,25 +7,45 @@
 
 ## Akun Test
 
-| Role | Nama | Email | Password |
-|------|------|-------|----------|
-| Admin | Admin | admin@heartybridge.com | `Admin@HB2024!` |
+| Role | Nama | Email | Password | ID |
+|------|------|-------|----------|----|
+| Super Admin | Super Admin | superadmin@heartybridge.com | `SuperAdmin2024!` | `6a3ee9f5eb7af44a5538d661` |
+| Admin | Admin | admin@heartybridge.com | `Admin@HB2024!` | — |
 | Admin | Citra | citra@hb.com | `Citra@HB2024!` |
 | Terapis | Dinda | dinda@hb.com | `Dinda@HB2024!` |
 | Terapis | Haya | haya@hb.com | `Haya@HB2024!` |
 | Terapis | Dhea | dhea@hb.com | `Dhea@HB2024!` |
-| Orang Tua | Sinta Amelia | sinta.amelia@gmail.com | `Sinta@HB2024!` |
-| Orang Tua | Ratna Prasetyo | ratna.prasetyo@gmail.com | `Ratna@HB2024!` |
-| Orang Tua | hendra | mahendrazulqarnaen@gmail.com | `Hendra@HB2024!` |
+| Orang Tua | Budi Santoso | budi@hbridge.id | `parent123` |
+| Orang Tua | Dewi Rahayu | dewi@hbridge.id | `parent123` |
+| Orang Tua | Ahmad Fauzi | ahmad@hbridge.id | `parent123` |
+| Orang Tua | Siti Nurhaliza | siti@hbridge.id | `parent123` |
+| Orang Tua | Hendra Kusuma | hendra@hbridge.id | `parent123` |
+| Orang Tua | Ratna Wulandari | ratna@hbridge.id | `parent123` |
+| Orang Tua | Doni Prasetyo | doni@hbridge.id | `parent123` |
+| Orang Tua | Anita Setiawan | anita@hbridge.id | `parent123` |
+| Orang Tua | Rudi Hermawan | rudi@hbridge.id | `parent123` |
+| Orang Tua | Maya Indah | maya@hbridge.id | `parent123` |
+| Orang Tua | Eko Wahyudi | eko@hbridge.id | `parent123` |
+| Orang Tua | Fitri Handayani | fitri@hbridge.id | `parent123` |
+| Orang Tua | Agus Supriyadi | agus@hbridge.id | `parent123` |
+| Orang Tua | Lina Marlina | lina@hbridge.id | `parent123` |
 
-## Data yang Ada
+> **Semua akun orang tua:** password = `parent123`
+> Di-seed via `scripts/seed-patients.js`. Jalankan ulang script untuk reset data.
 
-| Anak | Orang Tua | Terapis | Terapi | Token |
-|------|-----------|---------|--------|-------|
-| **Zahra Amelia** | Sinta Amelia | Dinda | Terapi Okupasi (OT) | 3 |
-| Adika Prasetyo | Ratna Prasetyo | — | — | — |
+## Data yang Ada (setelah seed)
 
-**Jadwal:** Zahra Amelia — Senin 09:00 — OT — Diagnosis: Cerebral Palsy
+| Data | Jumlah |
+|------|--------|
+| Orang Tua | 14 |
+| Anak | 18 (4 parents × 2 anak, 10 parents × 1 anak) |
+| Paket | 3 — Silver (8 sesi/Rp1.6jt), Gold (12/Rp2.4jt), Diamond (16/Rp3.2jt) |
+| Jadwal Mingguan | 18 slot — 3 per hari, Senin–Sabtu |
+| Sesi | ~119 completed (historis 1–7 minggu ke belakang) |
+| Laporan | ~71 (campuran draft + completed, ~60% dari sesi) |
+| Invoice | 18 — 40% paid · 30% unpaid · 20% overdue · 10% not submitted |
+
+**Therapist assignment:** Dinda → Haya → Dhea → round-robin per anak
 
 ---
 

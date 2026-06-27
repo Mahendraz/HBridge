@@ -36,7 +36,7 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
 
     // Check permission to view family members
     const canView = family.canUserAccess(new mongoose.Types.ObjectId(user.userId)) ||
-                    user.role === 'admin';
+                    user.role === 'admin' || user.role === 'super_admin';
 
     if (!canView) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
@@ -97,7 +97,7 @@ export const POST = withAnyAuth(async (request: NextRequest, user: any) => {
                 member.isActive && 
                 member.permissions.includes('manage-family')
     );
-    const canAddMembers = isPrimaryParent || hasManagePermission || user.role === 'admin';
+    const canAddMembers = isPrimaryParent || hasManagePermission || user.role === 'admin' || user.role === 'super_admin';
 
     if (!canAddMembers) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });

@@ -44,7 +44,7 @@ export const PATCH = withAnyAuth(
 
     if ('isResolved' in body) {
       const canResolve =
-        user.role === 'admin' ||
+        user.role === 'admin' || user.role === 'super_admin' ||
         (user.role === 'therapist' && (report as any).therapistId?.toString() === user.userId);
       if (!canResolve) return ErrorResponse.forbidden();
 
@@ -110,7 +110,7 @@ export const DELETE = withAnyAuth(
     if (!comment) return ErrorResponse.notFound('Comment');
 
     const canDelete =
-      user.role === 'admin' ||
+      user.role === 'admin' || user.role === 'super_admin' ||
       (comment as any).authorId?.toString() === user.userId;
     if (!canDelete) return ErrorResponse.forbidden();
 

@@ -532,7 +532,7 @@ function ReportViewDialog({
     }
   };
 
-  const canResolve = user?.role === 'admin' || (user?.role === 'therapist' && report.therapistId === user?._id);
+  const canResolve = user?.role === 'admin' || user?.role === 'super_admin' || (user?.role === 'therapist' && report.therapistId === user?._id);
 
   // Group: root comments + their replies
   const rootComments = comments.filter((c) => !c.parentCommentId);

@@ -36,7 +36,7 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
     // Check access permissions
     let hasAccess = false;
 
-    if (user.role === 'admin') {
+    if (user.role === 'admin' || user.role === 'super_admin') {
       hasAccess = true;
     } else if (document.uploadedBy._id.toString() === user.userId) {
       hasAccess = true;
@@ -105,7 +105,7 @@ export const PUT = withAnyAuth(async (request: NextRequest, user: any) => {
     }
 
     // Check permission to update document
-    const canUpdate = document.uploadedBy.toString() === user.userId || user.role === 'admin';
+    const canUpdate = document.uploadedBy.toString() === user.userId || user.role === 'admin' || user.role === 'super_admin';
 
     if (!canUpdate) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
@@ -164,7 +164,7 @@ export const DELETE = withAnyAuth(async (request: NextRequest, user: any) => {
     }
 
     // Check permission to delete document
-    const canDelete = document.uploadedBy.toString() === user.userId || user.role === 'admin';
+    const canDelete = document.uploadedBy.toString() === user.userId || user.role === 'admin' || user.role === 'super_admin';
 
     if (!canDelete) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });

@@ -103,7 +103,7 @@ export default function UnifiedPatientsPage() {
 
   useEffect(() => {
     fetchPatients();
-    if (user?.role === 'admin') fetchAllParents();
+    if (user?.role === 'admin' || user?.role === 'super_admin') fetchAllParents();
     if (user?.role === 'parent') fetchCompletedSessions();
   }, [user]);
 
@@ -349,7 +349,7 @@ export default function UnifiedPatientsPage() {
 
   // For therapist: derive unique parents from their assigned patients
   // For admin: use allParents (fetched separately, includes parents with no children)
-  const displayParents = user?.role === 'admin'
+  const displayParents = (user?.role === 'admin' || user?.role === 'super_admin')
     ? allParents
     : (() => {
         const map = new Map<string, { _id: string; name: string; email: string; phone?: string }>();
@@ -368,6 +368,7 @@ export default function UnifiedPatientsPage() {
 
   const getPageTitle = () => {
     switch (user?.role) {
+      case "super_admin":
       case "admin": return "Kelola Semua Pasien";
       case "therapist": return "Pasien yang Ditugaskan";
       case "parent": return "Anak Saya";
@@ -377,6 +378,7 @@ export default function UnifiedPatientsPage() {
 
   const getPageDescription = () => {
     switch (user?.role) {
+      case "super_admin":
       case "admin": return "Kelola semua pasien dalam sistem";
       case "therapist": return "Kelola pasien yang ditugaskan dan sesi terapi Anda";
       case "parent": return "Kelola profil dan pantau perkembangan anak Anda";
@@ -407,13 +409,13 @@ export default function UnifiedPatientsPage() {
         </div>
 
         <div className="flex gap-2">
-          {user?.role === "admin" && (
+          {(user?.role === "admin" || user?.role === "super_admin") && (
             <Button variant="outline" onClick={() => setShowCreateParentModal(true)}>
               <UserPlusIcon className="h-4 w-4 mr-2" />
               Tambah Orang Tua
             </Button>
           )}
-          {user?.role !== "admin" && (
+          {user?.role !== "admin" && user?.role !== "super_admin" && (
             <PermissionGuard userRole={user?.role || "parent"} permissions={["patients:create"]}>
               <Button
                 className="bg-green-600 hover:bg-green-700"
@@ -689,7 +691,7 @@ export default function UnifiedPatientsPage() {
                           </div>
                         </div>
                       </div>
-                      {user?.role === 'admin' && (
+                      {(user?.role === 'admin' || user?.role === 'super_admin') && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -758,10 +760,10 @@ export default function UnifiedPatientsPage() {
                 <CardContent className="py-8 text-center text-gray-500">
                   <UsersIcon className="h-12 w-12 mx-auto mb-3 text-gray-300" />
                   <p className="font-medium text-gray-900">
-                    {user?.role === 'admin' ? 'Belum ada orang tua terdaftar' : 'Tidak ada pasien yang ditugaskan'}
+                    {(user?.role === 'admin' || user?.role === 'super_admin') ? 'Belum ada orang tua terdaftar' : 'Tidak ada pasien yang ditugaskan'}
                   </p>
                   <p className="text-sm mt-1">
-                    {user?.role === 'admin'
+                    {(user?.role === 'admin' || user?.role === 'super_admin')
                       ? 'Tambahkan orang tua terlebih dahulu, lalu tambahkan anak mereka.'
                       : 'Hubungi admin untuk penugasan pasien.'}
                   </p>

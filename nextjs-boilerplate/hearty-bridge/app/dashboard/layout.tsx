@@ -13,22 +13,17 @@ interface Props {
 export default function Layout({ children }: Props) {
   const { user } = useAuth();
   const pathname = usePathname();
-  
+  const permissions = usePermissions(user?.role || 'parent');
+
   // Only show title and description for main dashboard page
   const isMainDashboard = pathname === '/dashboard';
-  
-  let title = undefined;
-  let description = undefined;
-  
-  if (isMainDashboard && user?.role) {
-    const permissions = usePermissions(user.role);
-    title = permissions.getDashboardTitle();
-    description = permissions.getDashboardDescription();
-  }
-  
+
+  const title = isMainDashboard && user?.role ? permissions.getDashboardTitle() : undefined;
+  const description = isMainDashboard && user?.role ? permissions.getDashboardDescription() : undefined;
+
   return (
-    <DashboardLayout 
-      allowedRoles={['admin', 'therapist', 'parent']}
+    <DashboardLayout
+      allowedRoles={['super_admin', 'admin', 'therapist', 'parent']}
       title={title}
       description={description}
     >

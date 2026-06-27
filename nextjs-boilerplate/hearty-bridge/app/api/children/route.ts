@@ -83,7 +83,7 @@ export const GET = withAnyAuth(
         childrenQuery = childrenQuery.populate('therapistId', 'name email profile.specialization profile.clinic');
       } else if (user.role === 'therapist') {
         childrenQuery = childrenQuery.populate('parentId', 'name email phone');
-      } else if (user.role === 'admin') {
+      } else if (user.role === 'admin' || user.role === 'super_admin') {
         childrenQuery = childrenQuery
           .populate('parentId', 'name email phone')
           .populate('therapistId', 'name email profile.specialization profile.clinic');
@@ -93,7 +93,7 @@ export const GET = withAnyAuth(
 
       // Format response based on user role and permissions
       const formattedChildren: any[] = children.map(child => {
-        const hasAccess = user.role === 'admin' || user.role === 'therapist'
+        const hasAccess = user.role === 'admin' || user.role === 'therapist' || user.role === 'super_admin'
           ? true
           : canAccessChild(user, child);
         return formatChildrenForResponse([child], hasAccess)[0];
@@ -252,7 +252,7 @@ export const POST = withAnyAuth(
     logRequest('POST', '/api/children', user);
 
     // Only parents and admins can create children
-    if (user.role !== 'parent' && user.role !== 'admin') {
+    if (user.role !== 'parent' && user.role !== 'admin' && user.role !== 'super_admin') {
       return ErrorResponse.forbidden(
         'Only parents and admins can create child profiles',
         'INSUFFICIENT_PERMISSIONS'
@@ -282,7 +282,7 @@ export const POST = withAnyAuth(
       // Determine parentId based on role
       let effectiveParentId: mongoose.Types.ObjectId;
 
-      if (user.role === 'admin') {
+      if (user.role === 'admin' || user.role === 'super_admin') {
         if (!bodyParentId || !/^[0-9a-fA-F]{24}$/.test(bodyParentId)) {
           return ErrorResponse.badRequest('Valid parentId is required when admin creates a child', 'VALIDATION_ERROR');
         }

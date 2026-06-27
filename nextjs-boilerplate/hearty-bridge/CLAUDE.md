@@ -10,7 +10,7 @@ guide in `node_modules/next/dist/docs/`.
 
 Healthcare collaboration platform for parents and therapists managing children's therapeutic care.
 
-**User roles**: `admin`, `therapist`, `parent`
+**User roles**: `super_admin`, `admin`, `therapist`, `parent`
 
 ## Tech Stack
 

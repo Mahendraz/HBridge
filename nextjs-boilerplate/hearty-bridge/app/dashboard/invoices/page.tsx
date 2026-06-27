@@ -67,7 +67,7 @@ function formatDate(d: string) {
 
 export default function InvoicesPage() {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin';
+  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);

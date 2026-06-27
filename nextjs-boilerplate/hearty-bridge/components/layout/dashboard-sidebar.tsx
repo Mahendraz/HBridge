@@ -59,7 +59,7 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
   const pathname = usePathname();
 
   useEffect(() => {
-    if (!user || (user.role !== 'admin' && user.role !== 'therapist')) return;
+    if (!user || (user.role !== 'admin' && user.role !== 'therapist' && user.role !== 'super_admin')) return;
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     if (!token) return;
     fetch('/api/reports/comments/unresolved-count', {

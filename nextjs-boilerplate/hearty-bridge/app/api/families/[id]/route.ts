@@ -36,7 +36,7 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
 
     // Check permission to view family
     const canView = family.canUserAccess(new mongoose.Types.ObjectId(user.userId)) ||
-                    user.role === 'admin';
+                    user.role === 'admin' || user.role === 'super_admin';
 
     if (!canView) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
@@ -85,7 +85,7 @@ export const PUT = withAnyAuth(async (request: NextRequest, user: any) => {
     const isPrimaryParent = family.primaryParents.some(
       parentId => parentId.toString() === user.userId
     );
-    const canUpdate = isPrimaryParent || user.role === 'admin';
+    const canUpdate = isPrimaryParent || user.role === 'admin' || user.role === 'super_admin';
 
     if (!canUpdate) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
@@ -143,7 +143,7 @@ export const DELETE = withAnyAuth(async (request: NextRequest, user: any) => {
     const isPrimaryParent = family.primaryParents.some(
       parentId => parentId.toString() === user.userId
     );
-    const canDelete = isPrimaryParent || user.role === 'admin';
+    const canDelete = isPrimaryParent || user.role === 'admin' || user.role === 'super_admin';
 
     if (!canDelete) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });

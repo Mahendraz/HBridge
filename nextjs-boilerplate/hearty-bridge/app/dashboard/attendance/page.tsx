@@ -496,7 +496,7 @@ export default function AttendancePage() {
       )}
 
       {/* ── STAFF OVERVIEW (admin + therapist) ── */}
-      {(user.role === "admin" || user.role === "therapist") && (
+      {(user.role === "admin" || user.role === "therapist" || user.role === "super_admin") && (
         <>
           {/* Summary cards */}
           {adminData && (

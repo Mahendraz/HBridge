@@ -34,9 +34,9 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
     }
 
     // Check permission to view media file
-    const canView = mediaFile.isPublic || 
+    const canView = mediaFile.isPublic ||
                     mediaFile.uploadedBy._id.toString() === user.userId ||
-                    user.role === 'admin';
+                    (user.role === 'admin' || user.role === 'super_admin');
 
     if (!canView) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
@@ -82,7 +82,7 @@ export const PUT = withAnyAuth(async (request: NextRequest, user: any) => {
     }
 
     // Check permission to update media file
-    const canUpdate = mediaFile.uploadedBy.toString() === user.userId || user.role === 'admin';
+    const canUpdate = mediaFile.uploadedBy.toString() === user.userId || (user.role === 'admin' || user.role === 'super_admin');
 
     if (!canUpdate) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });
@@ -129,7 +129,7 @@ export const DELETE = withAnyAuth(async (request: NextRequest, user: any) => {
     }
 
     // Check permission to delete media file
-    const canDelete = mediaFile.uploadedBy.toString() === user.userId || user.role === 'admin';
+    const canDelete = mediaFile.uploadedBy.toString() === user.userId || (user.role === 'admin' || user.role === 'super_admin');
 
     if (!canDelete) {
       return NextResponse.json({ error: 'Access denied' }, { status: 403 });

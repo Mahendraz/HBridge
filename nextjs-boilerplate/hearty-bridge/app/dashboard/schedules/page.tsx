@@ -1014,7 +1014,7 @@ export default function SchedulesPage() {
   useEffect(() => {
     if (user) {
       fetchSlots();
-      if (user.role === "admin") fetchDropdownData();
+      if (user.role === "admin" || user.role === "super_admin") fetchDropdownData();
       else fetchPhotoMap();
     }
   }, [user, weekStart, fetchSlots, fetchDropdownData, fetchPhotoMap]);
@@ -1185,12 +1185,12 @@ export default function SchedulesPage() {
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Jadwal Mingguan</h1>
           <p className="text-gray-600 text-sm mt-0.5">
-            {user?.role === "admin" && "Template jadwal terapi — berlaku setiap minggu"}
+            {(user?.role === "admin" || user?.role === "super_admin") && "Template jadwal terapi — berlaku setiap minggu"}
             {user?.role === "therapist" && "Jadwal sesi terapi Anda setiap minggu"}
             {user?.role === "parent" && "Jadwal sesi terapi anak Anda"}
           </p>
         </div>
-        {user?.role === "admin" && (
+        {(user?.role === "admin" || user?.role === "super_admin") && (
           <div className="flex gap-2">
             <Button onClick={() => openNewSlot()}>
               <PlusIcon className="h-4 w-4 mr-2" />
@@ -1332,7 +1332,7 @@ export default function SchedulesPage() {
                               reportMap={reportMap}
                               patientPhotoUrl={patientPhotoMap[slot.patientId] ?? null}
                               onClick={() => {
-                                if (user?.role === "admin") openEditSlot(slot);
+                                if (user?.role === "admin" || user?.role === "super_admin") openEditSlot(slot);
                               }}
                               onOpenReportModal={(s, sd) => {
                                 const existingReportId = reportMap[`${s.patientId}_${sd}`];
@@ -1351,7 +1351,7 @@ export default function SchedulesPage() {
                               }}
                             />
                           ))}
-                          {user?.role === "admin" && (
+                          {(user?.role === "admin" || user?.role === "super_admin") && (
                             <button
                               className="w-full h-7 flex items-center justify-center text-gray-300 hover:text-teal-500 hover:bg-teal-50 rounded border border-dashed border-gray-200 hover:border-teal-300 transition-colors"
                               onClick={() => openNewSlot(day, hour)}

@@ -11,7 +11,7 @@ function getReportId(req: NextRequest): string {
 }
 
 async function canAccessReport(report: any, user: any): Promise<boolean> {
-  if (user.role === 'admin') return true;
+  if (user.role === 'admin' || user.role === 'super_admin') return true;
   if (user.role === 'therapist') {
     return report.therapistId?.toString() === user.userId;
   }
@@ -83,7 +83,7 @@ export const PUT = withAnyAuth(
       return NextResponse.json({ success: false, error: 'Report not found' }, { status: 404 });
     }
 
-    if (user.role !== 'admin' && report.therapistId?.toString() !== user.userId) {
+    if (user.role !== 'admin' && user.role !== 'super_admin' && report.therapistId?.toString() !== user.userId) {
       return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 });
     }
 
@@ -133,7 +133,7 @@ export const DELETE = withAnyAuth(
       return NextResponse.json({ success: false, error: 'Report not found' }, { status: 404 });
     }
 
-    if (user.role !== 'admin' && report.therapistId?.toString() !== user.userId) {
+    if (user.role !== 'admin' && user.role !== 'super_admin' && report.therapistId?.toString() !== user.userId) {
       return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 });
     }
 

@@ -30,10 +30,10 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
     ]);
 
     // Get patient statistics
-    const [totalPatients, activePatients, pendingPatients] = await Promise.all([
-      Child.countDocuments(),
-      Child.countDocuments({ status: 'active' }),
-      Child.countDocuments({ status: 'pending' })
+    const [totalPatients, activePatients, inactivePatients] = await Promise.all([
+      Child.countDocuments({ isActive: true }),
+      Child.countDocuments({ isActive: true }),
+      Child.countDocuments({ isActive: false })
     ]);
 
     // Get recent activity stats
@@ -42,14 +42,6 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
       .limit(5)
       .select('name email role createdAt')
       .lean();
-
-    // Get system health metrics (mock for now, could be real monitoring data)
-    const systemHealth = {
-      uptime: 99.7,
-      responseTime: 120,
-      errorRate: 0.1,
-      activeConnections: 45
-    };
 
     // Calculate growth metrics (last 30 days vs previous 30 days)
     const thirtyDaysAgo = new Date();
@@ -88,14 +80,8 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
       patients: {
         total: totalPatients,
         active: activePatients,
-        pending: pendingPatients,
+        inactive: inactivePatients,
         growth: `+${patientGrowth}%`
-      },
-      system: {
-        uptime: systemHealth.uptime,
-        responseTime: systemHealth.responseTime,
-        errorRate: systemHealth.errorRate,
-        activeConnections: systemHealth.activeConnections
       },
       recentActivity: recentUsers.map(user => ({
         id: user._id.toString(),

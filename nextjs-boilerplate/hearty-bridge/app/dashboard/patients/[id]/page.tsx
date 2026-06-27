@@ -448,7 +448,7 @@ export default function PatientDetailPage() {
                 </span>
               )}
             </div>
-            {user?.role === "admin" || user?.role === "super_admin" && (
+            {(user?.role === "admin" || user?.role === "super_admin") && (
               <button
                 onClick={() => photoInputRef.current?.click()}
                 disabled={photoUploading}
@@ -480,7 +480,7 @@ export default function PatientDetailPage() {
             <p className="text-sm text-gray-500 mt-0.5">
               {child.age} tahun &bull; {child.gender === "male" ? "Laki-laki" : "Perempuan"}
             </p>
-            {user?.role === "admin" || user?.role === "super_admin" && photoUrl && (
+            {(user?.role === "admin" || user?.role === "super_admin") && photoUrl && (
               <button
                 onClick={handlePhotoDelete}
                 disabled={photoUploading}
@@ -495,7 +495,7 @@ export default function PatientDetailPage() {
             )}
           </div>
         </div>
-        {user?.role === "admin" || user?.role === "super_admin" && (
+        {(user?.role === "admin" || user?.role === "super_admin") && (
           <Button size="sm" onClick={openEdit}>
             <PencilIcon className="h-4 w-4 mr-2" />
             Edit Data
