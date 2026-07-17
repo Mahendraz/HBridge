@@ -1,5 +1,5 @@
 import { NextRequest } from 'next/server';
-import { withSuperAdminAuth } from '@/lib/middleware/auth';
+import { withSuperAdminAuth, withAdminAuth } from '@/lib/middleware/auth';
 import { withErrorHandling, SuccessResponse, ErrorResponse } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
 import Package from '@/models/Package';
@@ -19,7 +19,7 @@ const packageSchema = z.object({
  * Super Admin only. List all packages.
  * Query: ?active=true|false (filter by isActive)
  */
-export const GET = withSuperAdminAuth(
+export const GET = withAdminAuth(
   withErrorHandling(async (req: NextRequest, user: any) => {
     await connectToDatabase();
 
