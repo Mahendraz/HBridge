@@ -14,7 +14,7 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
   logRequest('GET', '/api/therapists');
 
   // Only admin can view all therapists, others can only view assigned ones
-  if (user.role !== 'admin' && user.role !== 'therapist') {
+  if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'therapist') {
     return ErrorResponse.forbidden("Access denied.");
   }
 
@@ -29,10 +29,10 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
     // Get all therapist users
     let therapists: any[] = [];
     try {
-      therapists = await User.find({
-        role: 'therapist',
-        isActive: true
-      }).select('-password').lean();
+      const query: any = { role: 'therapist' };
+      // admin/super_admin see all (including inactive); therapist sees only active
+      if (user.role === 'therapist') query.isActive = true;
+      therapists = await User.find(query).select('-password').lean();
     } catch (dbQueryError) {
       console.log('Database query failed, using mock data:', dbQueryError instanceof Error ? dbQueryError.message : String(dbQueryError));
       therapists = [];

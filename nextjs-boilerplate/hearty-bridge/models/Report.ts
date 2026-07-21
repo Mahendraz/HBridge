@@ -27,7 +27,7 @@ export interface IReport extends Document {
   title: string;
   description: string;
   content: string;
-  type: 'progress' | 'assessment' | 'therapy-notes' | 'milestone';
+  type: 'progress' | 'assessment';
   status: 'draft' | 'completed';
   childId: mongoose.Types.ObjectId;
   childName: string;
@@ -75,7 +75,7 @@ const ReportSchema = new Schema<IReport>(
     type: {
       type: String,
       enum: {
-        values: ['progress', 'assessment', 'therapy-notes', 'milestone'],
+        values: ['progress', 'assessment'],
         message: 'Invalid report type',
       },
       default: 'progress',

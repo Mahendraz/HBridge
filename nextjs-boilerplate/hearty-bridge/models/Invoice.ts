@@ -10,6 +10,8 @@ export interface IInvoice extends Document {
   packageType: string;
   therapyType: 'OT' | 'TW';
   sessions: number;
+  originalAmount: number;
+  discountAmount: number;
   amount: number;
   dueDate: Date;
   status: 'unpaid' | 'paid' | 'overdue';
@@ -41,8 +43,10 @@ const InvoiceSchema = new Schema<IInvoice>(
       enum: ['OT', 'TW'],
       required: true,
     },
-    sessions:          { type: Number, required: true, min: 1 },
-    amount:            { type: Number, required: true, min: 0 },
+    sessions:        { type: Number, required: true, min: 1 },
+    originalAmount:  { type: Number, default: 0 },
+    discountAmount:  { type: Number, default: 0 },
+    amount:          { type: Number, required: true, min: 0 },
     dueDate:           { type: Date, required: true },
     status: {
       type: String,

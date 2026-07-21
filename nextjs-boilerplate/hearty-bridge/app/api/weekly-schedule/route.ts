@@ -108,6 +108,12 @@ export const GET = withAnyAuth(
 
     const packageSlots = activeSlots.filter(s => s.packageId);
 
+    // How many weeks ahead is the requested week vs the real current week?
+    const currentMonday = getMondayOfWeek();
+    const weeksAhead = Math.round(
+      (weekStart.getTime() - currentMonday.getTime()) / (7 * 24 * 3600 * 1000)
+    );
+
     if (packageSlots.length > 0) {
       const packageIds = packageSlots.map(s => new mongoose.Types.ObjectId(s.packageId));
 
@@ -132,20 +138,71 @@ export const GET = withAnyAuth(
         weekSessionMap.set((ws as any).packageId.toString(), ws);
       }
 
+      // For slots without a session for this specific week, estimate the session number.
+      // Past/current week: count sessions before weekStart + 1.
+      // Future weeks: project from completed count + weeksAhead offset.
+      const slotsNeedingEstimate = packageSlots.filter(
+        s => !weekSessionMap.has(s.packageId.toString())
+      );
+
+      const countBeforeMap = new Map<string, number>();
+      if (slotsNeedingEstimate.length > 0 && weeksAhead <= 0) {
+        const estimatePkgIds = slotsNeedingEstimate.map(
+          s => new mongoose.Types.ObjectId(s.packageId)
+        );
+        const countBeforeAgg = await Session.aggregate([
+          { $match: { packageId: { $in: estimatePkgIds }, date: { $lt: weekStart }, isActive: true } },
+          { $group: { _id: '$packageId', count: { $sum: 1 } } },
+        ]);
+        for (const row of countBeforeAgg) {
+          countBeforeMap.set(row._id.toString(), row.count as number);
+        }
+      }
+
+      const hiddenSlotIds = new Set<string>();
+
       for (const slot of activeSlots) {
         if (!slot.packageId) continue;
-        const pkgIdStr = slot.packageId.toString();
+        const pkgIdStr  = slot.packageId.toString();
         const completed = completedMap.get(pkgIdStr) ?? 0;
+        const total     = slot.totalSessions ?? 0;
         const weekSession = weekSessionMap.get(pkgIdStr);
 
-        slot.sessionProgress = {
-          completed,
-          total: slot.totalSessions ?? 0,
-          sessionNumber: weekSession?.sessionNumber ?? null,
-        };
-        slot.sessionId = weekSession?._id?.toString() ?? null;
-        slot.sessionStatus = weekSession?.status ?? null;
+        let sessionNumber: number | null = weekSession?.sessionNumber ?? null;
+
+        if (sessionNumber === null) {
+          if (weeksAhead <= 0) {
+            // Past or current week: derive from session count before weekStart
+            const countBefore = countBeforeMap.get(pkgIdStr) ?? 0;
+            sessionNumber = countBefore + 1;
+          } else {
+            // Future week: project forward from completed count
+            sessionNumber = completed + weeksAhead + 1;
+          }
+        }
+
+        // If projected session exceeds package total → slot is past its last session
+        if (total > 0 && sessionNumber !== null && sessionNumber > total) {
+          hiddenSlotIds.add(String(slot._id));
+          continue;
+        }
+        // Also hide if already fully completed and this is a future week
+        if (total > 0 && completed >= total && weeksAhead > 0) {
+          hiddenSlotIds.add(String(slot._id));
+          continue;
+        }
+
+        slot.sessionProgress = { completed, total, sessionNumber };
+        slot.sessionId      = weekSession?._id?.toString() ?? null;
+        slot.sessionStatus  = weekSession?.status ?? null;
       }
+
+      // Remove slots that are past their last session
+      const beforeFilter = activeSlots.length;
+      activeSlots.splice(0, activeSlots.length,
+        ...activeSlots.filter(s => !hiddenSlotIds.has(String(s._id)))
+      );
+      void beforeFilter; // suppress unused warning
     }
 
     // ── 3. Add standalone Session records for the week ──
@@ -296,6 +353,11 @@ export const POST = withAnyAuth(
       }
     }
 
+    // Normalize therapyType: empty string → null so enum validator doesn't reject it
+    if (data.therapyType !== 'OT' && data.therapyType !== 'TW') {
+      data.therapyType = null;
+    }
+
     const effectiveFrom = effectiveFromStr
       ? new Date(effectiveFromStr + 'T00:00:00Z')
       : getMondayOfWeek();
@@ -318,22 +380,31 @@ export const POST = withAnyAuth(
       slot = await WeeklySchedule.create({ ...data, effectiveFrom });
     }
 
-    // ── Auto-generate sessions if patient has active package with no sessions yet ──
-    if (data.patientId && mongoose.isValidObjectId(data.therapistId)) {
-      const activePkg = await TokenTransaction.findOne({
+    // ── Link package + auto-generate sessions if none exist yet ──
+    if (data.patientId) {
+      const allPkgs = await TokenTransaction.find({
         childId: new mongoose.Types.ObjectId(data.patientId),
         type: 'topup',
         packageType: { $ne: null },
       }).sort({ createdAt: -1 });
 
-      if (activePkg) {
-        const existingSessionCount = await Session.countDocuments({
-          packageId: activePkg._id,
-          isActive: true,
-        });
+      // Pick the most recently assigned package that has no sessions yet.
+      // This ensures each new slot uses the next unstarted package when a patient
+      // has multiple active packages (e.g. Silver + Gold + Diamond).
+      let activePkg: typeof allPkgs[number] | null = null;
+      let activePkgHasSessions = false;
+      for (const pkg of allPkgs) {
+        const count = await Session.countDocuments({ packageId: pkg._id, isActive: true });
+        if (count === 0) { activePkg = pkg; break; }
+      }
+      if (!activePkg && allPkgs.length > 0) {
+        activePkg = allPkgs[0];
+        activePkgHasSessions = true;
+      }
 
-        if (existingSessionCount === 0) {
-          // Compute first session date: next occurrence of slot.day from effectiveFrom
+      if (activePkg) {
+        if (!activePkgHasSessions && mongoose.isValidObjectId(data.therapistId)) {
+          // No sessions yet — generate all sessions and link slot
           const DAY_TO_IDX: Record<string, number> = {
             senin: 1, selasa: 2, rabu: 3, kamis: 4, jumat: 5, sabtu: 6,
           };
@@ -368,7 +439,6 @@ export const POST = withAnyAuth(
             }))
           );
 
-          // Link packageId + effectiveUntil to the slot
           await WeeklySchedule.findByIdAndUpdate((slot as any)._id, {
             $set: {
               packageId: (activePkg._id as mongoose.Types.ObjectId).toString(),
@@ -377,13 +447,24 @@ export const POST = withAnyAuth(
             },
           });
 
-          // Update child token expiry
           await Child.findByIdAndUpdate(data.patientId, { tokenExpiry: lastSessionDate });
+        } else {
+          // Sessions already exist — just link this slot to the package so the badge shows.
+          // Do NOT set effectiveUntil here: past session dates would hide the slot from the
+          // current week view (effectiveUntil < weekStart → filtered out by GET query).
+          await WeeklySchedule.findByIdAndUpdate((slot as any)._id, {
+            $set: {
+              packageId: (activePkg._id as mongoose.Types.ObjectId).toString(),
+              totalSessions: activePkg.amount,
+            },
+          });
         }
       }
     }
 
-    return NextResponse.json({ success: true, data: slot });
+    // Re-fetch the slot so the response reflects all updates (packageId, totalSessions, etc.)
+    const updatedSlot = await WeeklySchedule.findById((slot as any)._id).lean();
+    return NextResponse.json({ success: true, data: updatedSlot ?? slot });
   })
 );
 

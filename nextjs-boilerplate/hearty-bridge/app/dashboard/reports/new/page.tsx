@@ -41,6 +41,7 @@ interface FormState {
   childId: string;
   childName: string;
   dueDate: string;
+  type: "progress" | "assessment";
 }
 
 const EMPTY_FORM: FormState = {
@@ -50,6 +51,7 @@ const EMPTY_FORM: FormState = {
   childId: "",
   childName: "",
   dueDate: "",
+  type: "progress",
 };
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -123,6 +125,7 @@ export default function NewReportPage() {
         childId: d.childId || "",
         childName: d.childName || "",
         dueDate: d.dueDate || "",
+        type: (d.type === 'assessment' ? 'assessment' : 'progress'),
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -206,6 +209,7 @@ export default function NewReportPage() {
         title: form.title.trim(),
         description: form.description.trim(),
         content: form.content.trim(),
+        type: form.type,
         status: statusToSave,
         childId: form.childId,
         childName: form.childName,
@@ -213,7 +217,6 @@ export default function NewReportPage() {
         // From schedule redirect — store session metadata
         ...(urlSessionDate && { sessionDate: urlSessionDate }),
         ...(urlSessionHour && { sessionHour: parseInt(urlSessionHour) }),
-        ...(urlSessionDate && { type: "therapy-notes" }),
       };
 
       const res = await fetch("/api/reports", {
@@ -369,6 +372,32 @@ export default function NewReportPage() {
               onChange={(e) => setForm((f) => ({ ...f, dueDate: e.target.value }))}
               className="w-full border-2 border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
             />
+          </div>
+
+          {/* Jenis Laporan */}
+          <div className="flex rounded-lg border border-gray-200 p-1 bg-gray-50">
+            <button
+              type="button"
+              onClick={() => setForm((f) => ({ ...f, type: 'progress' }))}
+              className={`flex-1 text-sm py-1.5 rounded-md font-medium transition-all ${
+                form.type === 'progress'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Harian
+            </button>
+            <button
+              type="button"
+              onClick={() => setForm((f) => ({ ...f, type: 'assessment' }))}
+              className={`flex-1 text-sm py-1.5 rounded-md font-medium transition-all ${
+                form.type === 'assessment'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Asesmen
+            </button>
           </div>
 
           {/* Judul */}

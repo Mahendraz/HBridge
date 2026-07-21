@@ -104,7 +104,7 @@ interface Report {
   title: string;
   description: string;
   content?: string;
-  type: "progress" | "assessment" | "therapy-notes" | "milestone";
+  type: "progress" | "assessment" | string;
   status: "draft" | "completed";
   childId?: string;
   childName: string;
@@ -125,13 +125,8 @@ interface Report {
 // Helpers
 // ─────────────────────────────────────────────────────────────────────────────
 function getTypeLabel(type: string) {
-  const map: Record<string, string> = {
-    progress: "Kemajuan",
-    assessment: "Penilaian",
-    "therapy-notes": "Catatan Terapi",
-    milestone: "Tonggak Capaian",
-  };
-  return map[type] ?? type;
+  if (type === "assessment") return "Asesmen";
+  return "Harian";
 }
 
 function getStatusLabel(status: string) {
@@ -143,13 +138,8 @@ function getStatusLabel(status: string) {
 }
 
 function getTypeColor(type: string) {
-  const map: Record<string, string> = {
-    progress: "bg-teal-100 text-teal-800",
-    assessment: "bg-green-100 text-green-800",
-    "therapy-notes": "bg-purple-100 text-purple-800",
-    milestone: "bg-orange-100 text-orange-800",
-  };
-  return map[type] ?? "bg-gray-100 text-gray-800";
+  if (type === "assessment") return "bg-indigo-100 text-indigo-800";
+  return "bg-teal-100 text-teal-800";
 }
 
 function getStatusBadgeVariant(
@@ -614,19 +604,6 @@ function ReportViewDialog({
               )}
             </div>
 
-            {report.tags && report.tags.length > 0 && (
-              <div>
-                <p className="text-xs text-gray-500 mb-1">Tag</p>
-                <div className="flex flex-wrap gap-1">
-                  {report.tags.map((tag, i) => (
-                    <Badge key={i} variant="outline" className="text-xs">
-                      {tag}
-                    </Badge>
-                  ))}
-                </div>
-              </div>
-            )}
-
             {report.mediaFiles && report.mediaFiles.length > 0 && (
               <div>
                 <p className="text-xs text-gray-500 mb-2">
@@ -1010,15 +987,74 @@ export default function ReportsPage() {
     return (
       <div className="rounded-xl shadow-sm hover:shadow-lg transition-shadow">
         <MagicCard gradientColor="#f0fdfa" gradientOpacity={0.5}>
-          <div className="p-5 space-y-3">
-            {/* Action buttons */}
-            <div className="flex items-center justify-between gap-2">
+          <div className="p-4 space-y-3">
+            {/* Title row + action icons */}
+            <div className="flex items-start gap-2">
+              <p
+                className="flex-1 font-semibold text-gray-900 leading-snug line-clamp-2 cursor-pointer hover:text-teal-700 transition-colors"
+                onClick={() => setViewingReport(report)}
+              >
+                {report.title}
+              </p>
+              <PermissionGuard
+                userRole={user?.role || "parent"}
+                permissions={["reports:create", "reports:view_all"]}
+              >
+                <div className="flex shrink-0 -mt-1 -mr-1 space-x-0.5">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setViewingReport(report)}
+                    title="Lihat detail"
+                    className="h-7 w-7 p-0"
+                  >
+                    <EyeIcon className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => router.push(`/dashboard/reports/${report._id}/edit`)}
+                    title="Edit"
+                    className="h-7 w-7 p-0"
+                  >
+                    <EditIcon className="h-3.5 w-3.5" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => handleDelete(report._id)}
+                    className="h-7 w-7 p-0 text-red-400 hover:text-red-600 hover:bg-red-50"
+                    title="Hapus"
+                  >
+                    <TrashIcon className="h-3.5 w-3.5" />
+                  </Button>
+                </div>
+              </PermissionGuard>
+            </div>
+
+            {/* Meta info */}
+            <div className="space-y-1.5 text-sm">
+              <div className="flex items-center gap-1.5 text-gray-600">
+                <UserIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                <span className="truncate">{report.childName}</span>
+              </div>
+              <div className="flex items-center gap-1.5 text-gray-600">
+                <UserIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                <span className="truncate">{report.therapistName}</span>
+              </div>
+              {report.dueDate && (
+                <div className="flex items-center gap-1.5 text-gray-600">
+                  <CalendarIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                  <span>{new Date(report.dueDate).toLocaleDateString("id-ID")}</span>
+                </div>
+              )}
+            </div>
+
+            {/* Badges + footer */}
+            <div className="flex items-center justify-between pt-2 border-t border-gray-100">
               <div className="flex items-center gap-1.5">
                 {hasMedia && (
-                  <Badge
-                    variant="outline"
-                    className="text-xs bg-blue-50 text-blue-700 border-blue-200"
-                  >
+                  <Badge variant="outline" className="text-xs bg-blue-50 text-blue-700 border-blue-200">
                     {report.mediaFiles!.some((m) => m.fileType === "video") ? (
                       <VideoIcon className="h-3 w-3 mr-1 inline" />
                     ) : (
@@ -1028,94 +1064,34 @@ export default function ReportsPage() {
                   </Badge>
                 )}
                 {(report.unresolvedCommentCount ?? 0) > 0 && (
-                  <Badge
-                    variant="outline"
-                    className="text-xs bg-amber-50 text-amber-700 border-amber-200"
-                  >
+                  <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
                     <MessageCircleIcon className="h-3 w-3 mr-1 inline" />
                     {report.unresolvedCommentCount} komentar
                   </Badge>
                 )}
               </div>
-              <PermissionGuard
-                userRole={user?.role || "parent"}
-                permissions={["reports:create", "reports:view_all"]}
-              >
-                <div className="flex shrink-0 space-x-0.5">
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => setViewingReport(report)}
-                    title="Lihat detail"
-                  >
-                    <EyeIcon className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => router.push(`/dashboard/reports/${report._id}/edit`)}
-                    title="Edit"
-                  >
-                    <EditIcon className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => handleDelete(report._id)}
-                    className="text-red-500 hover:text-red-700 hover:bg-red-50"
-                    title="Hapus"
-                  >
-                    <TrashIcon className="h-4 w-4" />
-                  </Button>
-                </div>
-              </PermissionGuard>
-            </div>
-
-            {/* Info */}
-            <div className="space-y-2 text-sm">
-              <div className="flex items-center gap-1.5 text-gray-700">
-                <UserIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                <span className="truncate">
-                  <span className="font-medium">Pasien:</span> {report.childName}
-                </span>
-              </div>
-              <div className="flex items-center gap-1.5 text-gray-700">
-                <UserIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                <span className="truncate">
-                  <span className="font-medium">Terapis:</span> {report.therapistName}
-                </span>
-              </div>
-              {report.dueDate && (
-                <div className="flex items-center gap-1.5 text-gray-700">
-                  <CalendarIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                  <span>
-                    <span className="font-medium">Waktu Terapi:</span>{" "}
-                    {new Date(report.dueDate).toLocaleDateString("id-ID")}
-                  </span>
-                </div>
-              )}
-            </div>
-
-            <div className="flex gap-2 pt-2 border-t border-gray-100">
-              <Button
-                variant="outline"
-                size="sm"
-                className="flex-1"
-                onClick={() => setViewingReport(report)}
-              >
-                <EyeIcon className="h-4 w-4 mr-1.5" />
-                Lihat
-              </Button>
-              {downloadUrl && (
+              <div className="flex gap-1.5">
                 <Button
                   variant="outline"
                   size="sm"
-                  onClick={() => window.open(downloadUrl, "_blank")}
+                  className="h-7 text-xs px-3"
+                  onClick={() => setViewingReport(report)}
                 >
-                  <DownloadIcon className="h-4 w-4 mr-1.5" />
-                  Unduh
+                  <EyeIcon className="h-3.5 w-3.5 mr-1" />
+                  Lihat
                 </Button>
-              )}
+                {downloadUrl && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-7 text-xs px-3"
+                    onClick={() => window.open(downloadUrl, "_blank")}
+                  >
+                    <DownloadIcon className="h-3.5 w-3.5 mr-1" />
+                    Unduh
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
         </MagicCard>
@@ -1156,10 +1132,8 @@ export default function ReportsPage() {
     if (!d || d.editingId) return null; // only show create-drafts (not edit-drafts)
 
     const typeMap: Record<string, string> = {
-      progress: "Kemajuan",
-      assessment: "Penilaian",
-      "therapy-notes": "Catatan Terapi",
-      milestone: "Tonggak Capaian",
+      progress: "Harian",
+      assessment: "Asesmen",
     };
 
     return (
@@ -1289,10 +1263,8 @@ export default function ReportsPage() {
                 onValueChange={setTypeFilter}
                 options={[
                   { value: "all", label: "Semua Jenis" },
-                  { value: "progress", label: "Kemajuan" },
-                  { value: "assessment", label: "Penilaian" },
-                  { value: "therapy-notes", label: "Catatan Terapi" },
-                  { value: "milestone", label: "Tonggak Capaian" },
+                  { value: "progress", label: "Harian" },
+                  { value: "assessment", label: "Asesmen" },
                 ]}
               />
               <Select

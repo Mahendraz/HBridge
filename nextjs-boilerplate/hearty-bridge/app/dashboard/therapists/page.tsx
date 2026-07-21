@@ -20,6 +20,7 @@ import {
   PhoneIcon,
   MailIcon,
   EditIcon,
+  PowerIcon,
 } from "lucide-react";
 
 interface Therapist {
@@ -34,7 +35,7 @@ interface Therapist {
 }
 
 export default function TherapistsPage() {
-  const { user } = useAuth();
+  const { user, isLoading: authLoading } = useAuth();
   const permissions = usePermissions(user?.role || "parent");
   const [therapists, setTherapists] = useState<Therapist[]>([]);
   const [filteredTherapists, setFilteredTherapists] = useState<Therapist[]>([]);
@@ -50,7 +51,29 @@ export default function TherapistsPage() {
   const [createError, setCreateError] = useState<string | null>(null);
   const [isCreating, setIsCreating] = useState(false);
 
-  // Only allow admin access to this page
+  // Edit state
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [editingTherapist, setEditingTherapist] = useState<Therapist | null>(null);
+  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '', specialization: '' });
+  const [editError, setEditError] = useState<string | null>(null);
+  const [isEditing, setIsEditing] = useState(false);
+
+  // Deactivate state
+  const [confirmDeactivate, setConfirmDeactivate] = useState<Therapist | null>(null);
+  const [isDeactivating, setIsDeactivating] = useState(false);
+
+  useEffect(() => {
+    if (user) fetchTherapists();
+  }, [user]);
+
+  useEffect(() => {
+    filterTherapists();
+  }, [therapists, searchTerm, statusFilter, specializationFilter]);
+
+  if (authLoading) {
+    return <div className="p-8 text-center text-gray-400">Memuat...</div>;
+  }
+
   if (!permissions.hasPermission("therapists:view")) {
     return (
       <div className="p-8 text-center">
@@ -61,14 +84,6 @@ export default function TherapistsPage() {
       </div>
     );
   }
-
-  useEffect(() => {
-    fetchTherapists();
-  }, []);
-
-  useEffect(() => {
-    filterTherapists();
-  }, [therapists, searchTerm, statusFilter, specializationFilter]);
 
   const fetchTherapists = async () => {
     try {
@@ -167,6 +182,86 @@ export default function TherapistsPage() {
     }
   };
 
+  const openEditModal = (therapist: Therapist) => {
+    setEditingTherapist(therapist);
+    setEditForm({
+      name: therapist.name,
+      email: therapist.email,
+      phone: therapist.phone || '',
+      specialization: therapist.specializations.join(', '),
+    });
+    setEditError(null);
+    setShowEditModal(true);
+  };
+
+  const handleEditTherapist = async () => {
+    if (!editingTherapist || !editForm.name || !editForm.email) {
+      setEditError('Nama dan email wajib diisi.');
+      return;
+    }
+    setEditError(null);
+    setIsEditing(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/admin/users/${editingTherapist._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({
+          name: editForm.name,
+          email: editForm.email,
+          phone: editForm.phone || undefined,
+          specialization: editForm.specialization || undefined,
+        }),
+      });
+      const result = await response.json();
+      if (response.ok && result.success) {
+        setShowEditModal(false);
+        setEditingTherapist(null);
+        fetchTherapists();
+      } else {
+        setEditError(result.error || result.message || 'Gagal memperbarui data terapis.');
+      }
+    } catch {
+      setEditError('Terjadi kesalahan. Silakan coba lagi.');
+    } finally {
+      setIsEditing(false);
+    }
+  };
+
+  const handleDeactivateTherapist = async () => {
+    if (!confirmDeactivate) return;
+    setIsDeactivating(true);
+    try {
+      const token = localStorage.getItem('token');
+      const response = await fetch(`/api/admin/users/${confirmDeactivate._id}`, {
+        method: 'DELETE',
+        headers: { 'Authorization': `Bearer ${token}` },
+      });
+      if (response.ok) {
+        setConfirmDeactivate(null);
+        fetchTherapists();
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setIsDeactivating(false);
+    }
+  };
+
+  const handleReactivateTherapist = async (therapist: Therapist) => {
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`/api/admin/users/${therapist._id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', 'Authorization': `Bearer ${token}` },
+        body: JSON.stringify({ isActive: true }),
+      });
+      fetchTherapists();
+    } catch {
+      // silently fail
+    }
+  };
+
   const getStatusBadgeVariant = (status: string) => {
     switch (status) {
       case 'active': return 'default';
@@ -185,12 +280,21 @@ export default function TherapistsPage() {
     }
   };
 
-  const TherapistCard = ({ therapist }: { therapist: Therapist }) => (
-    <Card className="hover:shadow-md transition-shadow">
+  const TherapistCard = ({
+    therapist,
+    onEdit,
+    onDeactivate,
+    onReactivate,
+  }: {
+    therapist: Therapist;
+    onEdit: (t: Therapist) => void;
+    onDeactivate: (t: Therapist) => void;
+    onReactivate: (t: Therapist) => void;
+  }) => (
+    <Card className={`hover:shadow-md transition-shadow ${therapist.status === 'inactive' ? 'opacity-60' : ''}`}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0">
-            {/* Avatar initial */}
             <div className="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold text-lg shrink-0">
               {therapist.name.charAt(0).toUpperCase()}
             </div>
@@ -198,7 +302,6 @@ export default function TherapistsPage() {
               <p className="font-semibold text-gray-900 leading-snug truncate">
                 {therapist.name}
               </p>
-              {/* Specialization badges — max 2 + overflow count */}
               <div className="flex flex-wrap gap-1 mt-1.5">
                 {therapist.specializations.slice(0, 2).map((spec, i) => (
                   <Badge key={i} variant="outline" className="text-xs text-teal-700 border-teal-300 px-1.5">
@@ -220,7 +323,6 @@ export default function TherapistsPage() {
       </CardHeader>
 
       <CardContent className="space-y-4">
-        {/* Contact info */}
         <div className="space-y-1.5 text-sm">
           <div className="flex items-center gap-2 text-gray-600">
             <MailIcon className="h-4 w-4 text-gray-400 shrink-0" />
@@ -234,7 +336,6 @@ export default function TherapistsPage() {
           ) : null}
         </div>
 
-        {/* Stats */}
         <div className="pt-3 border-t border-gray-100">
           <div className="text-center bg-gray-50 rounded-lg py-2.5">
             <p className="text-lg font-bold text-gray-900">{therapist.assignedPatients}</p>
@@ -242,20 +343,33 @@ export default function TherapistsPage() {
           </div>
         </div>
 
-        {/* Actions */}
-        <div className="flex gap-2">
-          <Button variant="outline" size="sm" className="flex-1">
-            Lihat Profil
-          </Button>
-          <PermissionGuard
-            userRole={user?.role || "parent"}
-            permissions={["therapists:edit"]}
-          >
-            <Button variant="outline" size="sm">
-              <EditIcon className="h-4 w-4" />
+        <PermissionGuard userRole={user?.role || "parent"} permissions={["therapists:edit"]}>
+          <div className="flex gap-2">
+            <Button variant="outline" size="sm" className="flex-1" onClick={() => onEdit(therapist)}>
+              <EditIcon className="h-4 w-4 mr-1.5" />
+              Edit
             </Button>
-          </PermissionGuard>
-        </div>
+            {therapist.status === 'inactive' ? (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-green-700 border-green-300 hover:bg-green-50"
+                onClick={() => onReactivate(therapist)}
+              >
+                <PowerIcon className="h-4 w-4" />
+              </Button>
+            ) : (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-red-600 border-red-200 hover:bg-red-50"
+                onClick={() => onDeactivate(therapist)}
+              >
+                <PowerIcon className="h-4 w-4" />
+              </Button>
+            )}
+          </div>
+        </PermissionGuard>
       </CardContent>
     </Card>
   );
@@ -323,10 +437,107 @@ export default function TherapistsPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
           {filteredTherapists.map(therapist => (
-            <TherapistCard key={therapist._id} therapist={therapist} />
+            <TherapistCard
+              key={therapist._id}
+              therapist={therapist}
+              onEdit={openEditModal}
+              onDeactivate={setConfirmDeactivate}
+              onReactivate={handleReactivateTherapist}
+            />
           ))}
         </div>
       )}
+
+      {/* Edit Therapist Modal */}
+      <Dialog open={showEditModal} onOpenChange={setShowEditModal}>
+        <DialogContent size="md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <EditIcon className="h-5 w-5 text-teal-600" />
+              Edit Data Terapis
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-4 py-2">
+            {editError && (
+              <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                {editError}
+              </div>
+            )}
+            <div>
+              <label className="text-sm font-medium text-gray-700">Nama Lengkap *</label>
+              <Input
+                value={editForm.name}
+                onChange={(e) => setEditForm(f => ({ ...f, name: e.target.value }))}
+                placeholder="Nama terapis"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Email *</label>
+              <Input
+                type="email"
+                value={editForm.email}
+                onChange={(e) => setEditForm(f => ({ ...f, email: e.target.value }))}
+                placeholder="email@contoh.com"
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">No. Telepon</label>
+              <Input
+                value={editForm.phone}
+                onChange={(e) => setEditForm(f => ({ ...f, phone: e.target.value }))}
+                placeholder="+62..."
+                className="mt-1"
+              />
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Spesialisasi</label>
+              <Input
+                value={editForm.specialization}
+                onChange={(e) => setEditForm(f => ({ ...f, specialization: e.target.value }))}
+                placeholder="cth. Terapi Wicara, Fisioterapi"
+                className="mt-1"
+              />
+              <p className="text-xs text-gray-500 mt-1">Pisahkan dengan koma untuk beberapa spesialisasi.</p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowEditModal(false)} disabled={isEditing}>
+              Batal
+            </Button>
+            <Button onClick={handleEditTherapist} disabled={isEditing}>
+              {isEditing ? 'Menyimpan...' : 'Simpan'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Deactivate Confirm Dialog */}
+      <Dialog open={!!confirmDeactivate} onOpenChange={(open) => !open && setConfirmDeactivate(null)}>
+        <DialogContent size="sm">
+          <DialogHeader>
+            <DialogTitle>Nonaktifkan Terapis</DialogTitle>
+          </DialogHeader>
+          <p className="text-sm text-gray-600 py-2">
+            Nonaktifkan <span className="font-semibold">{confirmDeactivate?.name}</span>? Terapis tidak bisa login hingga diaktifkan kembali.
+          </p>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDeactivate(null)} disabled={isDeactivating}>
+              Batal
+            </Button>
+            <Button
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={handleDeactivateTherapist}
+              disabled={isDeactivating}
+            >
+              {isDeactivating ? 'Memproses...' : 'Nonaktifkan'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       {/* Create Therapist Modal */}
       <Dialog open={showCreateModal} onOpenChange={setShowCreateModal}>

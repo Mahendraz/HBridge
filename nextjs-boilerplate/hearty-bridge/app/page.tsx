@@ -84,7 +84,7 @@ export default function Home() {
             <div className="h-[600px] w-[600px] rounded-full bg-teal-500/10 blur-3xl" />
           </div>
 
-          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 text-center">
+          <div className="relative mx-auto max-w-7xl px-6 text-center">
             <BlurFade delay={0} inView>
               <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1.5 text-sm text-teal-300 mb-8">
                 <span className="h-1.5 w-1.5 rounded-full bg-teal-400 animate-pulse" />
@@ -134,7 +134,7 @@ export default function Home() {
         {/* ── FEATURES / LAYANAN ──────────────────────────────── */}
         <section className="relative py-24 bg-gray-50 overflow-hidden">
           <DotPattern className="opacity-60" />
-          <div className="relative mx-auto max-w-7xl px-4 sm:px-6 lg:px-8">
+          <div className="relative mx-auto max-w-7xl px-6">
             <BlurFade inView>
               <div className="text-center mb-16">
                 <span className="inline-flex items-center rounded-full bg-teal-50 border border-teal-200 px-4 py-1.5 text-sm font-semibold text-teal-700 mb-4">

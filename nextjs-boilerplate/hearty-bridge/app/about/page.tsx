@@ -22,7 +22,7 @@ export default function AboutPage() {
 
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-teal-600 to-green-800 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="text-center">
             <HeartIcon className="h-16 w-16 text-green-200 mx-auto mb-6" />
             <h1 className="text-4xl md:text-5xl font-bold mb-6">{t('hero.title')}</h1>
@@ -35,7 +35,7 @@ export default function AboutPage() {
 
       {/* Mission Section */}
       <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12 items-center">
             <div>
               <h2 className="text-3xl font-bold text-gray-900 mb-6">{t('mission.title')}</h2>
@@ -87,7 +87,7 @@ export default function AboutPage() {
 
       {/* Values Section */}
       <section className="bg-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">{t('values.title')}</h2>
             <p className="text-lg text-gray-600 max-w-2xl mx-auto">
@@ -143,7 +143,7 @@ export default function AboutPage() {
 
       {/* Team Section */}
       <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">{t('team.title')}</h2>
             <p className="text-lg text-gray-600">
@@ -184,7 +184,7 @@ export default function AboutPage() {
 
       {/* CTA Section */}
       <section className="bg-green-600 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 text-center">
+        <div className="max-w-7xl mx-auto px-6 text-center">
           <h2 className="text-3xl font-bold mb-6">{t('cta.title')}</h2>
           <p className="text-xl text-teal-100 mb-8 max-w-2xl mx-auto">
             {t('cta.subtitle')}

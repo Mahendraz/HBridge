@@ -173,6 +173,19 @@ export const GET = withAnyAuth(
           child.therapyBalance = therapyByChild[child.id] ?? {};
         }
 
+        // Count total active packages per child (for slot-scheduling eligibility check)
+        const pkgCountAgg = await TokenTransaction.aggregate([
+          { $match: { childId: { $in: childObjectIds }, type: 'topup', packageType: { $ne: null } } },
+          { $group: { _id: '$childId', count: { $sum: 1 } } },
+        ]);
+        const pkgCountByChild: Record<string, number> = {};
+        for (const row of pkgCountAgg) {
+          pkgCountByChild[row._id.toString()] = row.count as number;
+        }
+        for (const child of formattedChildren) {
+          child.activePackageCount = pkgCountByChild[child.id] ?? 0;
+        }
+
         // Add session progress (completed / total) per child
         const now = new Date();
         const monthStart = new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), 1));

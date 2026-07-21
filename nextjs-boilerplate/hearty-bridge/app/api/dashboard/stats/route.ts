@@ -285,6 +285,94 @@ async function therapistStats(user: JWTPayload): Promise<NextResponse> {
       }));
   }
 
+  // Build missing-reports list: per slot, past sessions only (slotDate <= today)
+  // Helper: local YYYY-MM-DD string (avoids UTC-shift on WIB servers)
+  const localDateStr = (d: Date): string => {
+    const y  = d.getFullYear();
+    const mo = String(d.getMonth() + 1).padStart(2, '0');
+    const dd = String(d.getDate()).padStart(2, '0');
+    return `${y}-${mo}-${dd}`;
+  };
+
+  const todayStr = localDateStr(new Date());
+
+  const uniquePatientIds = [...new Set(
+    (mySlots as any[]).filter(s => s.patientId && DAY_ORDER.includes(s.day)).map(s => s.patientId as string)
+  )];
+  const patientOids2 = uniquePatientIds.map(id => toOid(id)).filter(Boolean) as mongoose.Types.ObjectId[];
+
+  let missingReports: Array<{
+    childId: string;
+    childName: string;
+    therapyType: string;
+    day: string;
+    slotDate: string;
+    hour: number;
+    sessionNumber: number;
+    totalSessions: number;
+  }> = [];
+
+  if (patientOids2.length > 0) {
+    const N_WEEKS = 5; // current week + 4 previous weeks
+    const lookbackStart = new Date(startOfWeek);
+    lookbackStart.setDate(startOfWeek.getDate() - (N_WEEKS - 1) * 7);
+
+    const recentReports = await Report.find({
+      therapistId: therapistOid,
+      childId:     { $in: patientOids2 },
+      isActive:    true,
+      createdAt:   { $gte: lookbackStart },
+    }).select('childId sessionDate createdAt').lean();
+
+    // A slot is covered if a report matches by sessionDate OR by local createdAt date
+    const coveredKeys = new Set<string>();
+    for (const r of recentReports as any[]) {
+      const cid = r.childId.toString();
+      if (r.sessionDate) {
+        coveredKeys.add(`${cid}_${localDateStr(new Date(r.sessionDate))}`);
+      }
+      if (r.createdAt) {
+        coveredKeys.add(`${cid}_${localDateStr(new Date(r.createdAt))}`);
+      }
+    }
+
+    // Generate slot instances for every week in the lookback window
+    const validSlots = (mySlots as any[]).filter(s => s.patientId && DAY_ORDER.includes(s.day));
+    const allInstances: Array<typeof validSlots[number] & { slotDateStr: string }> = [];
+
+    for (let w = 0; w < N_WEEKS; w++) {
+      const weekStart = new Date(startOfWeek);
+      weekStart.setDate(startOfWeek.getDate() - w * 7);
+
+      for (const s of validSlots) {
+        const offset   = DAY_ORDER.indexOf(s.day);
+        const slotDate = new Date(weekStart);
+        slotDate.setDate(weekStart.getDate() + offset);
+        const slotDateStr = localDateStr(slotDate);
+        // Only past sessions (≤ today), never future
+        if (slotDateStr <= todayStr) {
+          allInstances.push({ ...s, slotDateStr });
+        }
+      }
+    }
+
+    missingReports = allInstances
+      .filter(s => !coveredKeys.has(`${s.patientId}_${s.slotDateStr}`))
+      .sort((a, b) =>
+        b.slotDateStr < a.slotDateStr ? -1 : b.slotDateStr > a.slotDateStr ? 1 : a.hour - b.hour
+      )
+      .map(s => ({
+        childId:       s.patientId as string,
+        childName:     s.patientName ?? '',
+        therapyType:   s.therapyType ?? '',
+        day:           s.day ?? '',
+        slotDate:      s.slotDateStr,
+        hour:          s.hour ?? 0,
+        sessionNumber: s.packageId ? (completedMap.get(s.packageId) ?? 0) : 0,
+        totalSessions: s.totalSessions ?? 0,
+      }));
+  }
+
   return SuccessResponse.ok({
     data: {
       role:            'therapist',
@@ -292,6 +380,7 @@ async function therapistStats(user: JWTPayload): Promise<NextResponse> {
       sessionThisWeek: { completed: sessionWeekCompleted,       planned: (mySlots as any[]).length },
       todaySchedule,
       weeklySchedule,
+      missingReports,
     },
   });
 }

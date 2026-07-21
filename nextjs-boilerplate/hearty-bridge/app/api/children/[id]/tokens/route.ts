@@ -107,7 +107,7 @@ export const POST = withAdminAuth(
     }
 
     // ── Package assignment path ──
-    const { packageId } = body as { packageId?: string };
+    const { packageId, discountAmount: rawDiscount } = body as { packageId?: string; discountAmount?: number };
 
     if (!packageId || !mongoose.isValidObjectId(packageId)) {
       return ErrorResponse.badRequest('packageId harus berisi ID paket yang valid');
@@ -126,11 +126,14 @@ export const POST = withAdminAuth(
       return ErrorResponse.badRequest('Paket ini sudah tidak aktif');
     }
 
-    const packageDoc = pkg as any;
+    const packageDoc  = pkg as any;
     const amount      = packageDoc.sessions as number;
     const packageName = packageDoc.name as string;
     const therapyType = packageDoc.therapyType as string;
     const price       = packageDoc.price as number;
+
+    const discount   = Math.min(Math.max(0, Math.round(Number(rawDiscount) || 0)), price);
+    const finalPrice = price - discount;
 
     const balanceBefore = child.tokenBalance ?? 0;
     const balanceAfter  = balanceBefore + amount;
@@ -144,14 +147,17 @@ export const POST = withAdminAuth(
       childName:  child.name,
       adminId:    new mongoose.Types.ObjectId(user.userId),
       adminName:  user.name || '',
-      type:       'topup' as const,
-      packageType: packageName,
-      packageId:  new mongoose.Types.ObjectId(packageId),
-      therapyType: txTherapyType,
+      type:          'topup' as const,
+      packageType:   packageName,
+      packageId:     new mongoose.Types.ObjectId(packageId),
+      therapyType:   txTherapyType,
       amount,
+      originalPrice: price,
+      discountAmount: discount,
+      finalPrice,
       balanceBefore,
       balanceAfter,
-      note: `Paket ${packageName} (${amount} sesi)`,
+      note: `Paket ${packageName} (${amount} sesi)${discount > 0 ? ` - Diskon Rp ${discount.toLocaleString('id-ID')}` : ''}`,
     }) as any;
 
     // Auto-create invoice
@@ -174,7 +180,9 @@ export const POST = withAdminAuth(
       packageType:          packageName,
       therapyType:          therapyType === 'both' ? 'OT' : (therapyType as 'OT' | 'TW'),
       sessions:             amount,
-      amount:               price,
+      originalAmount:       price,
+      discountAmount:       discount,
+      amount:               finalPrice,
       dueDate,
       status:               'unpaid',
       paidAt:               null,

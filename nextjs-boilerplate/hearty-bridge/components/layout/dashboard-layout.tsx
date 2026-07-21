@@ -28,28 +28,24 @@ export function DashboardLayout({
           {/* Header */}
           {(title || description) && (
             <div className="bg-white shadow-sm border-b border-gray-200">
-              <div className="px-4 sm:px-6 lg:px-8 py-6">
-                <div className="max-w-7xl mx-auto">
-                  {title && (
-                    <h1 className="text-2xl font-bold text-gray-900 mb-2">
-                      {title}
-                    </h1>
-                  )}
-                  {description && (
-                    <p className="text-gray-600">
-                      {description}
-                    </p>
-                  )}
-                </div>
+              <div className="px-6 py-6">
+                {title && (
+                  <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                    {title}
+                  </h1>
+                )}
+                {description && (
+                  <p className="text-gray-600">
+                    {description}
+                  </p>
+                )}
               </div>
             </div>
           )}
-          
+
           {/* Page content */}
-          <main className="px-4 sm:px-6 lg:px-8 py-6">
-            <div className="max-w-7xl mx-auto">
-              {children}
-            </div>
+          <main className="px-6 py-6 w-full">
+            {children}
           </main>
         </div>
       </div>

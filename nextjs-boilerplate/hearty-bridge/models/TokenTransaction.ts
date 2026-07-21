@@ -10,6 +10,9 @@ export interface ITokenTransaction extends Document {
   packageId?: mongoose.Types.ObjectId | null;
   therapyType: 'OT' | 'TW' | null;
   amount: number;
+  originalPrice: number;
+  discountAmount: number;
+  finalPrice: number;
   balanceBefore: number;
   balanceAfter: number;
   note: string;
@@ -45,6 +48,9 @@ const TokenTransactionSchema = new Schema<ITokenTransaction>(
       default: null,
     },
     amount:        { type: Number, required: true, min: [1, 'Amount must be at least 1'] },
+    originalPrice: { type: Number, default: 0 },
+    discountAmount: { type: Number, default: 0 },
+    finalPrice:    { type: Number, default: 0 },
     balanceBefore: { type: Number, required: true, min: 0 },
     balanceAfter:  { type: Number, required: true, min: 0 },
     note:          { type: String, default: '', trim: true },

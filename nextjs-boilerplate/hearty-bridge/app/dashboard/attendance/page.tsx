@@ -272,20 +272,6 @@ export default function AttendancePage() {
     );
   };
 
-  // Mock: kirim koordinat langsung tanpa GPS (untuk testing)
-  const handleMockCheckIn = (scenario: "in" | "out") => {
-    setGpsError(null);
-    setCheckInResult(null);
-    setChecking(true);
-    // "in"  → koordinat sama persis dengan OFFICE_LATITUDE/LONGITUDE di .env
-    // "out" → koordinat ~20km dari kantor (Bandung arah selatan)
-    const coords =
-      scenario === "in"
-        ? { lat: 1.1244132, lng: 104.0203694 }
-        : { lat: 1.5, lng: 104.5 };
-    doCheckIn(coords.lat, coords.lng);
-  };
-
   if (!user) return null;
 
   const today = todayWIB();
@@ -460,35 +446,6 @@ export default function AttendancePage() {
                   tombol.
                 </p>
 
-                {/* ── Mock buttons (testing only) ── */}
-                <div className="mt-4 rounded-lg border border-dashed border-orange-300 bg-orange-50 p-3 space-y-2">
-                  <p className="text-xs font-semibold text-orange-600 uppercase tracking-wide">
-                    Mode Testing — hapus sebelum produksi
-                  </p>
-                  <div className="flex flex-wrap gap-2">
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-orange-400 text-orange-700 hover:bg-orange-100 text-xs"
-                      onClick={() => handleMockCheckIn("in")}
-                      disabled={checking}
-                    >
-                      Mock: Di Dalam Kantor
-                    </Button>
-                    <Button
-                      size="sm"
-                      variant="outline"
-                      className="border-orange-400 text-orange-700 hover:bg-orange-100 text-xs"
-                      onClick={() => handleMockCheckIn("out")}
-                      disabled={checking}
-                    >
-                      Mock: Di Luar Area
-                    </Button>
-                  </div>
-                  <p className="text-xs text-orange-500">
-                    Melewati GPS — langsung kirim koordinat tetap ke API.
-                  </p>
-                </div>
               </div>
             )}
           </CardContent>

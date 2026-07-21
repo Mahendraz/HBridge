@@ -59,7 +59,7 @@ export default function ContactPage() {
 
       {/* Hero Section */}
       <section className="bg-gradient-to-r from-teal-600 to-green-800 text-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="text-center">
             <MessageSquareIcon className="h-16 w-16 text-green-200 mx-auto mb-6" />
             <h1 className="text-4xl md:text-5xl font-bold mb-6">{t('hero.title')}</h1>
@@ -72,7 +72,7 @@ export default function ContactPage() {
 
       {/* Contact Information & Form */}
       <section className="py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-12">
 
             {/* Contact Information */}
@@ -253,7 +253,7 @@ export default function ContactPage() {
 
       {/* FAQ Section */}
       <section className="bg-white py-16">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="text-center mb-12">
             <h2 className="text-3xl font-bold text-gray-900 mb-4">{t('faq.title')}</h2>
             <p className="text-lg text-gray-600">
@@ -311,7 +311,7 @@ export default function ContactPage() {
 
       {/* Emergency Notice */}
       <section className="bg-red-50 border-t-4 border-red-400 py-8">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="max-w-7xl mx-auto px-6">
           <div className="text-center">
             <h3 className="text-lg font-semibold text-red-800 mb-2">{t('crisis.title')}</h3>
             <p className="text-red-700 mb-4">

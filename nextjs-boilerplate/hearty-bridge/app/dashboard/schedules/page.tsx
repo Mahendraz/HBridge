@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { Button } from "@/components/ui/button";
@@ -21,6 +21,7 @@ import {
   ChevronLeftIcon,
   ChevronRightIcon,
   CalendarIcon,
+  ClipboardListIcon,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -135,6 +136,22 @@ interface WeeklySlot {
   _type?: 'session' | 'weekly';
 }
 
+interface AssessmentSlot {
+  _id: string;
+  childId: { _id: string; name: string } | string;
+  assessorId: { _id: string; name: string; email: string } | null;
+  date: string;
+  time: string;
+  duration: number;
+  type: 'in-person' | 'video';
+  status: 'scheduled' | 'completed' | 'cancelled' | 'no-show';
+  notes: string;
+  result: {
+    OT: { conducted: boolean; needsTherapy: boolean | null; notes: string } | null;
+    TW: { conducted: boolean; needsTherapy: boolean | null; notes: string } | null;
+  };
+}
+
 interface PatientOption {
   _id: string;
   name: string;
@@ -143,6 +160,7 @@ interface PatientOption {
   assignedTherapistName?: string;
   tokenBalance?: number;
   therapyBalance?: Record<string, number>;
+  activePackageCount?: number;
 }
 
 interface TherapistOption {
@@ -265,6 +283,62 @@ function SlotCard({
 }
 
 // ---------------------------------------------------------------------------
+// AssessmentCard — compact card for assessment slots in the grid
+// ---------------------------------------------------------------------------
+
+function AssessmentCard({
+  assessment,
+  onClick,
+}: {
+  assessment: AssessmentSlot;
+  onClick: () => void;
+}) {
+  const childName =
+    typeof assessment.childId === 'object' ? assessment.childId.name : '—';
+  const assessorName = assessment.assessorId
+    ? typeof assessment.assessorId === 'object'
+      ? assessment.assessorId.name
+      : '—'
+    : 'Belum ada assessor';
+
+  return (
+    <div
+      className="p-2 rounded-lg border text-xs cursor-pointer transition-all hover:shadow-sm hover:-translate-y-px bg-indigo-50 border-indigo-200 hover:bg-indigo-100"
+      onClick={onClick}
+    >
+      <div className="flex items-start justify-between gap-1 mb-0.5">
+        <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-bold bg-indigo-600 text-white leading-none shrink-0">
+          ASESMEN
+        </span>
+        <span
+          className={`inline-flex items-center px-1.5 py-0.5 rounded text-[9px] font-medium leading-none ${
+            assessment.status === 'completed'
+              ? 'bg-green-100 text-green-700'
+              : assessment.status === 'cancelled'
+              ? 'bg-gray-100 text-gray-500'
+              : assessment.status === 'no-show'
+              ? 'bg-red-100 text-red-700'
+              : 'bg-sky-100 text-sky-700'
+          }`}
+        >
+          {assessment.status === 'completed'
+            ? 'Selesai'
+            : assessment.status === 'cancelled'
+            ? 'Dibatalkan'
+            : assessment.status === 'no-show'
+            ? 'Tidak Hadir'
+            : 'Terjadwal'}
+        </span>
+      </div>
+      <p className="font-semibold text-gray-900 truncate leading-snug">{childName}</p>
+      <p className="truncate text-[11px] leading-snug text-indigo-700 mt-0.5">
+        {assessorName.replace(/,.*/, '')}
+      </p>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // SlotModal — add / edit dialog (admin only)
 // ---------------------------------------------------------------------------
 
@@ -277,6 +351,8 @@ interface SlotModalProps {
   onSave: (data: Partial<WeeklySlot> & { effectiveFrom: string }) => Promise<void>;
   onDelete?: () => Promise<void>;
   onAssignPackage?: (slot: Partial<WeeklySlot>) => void;
+  showTabs?: boolean;
+  onSaveAssessment?: (data: { childId: string; assessorId: string | null; date: string; time: string; notes: string }) => Promise<void>;
 }
 
 function SlotModal({
@@ -288,7 +364,25 @@ function SlotModal({
   onSave,
   onDelete,
   onAssignPackage,
+  showTabs,
+  onSaveAssessment,
 }: SlotModalProps) {
+  const canShowTabs = showTabs && !slot._id;
+  const [activeTab, setActiveTab] = useState<'slot' | 'assessment'>('slot');
+
+  // Assessment form state
+  const defaultAssessDate = (() => {
+    const offset = dayNameToOffset(slot.day || 'senin');
+    return offset >= 0 ? addDays(weekStart, offset) : weekStart;
+  })();
+  const [assessForm, setAssessForm] = useState({
+    childId: '',
+    assessorId: '',
+    date: defaultAssessDate,
+    time: `${String(slot.hour ?? 9).padStart(2, '0')}:00`,
+    notes: '',
+  });
+
   const [form, setForm] = useState<Partial<WeeklySlot>>({
     _id: slot._id || "",
     day: slot.day || "senin",
@@ -321,14 +415,18 @@ function SlotModal({
       .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (!data) return;
-        const types: string[] = Array.from(
+        const topups = (data.data?.transactions ?? []).filter(
+          (t: any) => t.type === 'topup' && t.packageType
+        );
+        // Collect types from packages with a specific therapyType (OT or TW).
+        // 'both' packages (therapyType null) are ignored for filtering — if the
+        // patient has no specific-type packages at all, show all therapists.
+        const specificTypes: string[] = Array.from(
           new Set<string>(
-            (data.data?.transactions ?? [])
-              .filter((t: any) => t.type === 'topup' && t.packageType && t.therapyType)
-              .map((t: any) => t.therapyType as string)
+            topups.filter((t: any) => t.therapyType).map((t: any) => t.therapyType as string)
           )
         );
-        setPatientTherapyTypes(types);
+        setPatientTherapyTypes(specificTypes);
       })
       .catch(() => setPatientTherapyTypes([]));
   }, [form.patientId]);
@@ -373,6 +471,24 @@ function SlotModal({
     setDeleting(false);
   };
 
+  const handleSaveAssessment = async () => {
+    if (!assessForm.childId || !assessForm.date) return;
+    setSaving(true);
+    setSaveError(null);
+    try {
+      await onSaveAssessment!({
+        childId: assessForm.childId,
+        assessorId: assessForm.assessorId || null,
+        date: assessForm.date,
+        time: assessForm.time,
+        notes: assessForm.notes,
+      });
+    } catch (err) {
+      setSaveError(err instanceof Error ? err.message : 'Gagal menyimpan asesmen.');
+      setSaving(false);
+    }
+  };
+
   const isValid = Boolean(form.patientId && form.therapistId && form.day);
 
   return (
@@ -380,8 +496,11 @@ function SlotModal({
       <DialogContent size="md">
         <DialogHeader>
           <div className="flex items-center justify-between">
-            <DialogTitle>
-              {slot._id ? "Edit Slot Jadwal" : "Tambah Slot Jadwal"}
+            <DialogTitle className="flex items-center gap-2">
+              {activeTab === 'assessment' && (
+                <ClipboardListIcon className="h-4 w-4 text-indigo-600" />
+              )}
+              {slot._id ? "Edit Slot Jadwal" : activeTab === 'assessment' ? "Jadwalkan Asesmen" : "Tambah Slot Jadwal"}
             </DialogTitle>
             <button
               onClick={onClose}
@@ -392,6 +511,35 @@ function SlotModal({
           </div>
         </DialogHeader>
 
+        {/* Tabs — only when adding new (not editing) and admin */}
+        {canShowTabs && (
+          <div className="flex rounded-lg border border-gray-200 p-1 bg-gray-50 mt-3">
+            <button
+              onClick={() => setActiveTab('slot')}
+              className={`flex-1 text-sm py-1.5 rounded-md font-medium transition-all ${
+                activeTab === 'slot'
+                  ? 'bg-white text-gray-900 shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Jadwal Terapi
+            </button>
+            <button
+              onClick={() => setActiveTab('assessment')}
+              className={`flex-1 text-sm py-1.5 rounded-md font-medium transition-all flex items-center justify-center gap-1.5 ${
+                activeTab === 'assessment'
+                  ? 'bg-indigo-600 text-white shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              <ClipboardListIcon className="h-3.5 w-3.5" />
+              Asesmen
+            </button>
+          </div>
+        )}
+
+        {/* ── Slot Tab Content ── */}
+        {activeTab === 'slot' && (
         <div className="space-y-4 mt-4">
           {saveError && (
             <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
@@ -451,7 +599,7 @@ function SlotModal({
             </select>
             {patients.filter((p) => (p.tokenBalance ?? 0) > 0).length === 0 && (
               <p className="text-xs text-amber-600 mt-1">
-                Tidak ada pasien dengan paket aktif. Assign paket terlebih dahulu di halaman detail pasien.
+                Semua pasien aktif sudah terjadwal minggu ini.
               </p>
             )}
           </div>
@@ -541,30 +689,141 @@ function SlotModal({
             </div>
           </div>
         </div>
+        )} {/* end slot tab */}
+
+        {/* ── Assessment Tab Content ── */}
+        {activeTab === 'assessment' && (
+          <div className="space-y-4 mt-4">
+            {saveError && (
+              <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+                {saveError}
+              </div>
+            )}
+
+            {/* Child */}
+            <div>
+              <label className="text-xs font-medium text-gray-700 mb-1 block">
+                <UserIcon className="inline h-3 w-3 mr-1" />
+                Anak
+              </label>
+              <select
+                value={assessForm.childId}
+                onChange={(e) => setAssessForm((f) => ({ ...f, childId: e.target.value }))}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="">Pilih anak...</option>
+                {patients.map((p) => (
+                  <option key={p._id} value={p._id}>
+                    {p.name}{p.diagnosis ? ` — ${p.diagnosis.slice(0, 30)}` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Assessor */}
+            <div>
+              <label className="text-xs font-medium text-gray-700 mb-1 block">
+                <StethoscopeIcon className="inline h-3 w-3 mr-1" />
+                Assessor <span className="text-gray-400 font-normal">(opsional)</span>
+              </label>
+              <select
+                value={assessForm.assessorId}
+                onChange={(e) => setAssessForm((f) => ({ ...f, assessorId: e.target.value }))}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+              >
+                <option value="">Belum ditentukan</option>
+                {therapists.map((t) => (
+                  <option key={t._id} value={t._id}>
+                    {t.name}{t.therapyType ? ` (${t.therapyType})` : ''}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Date + Time */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="text-xs font-medium text-gray-700 mb-1 block">Tanggal</label>
+                <input
+                  type="date"
+                  value={assessForm.date}
+                  onChange={(e) => setAssessForm((f) => ({ ...f, date: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                />
+              </div>
+              <div>
+                <label className="text-xs font-medium text-gray-700 mb-1 block">
+                  <ClockIcon className="inline h-3 w-3 mr-1" />
+                  Jam
+                </label>
+                <select
+                  value={assessForm.time}
+                  onChange={(e) => setAssessForm((f) => ({ ...f, time: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                >
+                  {HOURS.map((h) => (
+                    <option key={h} value={`${String(h).padStart(2, '0')}:00`}>
+                      {String(h).padStart(2, '0')}:00
+                    </option>
+                  ))}
+                </select>
+              </div>
+            </div>
+
+            {/* Notes */}
+            <div>
+              <label className="text-xs font-medium text-gray-700 mb-1 block">
+                Catatan <span className="text-gray-400 font-normal">(opsional)</span>
+              </label>
+              <textarea
+                value={assessForm.notes}
+                onChange={(e) => setAssessForm((f) => ({ ...f, notes: e.target.value }))}
+                rows={2}
+                placeholder="Catatan sebelum asesmen..."
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+              />
+            </div>
+          </div>
+        )}
 
         {/* Footer buttons */}
-        <div className="flex justify-between mt-4 pt-4 border-t border-gray-100">
-          <div className="flex gap-2">
-            {slot._id && onDelete && (
-              <Button
-                variant="outline"
-                className="text-red-600 border-red-200 hover:bg-red-50"
-                onClick={handleDelete}
-                disabled={deleting}
-              >
-                {deleting ? "Menghapus..." : "Hapus Slot"}
+        {activeTab === 'slot' ? (
+          <div className="flex justify-between mt-4 pt-4 border-t border-gray-100">
+            <div className="flex gap-2">
+              {slot._id && onDelete && (
+                <Button
+                  variant="outline"
+                  className="text-red-600 border-red-200 hover:bg-red-50"
+                  onClick={handleDelete}
+                  disabled={deleting}
+                >
+                  {deleting ? "Menghapus..." : "Hapus Slot"}
+                </Button>
+              )}
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={onClose} disabled={saving}>
+                Batal
               </Button>
-            )}
+              <Button onClick={handleSave} disabled={!isValid || saving}>
+                {saving ? "Menyimpan..." : "Simpan"}
+              </Button>
+            </div>
           </div>
-          <div className="flex gap-2">
+        ) : (
+          <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-gray-100">
             <Button variant="outline" onClick={onClose} disabled={saving}>
               Batal
             </Button>
-            <Button onClick={handleSave} disabled={!isValid || saving}>
-              {saving ? "Menyimpan..." : "Simpan"}
+            <Button
+              onClick={handleSaveAssessment}
+              disabled={!assessForm.childId || !assessForm.date || saving}
+              className="bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600"
+            >
+              {saving ? 'Menyimpan...' : 'Jadwalkan'}
             </Button>
           </div>
-        </div>
+        )}
       </DialogContent>
     </Dialog>
   );
@@ -885,6 +1144,23 @@ export default function SchedulesPage() {
   const [editingSlot, setEditingSlot] = useState<Partial<WeeklySlot> | null>(null);
   const [allPatients, setAllPatients] = useState<PatientOption[]>([]);
   const [allTherapists, setAllTherapists] = useState<TherapistOption[]>([]);
+  const scheduledPatientIds = useMemo(() => new Set(slots.map((s) => s.patientId)), [slots]);
+  // Count how many slots each patient currently has in the schedule
+  const scheduledSlotCountByPatient = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const s of slots) {
+      map.set(s.patientId, (map.get(s.patientId) ?? 0) + 1);
+    }
+    return map;
+  }, [slots]);
+  // Patient is eligible if they have fewer slots than active packages
+  const unscheduledPatients = useMemo(
+    () => allPatients.filter((p) =>
+      (p.tokenBalance ?? 0) > 0 &&
+      (scheduledSlotCountByPatient.get(p._id) ?? 0) < (p.activePackageCount ?? 1)
+    ),
+    [allPatients, scheduledSlotCountByPatient]
+  );
   const [patientPhotoMap, setPatientPhotoMap] = useState<Record<string, string>>({});
 
   // Reschedule modal state
@@ -896,6 +1172,13 @@ export default function SchedulesPage() {
 
   // Package session modal state
   const [showPackageModal, setShowPackageModal] = useState(false);
+
+  // Assessment state
+  const [assessments, setAssessments] = useState<AssessmentSlot[]>([]);
+  const [assessmentDetail, setAssessmentDetail] = useState<AssessmentSlot | null>(null);
+  const [assessmentStatusLoading, setAssessmentStatusLoading] = useState(false);
+  const [editAssessorId, setEditAssessorId] = useState('');
+  const [assessorSaving, setAssessorSaving] = useState(false);
 
 
   const weekDates = getWeekDates(weekStart);
@@ -948,6 +1231,25 @@ export default function SchedulesPage() {
     }
   }, [user, weekStart]);
 
+  // ---- Fetch assessments for the current week ----
+
+  const fetchAssessments = useCallback(async () => {
+    if (!user) return;
+    if (user.role === 'parent') return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/assessments?week=${weekStart}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const result = await res.json();
+        setAssessments(result.data?.assessments ?? []);
+      }
+    } catch {
+      // silently fail — assessments section just won't show
+    }
+  }, [user, weekStart]);
+
   // ---- Fetch patients + therapists for modal dropdowns (admin only) ----
 
   const fetchDropdownData = useCallback(async () => {
@@ -969,6 +1271,7 @@ export default function SchedulesPage() {
             assignedTherapistName: c.therapist?.name || "",
             tokenBalance: c.tokenBalance ?? 0,
             therapyBalance: c.therapyBalance ?? {},
+            activePackageCount: c.activePackageCount ?? 0,
           }))
         );
         // Build photo map from the same response
@@ -1014,10 +1317,11 @@ export default function SchedulesPage() {
   useEffect(() => {
     if (user) {
       fetchSlots();
+      fetchAssessments();
       if (user.role === "admin" || user.role === "super_admin") fetchDropdownData();
       else fetchPhotoMap();
     }
-  }, [user, weekStart, fetchSlots, fetchDropdownData, fetchPhotoMap]);
+  }, [user, weekStart, fetchSlots, fetchAssessments, fetchDropdownData, fetchPhotoMap]);
 
   // ---- Mutations ----
 
@@ -1145,10 +1449,75 @@ export default function SchedulesPage() {
     setEditingSlot(null);
   };
 
+  // ---- Assessment mutation ----
+
+  const handleCreateAssessment = async (data: {
+    childId: string;
+    assessorId: string | null;
+    date: string;
+    time: string;
+    notes: string;
+  }) => {
+    const token = localStorage.getItem('token');
+    const res = await fetch('/api/assessments', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ ...data, type: 'in-person' }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Gagal membuat asesmen (${res.status})`);
+    }
+    await fetchAssessments();
+  };
+
+  const handleAssessmentStatus = async (id: string, status: 'cancelled' | 'no-show') => {
+    setAssessmentStatusLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`/api/assessments/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ status }),
+      });
+      setAssessmentDetail(null);
+      await fetchAssessments();
+    } finally {
+      setAssessmentStatusLoading(false);
+    }
+  };
+
+  const handleAssignAssessor = async (id: string) => {
+    setAssessorSaving(true);
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`/api/assessments/${id}`, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ assessorId: editAssessorId || null }),
+      });
+      setAssessmentDetail(null);
+      await fetchAssessments();
+    } finally {
+      setAssessorSaving(false);
+    }
+  };
+
   // ---- Grid helpers ----
 
   const getSlotsForCell = (day: string, hour: number) =>
     slots.filter((s) => s.day === day && s.hour === hour);
+
+  const getAssessmentsForCell = (day: string, hour: number) => {
+    const dayIndex = DAYS.indexOf(day as Day);
+    if (dayIndex < 0) return [];
+    const dateStr = weekDates[dayIndex];
+    return assessments.filter((a) => {
+      const aDate = typeof a.date === 'string' ? a.date.split('T')[0] : '';
+      const aHour = parseInt(a.time.split(':')[0], 10);
+      return aDate === dateStr && aHour === hour;
+    });
+  };
 
   // ---- Loading state ----
 
@@ -1191,12 +1560,10 @@ export default function SchedulesPage() {
           </p>
         </div>
         {(user?.role === "admin" || user?.role === "super_admin") && (
-          <div className="flex gap-2">
-            <Button onClick={() => openNewSlot()}>
-              <PlusIcon className="h-4 w-4 mr-2" />
-              Tambah Slot
-            </Button>
-          </div>
+          <Button onClick={() => openNewSlot()}>
+            <PlusIcon className="h-4 w-4 mr-2" />
+            Tambah Slot
+          </Button>
         )}
       </div>
 
@@ -1248,6 +1615,10 @@ export default function SchedulesPage() {
           </span>
           <span className="flex items-center gap-1.5">
             <span className="text-amber-600">⚠️</span> Perlu isi laporan
+          </span>
+          <span className="flex items-center gap-1.5 ml-2">
+            <span className="w-3 h-3 rounded bg-indigo-50 border border-indigo-200 inline-block" />
+            Asesmen
           </span>
         </div>
       )}
@@ -1319,6 +1690,19 @@ export default function SchedulesPage() {
                         }`}
                       >
                         <div className="space-y-1 min-h-[64px]">
+                          {getAssessmentsForCell(day, hour).map((a) => (
+                            <AssessmentCard
+                              key={a._id}
+                              assessment={a}
+                              onClick={() => {
+                                if (user?.role === 'admin' || user?.role === 'super_admin') {
+                                  setAssessmentDetail(a);
+                                  const aid = a.assessorId;
+                                  setEditAssessorId(aid ? (typeof aid === 'object' ? aid._id : aid) : '');
+                                }
+                              }}
+                            />
+                          ))}
                           {cellSlots.map((slot) => (
                             <SlotCard
                               key={slot._id}
@@ -1405,10 +1789,110 @@ export default function SchedulesPage() {
         </div>
       </div>
 
+
+      {/* Assessment detail modal — admin can change status / assign assessor */}
+      {assessmentDetail && (
+        <Dialog open onOpenChange={(o) => { if (!o) setAssessmentDetail(null); }}>
+          <DialogContent size="sm">
+            <DialogHeader>
+              <div className="flex items-center justify-between">
+                <DialogTitle className="flex items-center gap-2">
+                  <ClipboardListIcon className="h-4 w-4 text-indigo-600" />
+                  Detail Asesmen
+                </DialogTitle>
+                <button onClick={() => setAssessmentDetail(null)} className="text-gray-400 hover:text-gray-600">
+                  <XIcon className="h-4 w-4" />
+                </button>
+              </div>
+            </DialogHeader>
+            <div className="mt-4 space-y-4">
+              <div className="rounded-lg bg-indigo-50 border border-indigo-100 p-3 text-sm">
+                <p className="font-semibold text-indigo-800">
+                  {typeof assessmentDetail.childId === 'object' ? assessmentDetail.childId.name : '—'}
+                </p>
+                <p className="text-indigo-600 text-xs mt-0.5">
+                  Assessor:{' '}
+                  {assessmentDetail.assessorId
+                    ? typeof assessmentDetail.assessorId === 'object'
+                      ? assessmentDetail.assessorId.name
+                      : '—'
+                    : 'Belum ditentukan'}
+                </p>
+                <p className="text-indigo-600 text-xs mt-0.5">
+                  {new Date(assessmentDetail.date).toLocaleDateString('id-ID', {
+                    weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+                  })}{' '}
+                  · {assessmentDetail.time} ·{' '}
+                  {assessmentDetail.type === 'in-person' ? 'Tatap Langsung' : 'Video Call'}
+                </p>
+                {assessmentDetail.notes && (
+                  <p className="text-indigo-700 text-xs mt-1.5 italic">"{assessmentDetail.notes}"</p>
+                )}
+              </div>
+
+              {/* Assign / change assessor */}
+              {assessmentDetail.status !== 'cancelled' && (
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-1.5">Assessor</p>
+                  <div className="flex gap-2">
+                    <select
+                      value={editAssessorId}
+                      onChange={(e) => setEditAssessorId(e.target.value)}
+                      className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      <option value="">Belum ditentukan</option>
+                      {allTherapists.map((t) => (
+                        <option key={t._id} value={t._id}>
+                          {t.name}{t.therapyType ? ` (${t.therapyType})` : ''}
+                        </option>
+                      ))}
+                    </select>
+                    <Button
+                      size="sm"
+                      onClick={() => handleAssignAssessor(assessmentDetail._id)}
+                      disabled={assessorSaving}
+                      className="bg-indigo-600 hover:bg-indigo-700 text-white shrink-0"
+                    >
+                      {assessorSaving ? '...' : 'Simpan'}
+                    </Button>
+                  </div>
+                </div>
+              )}
+
+              {assessmentDetail.status === 'scheduled' && (
+                <div>
+                  <p className="text-xs font-medium text-gray-500 mb-2">Ubah Status</p>
+                  <div className="flex gap-2">
+                    <button
+                      onClick={() => handleAssessmentStatus(assessmentDetail._id, 'cancelled')}
+                      disabled={assessmentStatusLoading}
+                      className="flex-1 px-3 py-2 rounded-md text-xs font-semibold bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 disabled:opacity-40 transition-colors"
+                    >
+                      — Batalkan
+                    </button>
+                    <button
+                      onClick={() => handleAssessmentStatus(assessmentDetail._id, 'no-show')}
+                      disabled={assessmentStatusLoading}
+                      className="flex-1 px-3 py-2 rounded-md text-xs font-semibold bg-red-50 text-red-700 border border-red-200 hover:bg-red-100 disabled:opacity-40 transition-colors"
+                    >
+                      ✕ Tidak Hadir
+                    </button>
+                  </div>
+                </div>
+              )}
+
+              <p className="text-xs text-gray-400 text-center">
+                Untuk mengisi hasil asesmen, buka profil anak.
+              </p>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
       {/* Package session modal (admin only) */}
       {showPackageModal && (
         <PackageSessionModal
-          patients={allPatients}
+          patients={unscheduledPatients}
           therapists={allTherapists}
           weekStart={weekStart}
           onClose={() => setShowPackageModal(false)}
@@ -1420,12 +1904,14 @@ export default function SchedulesPage() {
       {showModal && editingSlot !== null && (
         <SlotModal
           slot={editingSlot}
-          patients={allPatients}
+          patients={editingSlot._id ? allPatients : unscheduledPatients}
           therapists={allTherapists}
           weekStart={weekStart}
           onClose={closeModal}
           onSave={handleSave}
           onDelete={editingSlot._id ? handleDelete : undefined}
+          showTabs={user?.role === 'admin' || user?.role === 'super_admin'}
+          onSaveAssessment={handleCreateAssessment}
         />
       )}
 

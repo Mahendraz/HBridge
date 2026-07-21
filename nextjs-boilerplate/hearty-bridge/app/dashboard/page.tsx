@@ -91,6 +91,16 @@ interface DashboardData {
   sessionToday?: { completed: number; planned: number };
   sessionThisWeek?: { completed: number; planned: number };
   weeklySchedule?: Record<string, ScheduleSlot[]>;
+  missingReports?: Array<{
+    childId: string;
+    childName: string;
+    therapyType: string;
+    day: string;
+    slotDate: string;
+    hour: number;
+    sessionNumber: number;
+    totalSessions: number;
+  }>;
   // parent
   children?: ChildInfo[];
   weeklyReports?: WeeklyReport[];
@@ -454,10 +464,16 @@ function RecentActivityWidget({ activities }: { activities: ActivityItem[] }) {
 // ── Therapist Main Content ────────────────────────────────────────────────────
 
 function TherapistMainContent({ data }: { data: DashboardData }) {
-  const todaySlots  = data.todaySchedule  ?? [];
-  const weeklySlots = data.weeklySchedule ?? {};
+  const todaySlots     = data.todaySchedule  ?? [];
+  const weeklySlots    = data.weeklySchedule ?? {};
+  const missingReports = data.missingReports ?? [];
+  const SHOW_MAX = 3;
+  const [showAll, setShowAll] = useState(false);
+  const visibleMissing = showAll ? missingReports : missingReports.slice(0, SHOW_MAX);
+  const hiddenCount    = missingReports.length - SHOW_MAX;
 
   return (
+    <div className="space-y-6">
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Jadwal Hari Ini */}
       <div className="relative rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
@@ -529,6 +545,63 @@ function TherapistMainContent({ data }: { data: DashboardData }) {
           )}
         </div>
       </div>
+    </div>
+
+    {/* Laporan belum dibuat minggu ini */}
+    {missingReports.length > 0 && (
+      <div className="relative rounded-2xl border border-amber-200 bg-white shadow-sm overflow-hidden">
+        <BorderBeam size={120} duration={10} colorFrom="#f59e0b" colorTo="#ef4444" />
+        <div className="p-6 border-b border-amber-100 flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <AlertCircleIcon className="h-5 w-5 text-amber-500" />
+            <h2 className="text-base font-semibold text-gray-900">Laporan Belum Dibuat Minggu Ini</h2>
+          </div>
+          <span className="text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-0.5">
+            {missingReports.length} sesi
+          </span>
+        </div>
+        <div className="p-6 space-y-2">
+          {visibleMissing.map((p, idx) => {
+            const dateLabel = new Date(p.slotDate + "T00:00:00").toLocaleDateString("id-ID", {
+              weekday: "long", day: "numeric", month: "short", year: "numeric",
+            });
+            return (
+              <div key={`${p.childId}_${p.slotDate}_${p.therapyType}_${idx}`} className="flex items-center justify-between gap-3 p-3 rounded-xl bg-amber-50 border border-amber-100">
+                <div className="flex items-center gap-2 min-w-0">
+                  <div className="h-8 w-8 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+                    <UserCheckIcon className="h-4 w-4 text-amber-600" />
+                  </div>
+                  <div className="min-w-0">
+                    <p className="text-sm font-semibold text-gray-900 truncate">{p.childName}</p>
+                    <p className="text-xs text-gray-500 mt-0.5">
+                      <span className={`font-medium ${p.therapyType === "OT" ? "text-blue-600" : "text-purple-600"}`}>
+                        {p.therapyType}
+                      </span>
+                      {" · "}{dateLabel}{" · "}{slotTime(p.hour)}
+                      {" · "}Sesi {p.sessionNumber}/{p.totalSessions || "?"}
+                    </p>
+                  </div>
+                </div>
+                <Link
+                  href={`/dashboard/reports/new?childId=${p.childId}&childName=${encodeURIComponent(p.childName)}&sessionDate=${p.slotDate}`}
+                  className="flex-shrink-0 text-xs font-medium text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg px-3 py-1.5 transition-colors"
+                >
+                  + Buat
+                </Link>
+              </div>
+            );
+          })}
+          {hiddenCount > 0 && (
+            <button
+              onClick={() => setShowAll(v => !v)}
+              className="w-full text-sm text-amber-700 hover:text-amber-900 font-medium py-2 text-center"
+            >
+              {showAll ? "Sembunyikan" : `Lihat ${hiddenCount} sesi lainnya`}
+            </button>
+          )}
+        </div>
+      </div>
+    )}
     </div>
   );
 }

@@ -7,7 +7,7 @@ export interface IWeeklySchedule extends Document {
   patientName: string;
   therapistId: string;
   therapistName: string;
-  therapyType: 'OT' | 'TW';
+  therapyType: 'OT' | 'TW' | null;
   diagnosis: string;
   notes: string;
   effectiveFrom: Date | null;
@@ -37,7 +37,7 @@ const WeeklyScheduleSchema = new Schema<IWeeklySchedule>(
     patientName:  { type: String, required: [true, 'Patient name is required'], trim: true },
     therapistId:  { type: String, required: [true, 'Therapist ID is required'] },
     therapistName:{ type: String, required: [true, 'Therapist name is required'], trim: true },
-    therapyType:  { type: String, required: [true, 'Therapy type is required'], enum: ['OT', 'TW'], trim: true },
+    therapyType:  { type: String, default: null, enum: { values: ['OT', 'TW'], message: 'Therapy type must be OT or TW' }, trim: true },
     diagnosis:    { type: String, default: '', trim: true },
     notes:        { type: String, default: '', trim: true },
     effectiveFrom: { type: Date, default: null, index: true },
@@ -56,6 +56,10 @@ WeeklyScheduleSchema.index({ day: 1, hour: 1, effectiveFrom: 1 });
 WeeklyScheduleSchema.index({ therapistId: 1 });
 WeeklyScheduleSchema.index({ patientId: 1 });
 
+// In development, always re-register so schema changes take effect on hot reload
+if (process.env.NODE_ENV !== 'production') {
+  delete (mongoose.models as any).WeeklySchedule;
+}
 const WeeklySchedule = (mongoose.models.WeeklySchedule as IWeeklyScheduleModel) ||
   mongoose.model<IWeeklySchedule, IWeeklyScheduleModel>('WeeklySchedule', WeeklyScheduleSchema);
 
