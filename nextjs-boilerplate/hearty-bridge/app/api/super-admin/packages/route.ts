@@ -10,7 +10,7 @@ const packageSchema = z.object({
   name: z.string().min(1).max(100).trim(),
   sessions: z.number().int().min(1),
   price: z.number().min(0),
-  therapyType: z.enum(['OT', 'TW', 'both']),
+  therapyType: z.enum(['OT', 'TW', 'both', 'assessment']),
   description: z.string().max(500).optional(),
 });
 
@@ -51,6 +51,10 @@ export const POST = withSuperAdminAuth(
     }
 
     const { name, sessions, price, therapyType, description } = result.data;
+
+    if (therapyType === 'assessment' && sessions !== 1) {
+      return ErrorResponse.badRequest('Paket assessment harus memiliki tepat 1 sesi');
+    }
 
     const pkg = await Package.create({
       name,

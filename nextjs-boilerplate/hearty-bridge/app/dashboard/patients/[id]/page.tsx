@@ -862,9 +862,10 @@ export default function PatientDetailPage() {
                       <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                         {availablePackages.map((pkg) => {
                           const therapyColors: Record<string, string> = {
-                            OT:   'bg-blue-50 text-blue-700',
-                            TW:   'bg-purple-50 text-purple-700',
-                            both: 'bg-teal-50 text-teal-700',
+                            OT:         'bg-blue-50 text-blue-700',
+                            TW:         'bg-purple-50 text-purple-700',
+                            both:       'bg-teal-50 text-teal-700',
+                            assessment: 'bg-amber-50 text-amber-700',
                           };
                           return (
                             <button
@@ -908,9 +909,12 @@ export default function PatientDetailPage() {
                       ? 'bg-blue-50 text-blue-700'
                       : pkg.therapyType === 'TW'
                         ? 'bg-purple-50 text-purple-700'
-                        : 'bg-teal-50 text-teal-700';
+                        : pkg.therapyType === 'assessment'
+                          ? 'bg-amber-50 text-amber-700'
+                          : 'bg-teal-50 text-teal-700';
                     const therapyLabel = pkg.therapyType === 'OT' ? 'OT'
                       : pkg.therapyType === 'TW' ? 'TW'
+                      : pkg.therapyType === 'assessment' ? 'ASESMEN'
                       : 'OT & TW';
                     const invStatusColor: Record<string, string> = {
                       unpaid: 'bg-yellow-100 text-yellow-800',

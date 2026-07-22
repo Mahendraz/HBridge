@@ -622,7 +622,7 @@ export default function UnifiedPatientsPage() {
                         <div key={type} className="flex-1 min-w-[120px] rounded-xl border border-teal-100 bg-teal-50 p-3 text-center">
                           <p className="text-xs font-semibold text-teal-600 uppercase tracking-wide mb-1">{type}</p>
                           <p className="text-2xl font-bold text-teal-800">{total}</p>
-                          <p className="text-xs text-teal-600">sesi dibeli</p>
+                          <p className="text-xs text-teal-600">sesi tersisa</p>
                           {child.sessionProgress && (
                             <p className="text-xs text-gray-500 mt-1">
                               {child.sessionProgress.completed} terlaksana

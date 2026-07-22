@@ -20,6 +20,9 @@ export interface IAssessment extends Document {
     OT: IAssessmentResult | null;
     TW: IAssessmentResult | null;
   };
+  packageId?: mongoose.Types.ObjectId | null;
+  sessionNumber?: number | null;
+  totalSessions?: number | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -53,6 +56,9 @@ const AssessmentSchema = new Schema<IAssessment>(
       OT: { type: AssessmentResultSchema, default: null },
       TW: { type: AssessmentResultSchema, default: null },
     },
+    packageId:     { type: Schema.Types.ObjectId, ref: 'TokenTransaction', default: null },
+    sessionNumber: { type: Number, default: null },
+    totalSessions: { type: Number, default: null },
     isActive: { type: Boolean, default: true },
   },
   { timestamps: true }

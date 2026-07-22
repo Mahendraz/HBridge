@@ -307,7 +307,7 @@ export const GET = withAnyAuth(
  */
 export const POST = withAnyAuth(
   withErrorHandling(async (req: NextRequest, user: any) => {
-    if (user.role !== 'admin') {
+    if (user.role !== 'admin' && user.role !== 'super_admin') {
       return NextResponse.json(
         ErrorResponse.forbidden('Admin access required', 'FORBIDDEN'),
         { status: 403 }
@@ -380,7 +380,7 @@ export const POST = withAnyAuth(
       slot = await WeeklySchedule.create({ ...data, effectiveFrom });
     }
 
-    // ── Link package + auto-generate sessions if none exist yet ──
+    // ── Link package + auto-generate remaining sessions ──
     if (data.patientId) {
       const allPkgs = await TokenTransaction.find({
         childId: new mongoose.Types.ObjectId(data.patientId),
@@ -388,23 +388,32 @@ export const POST = withAnyAuth(
         packageType: { $ne: null },
       }).sort({ createdAt: -1 });
 
-      // Pick the most recently assigned package that has no sessions yet.
-      // This ensures each new slot uses the next unstarted package when a patient
-      // has multiple active packages (e.g. Silver + Gold + Diamond).
+      // Pick the newest package that still has remaining sessions (count < amount).
+      // This means: if a package already has some sessions in the calendar (but not all),
+      // we generate only the REMAINING sessions, not all over again.
       let activePkg: typeof allPkgs[number] | null = null;
-      let activePkgHasSessions = false;
+      let existingSessionCount = 0;
       for (const pkg of allPkgs) {
         const count = await Session.countDocuments({ packageId: pkg._id, isActive: true });
-        if (count === 0) { activePkg = pkg; break; }
+        if (count < (pkg.amount as number)) {
+          activePkg = pkg;
+          existingSessionCount = count;
+          break;
+        }
       }
+      // Fall back to most recent package if all are fully used
       if (!activePkg && allPkgs.length > 0) {
         activePkg = allPkgs[0];
-        activePkgHasSessions = true;
+        existingSessionCount = await Session.countDocuments({ packageId: allPkgs[0]._id, isActive: true });
       }
 
       if (activePkg) {
-        if (!activePkgHasSessions && mongoose.isValidObjectId(data.therapistId)) {
-          // No sessions yet — generate all sessions and link slot
+        const totalSessions: number = activePkg.amount;
+        const remainingCount = Math.max(0, totalSessions - existingSessionCount);
+
+        if (remainingCount > 0 && mongoose.isValidObjectId(data.therapistId)) {
+          // Generate only the remaining sessions, starting from effectiveFrom on the target day.
+          // Session numbers continue from where existing sessions left off.
           const DAY_TO_IDX: Record<string, number> = {
             senin: 1, selasa: 2, rabu: 3, kamis: 4, jumat: 5, sabtu: 6,
           };
@@ -414,13 +423,13 @@ export const POST = withAnyAuth(
             firstDate.setUTCDate(firstDate.getUTCDate() + 1);
           }
 
-          const totalSessions: number = activePkg.amount;
-          const sessionDates = Array.from({ length: totalSessions }, (_, i) => {
+          const startSessionNumber = existingSessionCount + 1;
+          const sessionDates = Array.from({ length: remainingCount }, (_, i) => {
             const d = new Date(firstDate);
             d.setUTCDate(firstDate.getUTCDate() + i * 7);
             return d;
           });
-          const lastSessionDate = sessionDates[totalSessions - 1];
+          const lastSessionDate = sessionDates[sessionDates.length - 1];
           const therapistObjId = new mongoose.Types.ObjectId(data.therapistId);
 
           await Session.insertMany(
@@ -433,7 +442,7 @@ export const POST = withAnyAuth(
               type: 'in-person',
               status: 'scheduled',
               packageId: activePkg._id,
-              sessionNumber: idx + 1,
+              sessionNumber: startSessionNumber + idx,
               totalSessions,
               isActive: true,
             }))
@@ -449,13 +458,11 @@ export const POST = withAnyAuth(
 
           await Child.findByIdAndUpdate(data.patientId, { tokenExpiry: lastSessionDate });
         } else {
-          // Sessions already exist — just link this slot to the package so the badge shows.
-          // Do NOT set effectiveUntil here: past session dates would hide the slot from the
-          // current week view (effectiveUntil < weekStart → filtered out by GET query).
+          // All sessions already generated — just link this slot to the package
           await WeeklySchedule.findByIdAndUpdate((slot as any)._id, {
             $set: {
               packageId: (activePkg._id as mongoose.Types.ObjectId).toString(),
-              totalSessions: activePkg.amount,
+              totalSessions,
             },
           });
         }
@@ -474,7 +481,7 @@ export const POST = withAnyAuth(
  */
 export const DELETE = withAnyAuth(
   withErrorHandling(async (req: NextRequest, user: any) => {
-    if (user.role !== 'admin') {
+    if (user.role !== 'admin' && user.role !== 'super_admin') {
       return NextResponse.json(
         ErrorResponse.forbidden('Admin access required', 'FORBIDDEN'),
         { status: 403 }

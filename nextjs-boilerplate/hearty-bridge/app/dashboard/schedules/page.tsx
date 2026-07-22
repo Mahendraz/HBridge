@@ -176,7 +176,7 @@ interface TherapistOption {
  */
 function formatTherapyLabel(p: PatientOption): string {
   const breakdown = p.therapyBalance ?? {};
-  const entries = Object.entries(breakdown).filter(([, v]) => v > 0);
+  const entries = Object.entries(breakdown).filter(([type, v]) => type !== 'assessment' && v > 0);
   if (entries.length === 0) return `${p.tokenBalance ?? 0} sesi tersisa`;
   return entries.map(([type, count]) => `${count} sesi ${type}`).join(' · ');
 }
@@ -192,6 +192,7 @@ function SlotCard({
   weekStart,
   reportMap,
   patientPhotoUrl,
+  isTherapistOnLeave,
   onClick,
   onOpenReportModal,
 }: {
@@ -201,6 +202,7 @@ function SlotCard({
   weekStart: string;
   reportMap: Record<string, string>;
   patientPhotoUrl?: string | null;
+  isTherapistOnLeave?: boolean;
   onClick: () => void;
   onOpenReportModal: (slot: WeeklySlot, sessionDate: string) => void;
 }) {
@@ -212,72 +214,77 @@ function SlotCard({
 
   return (
     <div
-      className={`p-2 rounded-lg border text-xs cursor-pointer transition-all hover:shadow-sm hover:-translate-y-px ${
-        highlight
+      className={`p-2 rounded-lg border text-xs cursor-pointer transition-all hover:shadow-sm hover:-translate-y-px relative ${
+        isTherapistOnLeave
+          ? "bg-red-50 border-red-300 hover:bg-red-100"
+          : highlight
           ? "bg-teal-50 border-teal-200 hover:bg-teal-100"
           : "bg-blue-50 border-blue-100 hover:bg-blue-100"
       }`}
       onClick={onClick}
     >
-      <div className="flex items-start justify-between gap-1">
-        <div className="flex items-center gap-1.5 flex-1 min-w-0">
-          <div className="w-5 h-5 rounded-full overflow-hidden bg-teal-100 border border-teal-200 flex items-center justify-center shrink-0 relative">
-            <span className="text-[9px] font-bold text-teal-600 leading-none">
-              {slot.patientName.charAt(0).toUpperCase()}
-            </span>
-            {patientPhotoUrl && (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img src={patientPhotoUrl} alt="" className="absolute inset-0 w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
-            )}
-          </div>
-          <p className="font-semibold text-gray-900 truncate leading-snug">
-            {slot.patientName}{slot.therapyType ? ` (${slot.therapyType})` : ''}
-          </p>
-        </div>
-        {sp && currentNum !== null && (
-          <span className="flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-600 text-white leading-none">
-            {currentNum}/{sp.total}
-          </span>
-        )}
-      </div>
-      <p
-        className={`truncate text-[11px] leading-snug mt-0.5 ${
-          highlight ? "text-teal-700" : "text-blue-700"
-        }`}
-      >
-        {slot.therapistName.replace(/,.*/, "")}
-      </p>
-      {/* Session status badge for package slots */}
-      {slot.sessionId && (
-        <span className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-medium leading-none ${
-          slot.sessionStatus === 'completed' ? 'bg-green-100 text-green-700' :
-          slot.sessionStatus === 'no-show' ? 'bg-red-100 text-red-700' :
-          slot.sessionStatus === 'cancelled' ? 'bg-gray-100 text-gray-500' :
-          'bg-sky-100 text-sky-700'
-        }`}>
-          {slot.sessionStatus === 'completed' ? 'Terlaksana' :
-           slot.sessionStatus === 'no-show' ? 'Tidak hadir' :
-           slot.sessionStatus === 'cancelled' ? 'Dibatalkan' :
-           'Terjadwal'}
+      {isTherapistOnLeave && (
+        <span className="absolute top-1 right-1 z-10 text-[9px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded leading-none">
+          CUTI
         </span>
       )}
-
-      {/* Report status (therapist own slots only) */}
-      {isOwn && (
-        <button
-          className="mt-1.5 w-full text-left text-[10px] font-medium leading-snug"
-          onClick={(e) => {
-            e.stopPropagation();
-            onOpenReportModal(slot, sessionDate);
-          }}
-        >
-          {hasReport ? (
-            <span className="text-green-600">✅ Laporan ada</span>
-          ) : (
-            <span className="text-amber-600">⚠️ Isi laporan</span>
+      <div className="flex gap-2">
+        {/* Avatar — large, left column */}
+        <div className="w-10 h-10 rounded-full overflow-hidden bg-teal-100 border-2 border-teal-200 flex items-center justify-center shrink-0 relative">
+          <span className="text-sm font-bold text-teal-600 leading-none">
+            {slot.patientName.charAt(0).toUpperCase()}
+          </span>
+          {patientPhotoUrl && (
+            // eslint-disable-next-line @next/next/no-img-element
+            <img src={patientPhotoUrl} alt="" className="absolute inset-0 w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
           )}
-        </button>
-      )}
+        </div>
+
+        {/* Content — right column */}
+        <div className="flex-1 min-w-0">
+          <div className="flex items-start justify-between gap-1">
+            <p className="font-semibold text-gray-900 truncate leading-snug">
+              {slot.patientName}{slot.therapyType ? ` (${slot.therapyType})` : ''}
+            </p>
+            {sp && currentNum !== null && (
+              <span className="flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-600 text-white leading-none">
+                {currentNum}/{sp.total}
+              </span>
+            )}
+          </div>
+          <p className={`truncate text-[11px] leading-snug mt-0.5 ${highlight ? "text-teal-700" : "text-blue-700"}`}>
+            {slot.therapistName.replace(/,.*/, "")}
+          </p>
+          {slot.sessionId && (
+            <span className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-medium leading-none ${
+              slot.sessionStatus === 'completed' ? 'bg-green-100 text-green-700' :
+              slot.sessionStatus === 'no-show' ? 'bg-red-100 text-red-700' :
+              slot.sessionStatus === 'cancelled' ? 'bg-gray-100 text-gray-500' :
+              'bg-sky-100 text-sky-700'
+            }`}>
+              {slot.sessionStatus === 'completed' ? 'Terlaksana' :
+               slot.sessionStatus === 'no-show' ? 'Tidak hadir' :
+               slot.sessionStatus === 'cancelled' ? 'Dibatalkan' :
+               'Terjadwal'}
+            </span>
+          )}
+          {isOwn && (
+            <button
+              className="mt-1 w-full text-left text-[10px] font-medium leading-snug"
+              onClick={(e) => {
+                e.stopPropagation();
+                onOpenReportModal(slot, sessionDate);
+              }}
+            >
+              {hasReport ? (
+                <span className="text-green-600">✅ Laporan ada</span>
+              ) : (
+                <span className="text-amber-600">⚠️ Isi laporan</span>
+              )}
+            </button>
+          )}
+        </div>
+      </div>
     </div>
   );
 }
@@ -352,7 +359,7 @@ interface SlotModalProps {
   onDelete?: () => Promise<void>;
   onAssignPackage?: (slot: Partial<WeeklySlot>) => void;
   showTabs?: boolean;
-  onSaveAssessment?: (data: { childId: string; assessorId: string | null; date: string; time: string; notes: string }) => Promise<void>;
+  onSaveAssessment?: (data: { childId: string; assessorId: string | null; date: string; time: string; notes: string; packageId?: string | null }) => Promise<void>;
 }
 
 function SlotModal({
@@ -402,6 +409,8 @@ function SlotModal({
   const [patientTherapyTypes, setPatientTherapyTypes] = useState<string[]>(
     slot.therapyType ? [slot.therapyType] : []
   );
+  const [assessmentPackageId, setAssessmentPackageId] = useState<string | null>(null);
+  const [assessmentPackageLoading, setAssessmentPackageLoading] = useState(false);
 
   useEffect(() => {
     if (!form.patientId) {
@@ -418,18 +427,45 @@ function SlotModal({
         const topups = (data.data?.transactions ?? []).filter(
           (t: any) => t.type === 'topup' && t.packageType
         );
-        // Collect types from packages with a specific therapyType (OT or TW).
-        // 'both' packages (therapyType null) are ignored for filtering — if the
-        // patient has no specific-type packages at all, show all therapists.
+        // Only include therapy types where the patient still has sessions remaining.
+        // Exclude 'assessment' — it's handled separately in the Asesmen tab.
+        // 'both' packages (therapyType null) are ignored — they don't restrict the therapist list.
         const specificTypes: string[] = Array.from(
           new Set<string>(
-            topups.filter((t: any) => t.therapyType).map((t: any) => t.therapyType as string)
+            topups
+              .filter((t: any) => t.therapyType && t.therapyType !== 'assessment' && (t.remainingSessions ?? 0) > 0)
+              .map((t: any) => t.therapyType as string)
           )
         );
         setPatientTherapyTypes(specificTypes);
       })
       .catch(() => setPatientTherapyTypes([]));
   }, [form.patientId]);
+
+  // Fetch assessment package ID when assessment child is selected
+  useEffect(() => {
+    if (!assessForm.childId) {
+      setAssessmentPackageId(null);
+      return;
+    }
+    setAssessmentPackageLoading(true);
+    setAssessmentPackageId(null);
+    const token = localStorage.getItem('token');
+    fetch(`/api/children/${assessForm.childId}/tokens`, {
+      headers: { Authorization: `Bearer ${token ?? ''}` },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((data) => {
+        if (!data) return;
+        const txs: any[] = data.data?.transactions ?? [];
+        const assessTx = txs.find(
+          (t: any) => t.type === 'topup' && t.therapyType === 'assessment' && (t.remainingSessions ?? 0) > 0
+        );
+        setAssessmentPackageId(assessTx?._id?.toString() ?? null);
+      })
+      .catch(() => setAssessmentPackageId(null))
+      .finally(() => setAssessmentPackageLoading(false));
+  }, [assessForm.childId]);
 
   const thisWeek = weekStart;
   const nextWeek = addWeeks(weekStart, 1);
@@ -472,7 +508,7 @@ function SlotModal({
   };
 
   const handleSaveAssessment = async () => {
-    if (!assessForm.childId || !assessForm.date) return;
+    if (!assessForm.childId || !assessForm.date || !assessmentPackageId) return;
     setSaving(true);
     setSaveError(null);
     try {
@@ -482,12 +518,16 @@ function SlotModal({
         date: assessForm.date,
         time: assessForm.time,
         notes: assessForm.notes,
+        packageId: assessmentPackageId,
       });
+      onClose();
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : 'Gagal menyimpan asesmen.');
       setSaving(false);
     }
   };
+
+  const assessmentPatients = patients.filter((p) => (p.therapyBalance?.assessment ?? 0) > 0);
 
   const isValid = Boolean(form.patientId && form.therapistId && form.day);
 
@@ -590,14 +630,24 @@ function SlotModal({
             >
               <option value="">Pilih pasien...</option>
               {patients
-                .filter((p) => (p.tokenBalance ?? 0) > 0)
+                .filter((p) => {
+                  if ((p.tokenBalance ?? 0) <= 0) return false;
+                  const b = p.therapyBalance ?? {};
+                  if (Object.keys(b).length === 0) return true; // 'both' packages have no breakdown
+                  return Object.entries(b).some(([type, v]) => type !== 'assessment' && (v as number) > 0);
+                })
                 .map((p) => (
                   <option key={p._id} value={p._id}>
                     {p.name} ({formatTherapyLabel(p)})
                   </option>
                 ))}
             </select>
-            {patients.filter((p) => (p.tokenBalance ?? 0) > 0).length === 0 && (
+            {patients.filter((p) => {
+              if ((p.tokenBalance ?? 0) <= 0) return false;
+              const b = p.therapyBalance ?? {};
+              if (Object.keys(b).length === 0) return true;
+              return Object.entries(b).some(([type, v]) => type !== 'assessment' && (v as number) > 0);
+            }).length === 0 && (
               <p className="text-xs text-amber-600 mt-1">
                 Semua pasien aktif sudah terjadwal minggu ini.
               </p>
@@ -700,89 +750,103 @@ function SlotModal({
               </div>
             )}
 
-            {/* Child */}
-            <div>
-              <label className="text-xs font-medium text-gray-700 mb-1 block">
-                <UserIcon className="inline h-3 w-3 mr-1" />
-                Anak
-              </label>
-              <select
-                value={assessForm.childId}
-                onChange={(e) => setAssessForm((f) => ({ ...f, childId: e.target.value }))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              >
-                <option value="">Pilih anak...</option>
-                {patients.map((p) => (
-                  <option key={p._id} value={p._id}>
-                    {p.name}{p.diagnosis ? ` — ${p.diagnosis.slice(0, 30)}` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Assessor */}
-            <div>
-              <label className="text-xs font-medium text-gray-700 mb-1 block">
-                <StethoscopeIcon className="inline h-3 w-3 mr-1" />
-                Assessor <span className="text-gray-400 font-normal">(opsional)</span>
-              </label>
-              <select
-                value={assessForm.assessorId}
-                onChange={(e) => setAssessForm((f) => ({ ...f, assessorId: e.target.value }))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-              >
-                <option value="">Belum ditentukan</option>
-                {therapists.map((t) => (
-                  <option key={t._id} value={t._id}>
-                    {t.name}{t.therapyType ? ` (${t.therapyType})` : ''}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            {/* Date + Time */}
-            <div className="grid grid-cols-2 gap-3">
-              <div>
-                <label className="text-xs font-medium text-gray-700 mb-1 block">Tanggal</label>
-                <input
-                  type="date"
-                  value={assessForm.date}
-                  onChange={(e) => setAssessForm((f) => ({ ...f, date: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                />
+            {assessmentPatients.length === 0 ? (
+              <div className="rounded-lg border border-amber-200 bg-amber-50 px-4 py-6 text-center text-sm text-amber-700">
+                Belum ada pasien dengan paket assessment yang tersedia.
               </div>
-              <div>
-                <label className="text-xs font-medium text-gray-700 mb-1 block">
-                  <ClockIcon className="inline h-3 w-3 mr-1" />
-                  Jam
-                </label>
-                <select
-                  value={assessForm.time}
-                  onChange={(e) => setAssessForm((f) => ({ ...f, time: e.target.value }))}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
-                >
-                  {HOURS.map((h) => (
-                    <option key={h} value={`${String(h).padStart(2, '0')}:00`}>
-                      {String(h).padStart(2, '0')}:00
-                    </option>
-                  ))}
-                </select>
-              </div>
-            </div>
+            ) : (
+              <>
+                {/* Patient — only those with assessment remaining */}
+                <div>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">
+                    <UserIcon className="inline h-3 w-3 mr-1" />
+                    Pasien
+                  </label>
+                  <select
+                    value={assessForm.childId}
+                    onChange={(e) => setAssessForm((f) => ({ ...f, childId: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  >
+                    <option value="">Pilih pasien...</option>
+                    {assessmentPatients.map((p) => (
+                      <option key={p._id} value={p._id}>
+                        {p.name}{p.diagnosis ? ` — ${p.diagnosis.slice(0, 30)}` : ''}
+                      </option>
+                    ))}
+                  </select>
+                  {assessForm.childId && assessmentPackageLoading && (
+                    <p className="text-xs text-gray-400 mt-1">Memuat info paket...</p>
+                  )}
+                  {assessForm.childId && !assessmentPackageLoading && !assessmentPackageId && (
+                    <p className="text-xs text-red-500 mt-1">Paket assessment tidak ditemukan atau sudah terpakai.</p>
+                  )}
+                </div>
 
-            {/* Notes */}
-            <div>
-              <label className="text-xs font-medium text-gray-700 mb-1 block">
-                Catatan <span className="text-gray-400 font-normal">(opsional)</span>
-              </label>
-              <textarea
-                value={assessForm.notes}
-                onChange={(e) => setAssessForm((f) => ({ ...f, notes: e.target.value }))}
-                rows={2}
-                placeholder="Catatan sebelum asesmen..."
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
-              />
-            </div>
+                {/* Assessor — all therapists, not filtered */}
+                <div>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">
+                    <StethoscopeIcon className="inline h-3 w-3 mr-1" />
+                    Assessor <span className="text-gray-400 font-normal">(opsional)</span>
+                  </label>
+                  <select
+                    value={assessForm.assessorId}
+                    onChange={(e) => setAssessForm((f) => ({ ...f, assessorId: e.target.value }))}
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                  >
+                    <option value="">Belum ditentukan</option>
+                    {therapists.map((t) => (
+                      <option key={t._id} value={t._id}>
+                        {t.name}{t.therapyType ? ` (${t.therapyType})` : ''}
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                {/* Date + Time */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-xs font-medium text-gray-700 mb-1 block">Tanggal</label>
+                    <input
+                      type="date"
+                      value={assessForm.date}
+                      onChange={(e) => setAssessForm((f) => ({ ...f, date: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-xs font-medium text-gray-700 mb-1 block">
+                      <ClockIcon className="inline h-3 w-3 mr-1" />
+                      Jam
+                    </label>
+                    <select
+                      value={assessForm.time}
+                      onChange={(e) => setAssessForm((f) => ({ ...f, time: e.target.value }))}
+                      className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                    >
+                      {HOURS.map((h) => (
+                        <option key={h} value={`${String(h).padStart(2, '0')}:00`}>
+                          {String(h).padStart(2, '0')}:00
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                </div>
+
+                {/* Notes */}
+                <div>
+                  <label className="text-xs font-medium text-gray-700 mb-1 block">
+                    Catatan <span className="text-gray-400 font-normal">(opsional)</span>
+                  </label>
+                  <textarea
+                    value={assessForm.notes}
+                    onChange={(e) => setAssessForm((f) => ({ ...f, notes: e.target.value }))}
+                    rows={2}
+                    placeholder="Catatan sebelum asesmen..."
+                    className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent resize-none"
+                  />
+                </div>
+              </>
+            )}
           </div>
         )}
 
@@ -817,7 +881,7 @@ function SlotModal({
             </Button>
             <Button
               onClick={handleSaveAssessment}
-              disabled={!assessForm.childId || !assessForm.date || saving}
+              disabled={!assessForm.childId || !assessForm.date || !assessmentPackageId || assessmentPackageLoading || saving}
               className="bg-indigo-600 hover:bg-indigo-700 text-white border-indigo-600"
             >
               {saving ? 'Menyimpan...' : 'Jadwalkan'}
@@ -1180,6 +1244,9 @@ export default function SchedulesPage() {
   const [editAssessorId, setEditAssessorId] = useState('');
   const [assessorSaving, setAssessorSaving] = useState(false);
 
+  // Leave set: "therapistId_dateStr" → true (therapist on leave that date)
+  const [leaveSet, setLeaveSet] = useState<Set<string>>(new Set());
+
 
   const weekDates = getWeekDates(weekStart);
   const todayStr = getTodayStr();
@@ -1231,6 +1298,35 @@ export default function SchedulesPage() {
     }
   }, [user, weekStart]);
 
+  // ---- Fetch therapist leaves for the current week ----
+
+  const fetchLeaves = useCallback(async () => {
+    if (!user || user.role === 'parent') return;
+    try {
+      const token = localStorage.getItem('token');
+      const weekEnd = addDays(weekStart, 5);
+      const res = await fetch(`/api/therapist-leaves?from=${weekStart}&to=${weekEnd}&status=active`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const result = await res.json();
+      const leaveDates = new Set<string>();
+      const weekDatesArr = getWeekDates(weekStart);
+      for (const lv of (result.leaves ?? []) as any[]) {
+        const startStr = (lv.startDate as string).split('T')[0];
+        const endStr   = lv.endDate ? (lv.endDate as string).split('T')[0] : null;
+        for (const dateStr of weekDatesArr) {
+          if (dateStr >= startStr && (endStr === null || dateStr <= endStr)) {
+            leaveDates.add(`${(lv.userId as string).toString()}_${dateStr}`);
+          }
+        }
+      }
+      setLeaveSet(leaveDates);
+    } catch {
+      // silently fail
+    }
+  }, [user, weekStart]);
+
   // ---- Fetch assessments for the current week ----
 
   const fetchAssessments = useCallback(async () => {
@@ -1243,7 +1339,7 @@ export default function SchedulesPage() {
       });
       if (res.ok) {
         const result = await res.json();
-        setAssessments(result.data?.assessments ?? []);
+        setAssessments(result.assessments ?? []);
       }
     } catch {
       // silently fail — assessments section just won't show
@@ -1318,10 +1414,11 @@ export default function SchedulesPage() {
     if (user) {
       fetchSlots();
       fetchAssessments();
+      fetchLeaves();
       if (user.role === "admin" || user.role === "super_admin") fetchDropdownData();
       else fetchPhotoMap();
     }
-  }, [user, weekStart, fetchSlots, fetchAssessments, fetchDropdownData, fetchPhotoMap]);
+  }, [user, weekStart, fetchSlots, fetchAssessments, fetchLeaves, fetchDropdownData, fetchPhotoMap]);
 
   // ---- Mutations ----
 
@@ -1457,6 +1554,7 @@ export default function SchedulesPage() {
     date: string;
     time: string;
     notes: string;
+    packageId?: string | null;
   }) => {
     const token = localStorage.getItem('token');
     const res = await fetch('/api/assessments', {
@@ -1715,6 +1813,7 @@ export default function SchedulesPage() {
                               weekStart={weekStart}
                               reportMap={reportMap}
                               patientPhotoUrl={patientPhotoMap[slot.patientId] ?? null}
+                              isTherapistOnLeave={leaveSet.has(`${slot.therapistId}_${dateStr}`)}
                               onClick={() => {
                                 if (user?.role === "admin" || user?.role === "super_admin") openEditSlot(slot);
                               }}

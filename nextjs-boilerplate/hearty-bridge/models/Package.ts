@@ -4,7 +4,7 @@ export interface IPackage extends Document {
   name: string;
   sessions: number;
   price: number;
-  therapyType: 'OT' | 'TW' | 'both';
+  therapyType: 'OT' | 'TW' | 'both' | 'assessment';
   description?: string;
   isActive: boolean;
   createdBy: mongoose.Types.ObjectId;
@@ -35,7 +35,7 @@ const PackageSchema = new Schema<IPackage>(
     therapyType: {
       type: String,
       required: [true, 'Therapy type is required'],
-      enum: { values: ['OT', 'TW', 'both'], message: 'therapyType must be OT, TW, or both' },
+      enum: { values: ['OT', 'TW', 'both', 'assessment'], message: 'therapyType must be OT, TW, both, or assessment' },
     },
     description: {
       type: String,

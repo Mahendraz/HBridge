@@ -18,6 +18,7 @@ import WeeklySchedule from '@/models/WeeklySchedule';
 import TokenTransaction from '@/models/TokenTransaction';
 import { getR2SignedUrl } from '@/lib/services/r2-storage';
 import Session from '@/models/Session';
+import Assessment from '@/models/Assessment';
 import mongoose from 'mongoose';
 
 /**
@@ -139,34 +140,71 @@ export const GET = withAnyAuth(
         }
       }
 
-      // Add therapy type breakdown from token transactions (sum of topup amounts per therapyType)
+      // Add therapy type breakdown: REMAINING sessions per type (amount minus sessions in calendar)
       const childObjectIds = formattedChildren
         .map((c: any) => new mongoose.Types.ObjectId(c.id));
 
       if (childObjectIds.length > 0) {
-        const breakdowns = await TokenTransaction.aggregate([
-          {
-            $match: {
-              childId: { $in: childObjectIds },
-              type: 'topup',
-              packageType: { $ne: null },
-              therapyType: { $ne: null },
-            },
-          },
-          {
-            $group: {
-              _id: { childId: '$childId', therapyType: '$therapyType' },
-              total: { $sum: '$amount' },
-            },
-          },
-        ]);
+        // Step 1: fetch all topup transactions with a specific therapy type
+        const topupTxs = await TokenTransaction.find({
+          childId: { $in: childObjectIds },
+          type: 'topup',
+          packageType: { $ne: null },
+          therapyType: { $ne: null },
+        }).select('_id childId therapyType amount').lean();
 
+        // Separate assessment transactions from therapy transactions
+        const assessmentTxs = (topupTxs as any[]).filter((t: any) => t.therapyType === 'assessment');
+        const therapyTxs    = (topupTxs as any[]).filter((t: any) => t.therapyType !== 'assessment');
+
+        // Step 2a: for therapy transactions — count sessions + check WeeklySchedule
+        const therapyTxIds = therapyTxs.map((t: any) => t._id);
+        const sessionCounts = therapyTxIds.length > 0
+          ? await Session.aggregate([
+              { $match: { packageId: { $in: therapyTxIds }, isActive: true } },
+              { $group: { _id: '$packageId', count: { $sum: 1 } } },
+            ])
+          : [];
+        const sessionCountMap = new Map<string, number>(
+          sessionCounts.map((r: any) => [r._id.toString(), r.count as number])
+        );
+        const therapyTxIdStrings = therapyTxs.map((t: any) => t._id.toString());
+        const scheduledTherapySlots = therapyTxIdStrings.length > 0
+          ? await WeeklySchedule.find({ packageId: { $in: therapyTxIdStrings } })
+              .select('packageId').lean()
+          : [];
+        const scheduledTherapyPkgSet = new Set(
+          (scheduledTherapySlots as any[]).map((s: any) => s.packageId?.toString()).filter(Boolean)
+        );
+
+        // Step 2b: for assessment transactions — check Assessment collection
+        const assessmentTxIds = assessmentTxs.map((t: any) => t._id);
+        const scheduledAssessments = assessmentTxIds.length > 0
+          ? await Assessment.find({ packageId: { $in: assessmentTxIds }, isActive: true })
+              .select('packageId').lean()
+          : [];
+        const scheduledAssessmentSet = new Set(
+          (scheduledAssessments as any[]).map((a: any) => a.packageId?.toString()).filter(Boolean)
+        );
+
+        // Step 3: compute remaining per child per therapy type
         const therapyByChild: Record<string, Record<string, number>> = {};
-        for (const b of breakdowns) {
-          const cid = b._id.childId.toString();
-          const type = b._id.therapyType as string;
+        for (const tx of topupTxs as any[]) {
+          const cid    = tx.childId.toString();
+          const type   = tx.therapyType as string;
+          const txIdStr = tx._id.toString();
+
+          let remaining: number;
+          if (type === 'assessment') {
+            remaining = scheduledAssessmentSet.has(txIdStr) ? 0 : 1;
+          } else {
+            const isScheduled = scheduledTherapyPkgSet.has(txIdStr);
+            const used = sessionCountMap.get(txIdStr) ?? 0;
+            remaining = isScheduled ? 0 : Math.max(0, (tx.amount as number) - used);
+          }
+
           if (!therapyByChild[cid]) therapyByChild[cid] = {};
-          therapyByChild[cid][type] = b.total;
+          therapyByChild[cid][type] = (therapyByChild[cid][type] ?? 0) + remaining;
         }
 
         for (const child of formattedChildren) {

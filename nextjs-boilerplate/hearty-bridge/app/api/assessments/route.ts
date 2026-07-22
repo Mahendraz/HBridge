@@ -3,6 +3,8 @@ import { withAdminAuth } from '@/lib/middleware/auth';
 import { withErrorHandling, SuccessResponse, ErrorResponse } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
 import Assessment from '@/models/Assessment';
+import TokenTransaction from '@/models/TokenTransaction';
+import mongoose from 'mongoose';
 import { z } from 'zod';
 
 const createSchema = z.object({
@@ -13,6 +15,7 @@ const createSchema = z.object({
   duration: z.number().int().min(30).max(180).optional(),
   type: z.enum(['in-person', 'video']).optional(),
   notes: z.string().max(1000).optional(),
+  packageId: z.string().optional().nullable(),
 });
 
 export const GET = withAdminAuth(
@@ -42,7 +45,7 @@ export const GET = withAdminAuth(
       .sort({ date: 1, time: 1 })
       .lean();
 
-    return NextResponse.json(SuccessResponse.ok({ assessments }));
+    return SuccessResponse.ok({ assessments });
   })
 );
 
@@ -59,7 +62,31 @@ export const POST = withAdminAuth(
       );
     }
 
-    const { childId, assessorId, date, time, duration, type, notes } = result.data;
+    const { childId, assessorId, date, time, duration, type, notes, packageId } = result.data;
+
+    let resolvedPackageId: mongoose.Types.ObjectId | null = null;
+    if (packageId && mongoose.isValidObjectId(packageId)) {
+      const tx = await TokenTransaction.findOne({
+        _id: packageId,
+        childId: new mongoose.Types.ObjectId(childId),
+        type: 'topup',
+        therapyType: 'assessment',
+      }).lean();
+      if (!tx) {
+        return NextResponse.json(
+          ErrorResponse.badRequest('Paket assessment tidak ditemukan atau bukan milik pasien ini'),
+          { status: 400 }
+        );
+      }
+      const existing = await Assessment.findOne({ packageId: new mongoose.Types.ObjectId(packageId), isActive: true }).lean();
+      if (existing) {
+        return NextResponse.json(
+          ErrorResponse.badRequest('Paket assessment ini sudah dijadwalkan sebelumnya'),
+          { status: 400 }
+        );
+      }
+      resolvedPackageId = new mongoose.Types.ObjectId(packageId);
+    }
 
     const assessment = await Assessment.create({
       childId,
@@ -72,6 +99,7 @@ export const POST = withAdminAuth(
       notes: notes ?? '',
       status: 'scheduled',
       result: { OT: null, TW: null },
+      ...(resolvedPackageId ? { packageId: resolvedPackageId, sessionNumber: 1, totalSessions: 1 } : {}),
     });
 
     const populated = await assessment.populate([
@@ -79,6 +107,6 @@ export const POST = withAdminAuth(
       { path: 'assessorId', select: 'name email' },
     ]);
 
-    return NextResponse.json(SuccessResponse.created({ assessment: populated }), { status: 201 });
+    return SuccessResponse.created({ assessment: populated });
   })
 );

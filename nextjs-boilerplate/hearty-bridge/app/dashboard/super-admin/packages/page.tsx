@@ -26,24 +26,25 @@ interface PackageData {
   name: string;
   sessions: number;
   price: number;
-  therapyType: "OT" | "TW" | "both";
+  therapyType: "OT" | "TW" | "both" | "assessment";
   description?: string;
   isActive: boolean;
   createdAt: string;
 }
 
-const THERAPY_LABEL: Record<string, string> = { OT: "Terapi Okupasi", TW: "Terapi Wicara", both: "OT & TW" };
+const THERAPY_LABEL: Record<string, string> = { OT: "Terapi Okupasi", TW: "Terapi Wicara", both: "OT & TW", assessment: "Asesmen" };
 const THERAPY_COLOR: Record<string, string> = {
-  OT:   "bg-blue-50 text-blue-700 border-blue-200",
-  TW:   "bg-purple-50 text-purple-700 border-purple-200",
-  both: "bg-teal-50 text-teal-700 border-teal-200",
+  OT:         "bg-blue-50 text-blue-700 border-blue-200",
+  TW:         "bg-purple-50 text-purple-700 border-purple-200",
+  both:       "bg-teal-50 text-teal-700 border-teal-200",
+  assessment: "bg-amber-50 text-amber-700 border-amber-200",
 };
 
 function formatRupiah(n: number) {
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 }
 
-const EMPTY_FORM = { name: "", sessions: 1, price: 0, therapyType: "OT" as "OT" | "TW" | "both", description: "" };
+const EMPTY_FORM = { name: "", sessions: 1, price: 0, therapyType: "OT" as "OT" | "TW" | "both" | "assessment", description: "" };
 
 export default function SuperAdminPackagesPage() {
   const { user } = useAuth();
@@ -93,9 +94,9 @@ export default function SuperAdminPackagesPage() {
     setEditingId(pkg._id);
     setForm({
       name: pkg.name,
-      sessions: pkg.sessions,
+      sessions: pkg.therapyType === 'assessment' ? 1 : pkg.sessions,
       price: pkg.price,
-      therapyType: pkg.therapyType,
+      therapyType: pkg.therapyType as "OT" | "TW" | "both" | "assessment",
       description: pkg.description || "",
     });
     setSaveError(null);
@@ -279,12 +280,23 @@ export default function SuperAdminPackagesPage() {
             </div>
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Jumlah Sesi *</label>
+                <label className="block text-xs font-medium text-gray-700 mb-1">
+                  Jumlah Sesi *
+                  {form.therapyType === "assessment" && (
+                    <span className="ml-1 text-amber-600 font-normal">(1 sesi, terkunci)</span>
+                  )}
+                </label>
                 <Input
                   type="number"
                   min={1}
-                  value={form.sessions}
-                  onChange={(e) => setForm({ ...form, sessions: parseInt(e.target.value) || 1 })}
+                  value={form.therapyType === "assessment" ? 1 : form.sessions}
+                  readOnly={form.therapyType === "assessment"}
+                  onChange={(e) => {
+                    if (form.therapyType !== "assessment") {
+                      setForm({ ...form, sessions: parseInt(e.target.value) || 1 });
+                    }
+                  }}
+                  className={form.therapyType === "assessment" ? "bg-gray-50 text-gray-500 cursor-not-allowed" : ""}
                 />
               </div>
               <div>
@@ -299,18 +311,20 @@ export default function SuperAdminPackagesPage() {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Jenis Terapi *</label>
-              <div className="grid grid-cols-3 gap-2">
-                {(["OT", "TW", "both"] as const).map((t) => (
+              <div className="grid grid-cols-4 gap-2">
+                {(["OT", "TW", "both", "assessment"] as const).map((t) => (
                   <button
                     key={t}
-                    onClick={() => setForm({ ...form, therapyType: t })}
+                    onClick={() => setForm({ ...form, therapyType: t, sessions: t === "assessment" ? 1 : form.sessions })}
                     className={`py-2 text-xs font-semibold rounded-lg border-2 transition-all ${
                       form.therapyType === t
-                        ? "border-teal-500 bg-teal-50 text-teal-700"
+                        ? t === "assessment"
+                          ? "border-amber-500 bg-amber-50 text-amber-700"
+                          : "border-teal-500 bg-teal-50 text-teal-700"
                         : "border-gray-200 text-gray-600 hover:border-teal-300"
                     }`}
                   >
-                    {t === "both" ? "OT & TW" : t}
+                    {t === "both" ? "OT & TW" : t === "assessment" ? "Asesmen" : t}
                   </button>
                 ))}
               </div>

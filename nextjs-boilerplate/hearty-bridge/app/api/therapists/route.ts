@@ -2,12 +2,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import connectToDatabase from '@/lib/db/mongodb';
 import User from '@/models/User';
 import WeeklySchedule from '@/models/WeeklySchedule';
+import TherapistLeave from '@/models/TherapistLeave';
 import { withAnyAuth } from '@/lib/middleware/auth';
-import { 
-  withErrorHandling, 
-  ErrorResponse, 
+import {
+  withErrorHandling,
+  ErrorResponse,
   SuccessResponse,
-  logRequest 
+  logRequest
 } from '@/lib/utils/error-handler';
 
 export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
@@ -110,6 +111,19 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
       patientsByTherapist.get(tid)!.add(String(slot.patientId));
     }
 
+    // Build leave map: therapistId → leave type ('cuti' | 'inactive') for today
+    const todayMidnight = new Date();
+    todayMidnight.setHours(0, 0, 0, 0);
+    const activeLeaves = await TherapistLeave.find({
+      status: 'active',
+      startDate: { $lte: new Date() },
+      $or: [{ endDate: null }, { endDate: { $gte: todayMidnight } }],
+    }).select('userId type').lean().catch(() => []);
+    const leaveMap = new Map<string, string>();
+    for (const lv of activeLeaves as any[]) {
+      leaveMap.set(lv.userId.toString(), lv.type as string);
+    }
+
     const detectTherapyType = (specializations: string[]): 'OT' | 'TW' | null => {
       const text = specializations.join(' ').toLowerCase();
       if (text.includes('wicara') || text.includes(' tw') || text.startsWith('tw') || text === 'tw') return 'TW';
@@ -126,6 +140,13 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
             ? [therapist.profile.specialization]
             : [];
 
+        const leaveType = leaveMap.get(tid);
+        const status = leaveType === 'cuti'
+          ? 'on-leave'
+          : leaveType === 'inactive'
+          ? 'inactive'
+          : therapist.isActive ? 'active' : 'inactive';
+
         return {
           _id: therapist._id,
           name: therapist.name,
@@ -133,11 +154,12 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
           phone: therapist.phone || '+1-555-0000',
           specializations: specializations.length > 0 ? specializations : ['General Therapy'],
           therapyType: detectTherapyType(specializations),
-          status: therapist.isActive ? 'active' : 'inactive',
+          status,
+          currentLeave: leaveType ?? null,
           assignedPatients: assignedPatients,
-          maxPatients: 20, // Default max capacity
-          rating: 4.8, // Mock rating - could be calculated from reviews
-          totalSessions: 342, // Mock - could be from sessions table
+          maxPatients: 20,
+          rating: 4.8,
+          totalSessions: 342,
           joiningDate: therapist.createdAt?.toISOString() || new Date().toISOString(),
           availability: {
             days: ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday'],

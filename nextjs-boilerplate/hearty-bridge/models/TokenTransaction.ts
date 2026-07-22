@@ -8,7 +8,7 @@ export interface ITokenTransaction extends Document {
   type: 'topup' | 'deduct';
   packageType: string | null;
   packageId?: mongoose.Types.ObjectId | null;
-  therapyType: 'OT' | 'TW' | null;
+  therapyType: 'OT' | 'TW' | 'assessment' | null;
   amount: number;
   originalPrice: number;
   discountAmount: number;
@@ -44,7 +44,7 @@ const TokenTransactionSchema = new Schema<ITokenTransaction>(
     },
     therapyType: {
       type: String,
-      enum: { values: ['OT', 'TW'], message: 'therapyType must be OT or TW' },
+      enum: { values: ['OT', 'TW', 'assessment'], message: 'therapyType must be OT, TW, or assessment' },
       default: null,
     },
     amount:        { type: Number, required: true, min: [1, 'Amount must be at least 1'] },

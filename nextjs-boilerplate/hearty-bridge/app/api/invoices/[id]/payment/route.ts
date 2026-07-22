@@ -82,7 +82,7 @@ export const GET = withAnyAuth(
 
     if (user.role === 'parent') {
       if ((invoice as any).parentId?.toString() !== user.userId) return ErrorResponse.forbidden();
-    } else if (user.role !== 'admin' && user.role !== 'therapist') {
+    } else if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'therapist') {
       return ErrorResponse.forbidden();
     }
 

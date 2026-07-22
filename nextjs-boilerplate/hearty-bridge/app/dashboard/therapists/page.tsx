@@ -21,6 +21,12 @@ import {
   MailIcon,
   EditIcon,
   PowerIcon,
+  CalendarOffIcon,
+  UmbrellaIcon,
+  BanIcon,
+  XIcon,
+  PlusIcon,
+  AlertCircleIcon,
 } from "lucide-react";
 
 interface Therapist {
@@ -30,8 +36,21 @@ interface Therapist {
   phone?: string;
   specializations: string[];
   status: 'active' | 'inactive' | 'on-leave';
+  currentLeave?: string | null;
   assignedPatients: number;
   maxPatients: number;
+}
+
+interface LeaveRecord {
+  _id: string;
+  userId: string;
+  userName: string;
+  type: 'cuti' | 'inactive';
+  startDate: string;
+  endDate: string | null;
+  reason: string;
+  status: 'active' | 'cancelled';
+  createdByName: string;
 }
 
 export default function TherapistsPage() {
@@ -61,6 +80,20 @@ export default function TherapistsPage() {
   // Deactivate state
   const [confirmDeactivate, setConfirmDeactivate] = useState<Therapist | null>(null);
   const [isDeactivating, setIsDeactivating] = useState(false);
+
+  // Leave management state
+  const [leaveModalTherapist, setLeaveModalTherapist] = useState<Therapist | null>(null);
+  const [leaves, setLeaves] = useState<LeaveRecord[]>([]);
+  const [leaveLoading, setLeaveLoading] = useState(false);
+  const [leaveForm, setLeaveForm] = useState({
+    type: 'cuti' as 'cuti' | 'inactive',
+    startDate: '',
+    endDate: '',
+    reason: '',
+  });
+  const [leaveFormError, setLeaveFormError] = useState<string | null>(null);
+  const [leaveSubmitting, setLeaveSubmitting] = useState(false);
+  const [cancellingLeaveId, setCancellingLeaveId] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) fetchTherapists();
@@ -248,6 +281,86 @@ export default function TherapistsPage() {
     }
   };
 
+  // ── Leave management ──────────────────────────────────────────────────────
+
+  const openLeaveModal = async (therapist: Therapist) => {
+    setLeaveModalTherapist(therapist);
+    setLeaves([]);
+    setLeaveForm({ type: 'cuti', startDate: '', endDate: '', reason: '' });
+    setLeaveFormError(null);
+    setLeaveLoading(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/therapist-leaves?userId=${therapist._id}&status=all`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const result = await res.json();
+        setLeaves(result.leaves ?? []);
+      }
+    } catch {
+      // silently fail
+    } finally {
+      setLeaveLoading(false);
+    }
+  };
+
+  const handleCreateLeave = async () => {
+    if (!leaveModalTherapist || !leaveForm.startDate) {
+      setLeaveFormError('Tanggal mulai wajib diisi.');
+      return;
+    }
+    if (leaveForm.endDate && leaveForm.endDate < leaveForm.startDate) {
+      setLeaveFormError('Tanggal selesai tidak boleh sebelum tanggal mulai.');
+      return;
+    }
+    setLeaveFormError(null);
+    setLeaveSubmitting(true);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/therapist-leaves', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', Authorization: `Bearer ${token}` },
+        body: JSON.stringify({
+          userId: leaveModalTherapist._id,
+          type: leaveForm.type,
+          startDate: leaveForm.startDate,
+          endDate: leaveForm.endDate || null,
+          reason: leaveForm.reason,
+        }),
+      });
+      const result = await res.json();
+      if (res.ok && result.success) {
+        setLeaveForm({ type: 'cuti', startDate: '', endDate: '', reason: '' });
+        await openLeaveModal(leaveModalTherapist);
+        fetchTherapists();
+      } else {
+        setLeaveFormError(result.error || 'Gagal menyimpan cuti.');
+      }
+    } catch {
+      setLeaveFormError('Terjadi kesalahan.');
+    } finally {
+      setLeaveSubmitting(false);
+    }
+  };
+
+  const handleCancelLeave = async (leaveId: string) => {
+    setCancellingLeaveId(leaveId);
+    try {
+      const token = localStorage.getItem('token');
+      await fetch(`/api/therapist-leaves/${leaveId}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (leaveModalTherapist) await openLeaveModal(leaveModalTherapist);
+      fetchTherapists();
+    } catch {
+      // silently fail
+    } finally {
+      setCancellingLeaveId(null);
+    }
+  };
+
   const handleReactivateTherapist = async (therapist: Therapist) => {
     try {
       const token = localStorage.getItem('token');
@@ -262,18 +375,18 @@ export default function TherapistsPage() {
     }
   };
 
-  const getStatusBadgeVariant = (status: string) => {
+  const getStatusBadge = (status: string) => {
     switch (status) {
-      case 'active': return 'default';
-      case 'inactive': return 'secondary';
-      case 'on-leave': return 'outline';
-      default: return 'outline';
+      case 'active':   return 'bg-green-100 text-green-700 border-green-200';
+      case 'inactive': return 'bg-gray-100 text-gray-500 border-gray-200';
+      case 'on-leave': return 'bg-amber-100 text-amber-700 border-amber-200';
+      default:         return 'bg-gray-100 text-gray-500 border-gray-200';
     }
   };
 
   const getStatusLabel = (status: string) => {
     switch (status) {
-      case 'active': return 'Aktif';
+      case 'active':   return 'Aktif';
       case 'inactive': return 'Tidak Aktif';
       case 'on-leave': return 'Cuti';
       default: return status;
@@ -285,17 +398,23 @@ export default function TherapistsPage() {
     onEdit,
     onDeactivate,
     onReactivate,
+    onManageLeave,
   }: {
     therapist: Therapist;
     onEdit: (t: Therapist) => void;
     onDeactivate: (t: Therapist) => void;
     onReactivate: (t: Therapist) => void;
+    onManageLeave: (t: Therapist) => void;
   }) => (
-    <Card className={`hover:shadow-md transition-shadow ${therapist.status === 'inactive' ? 'opacity-60' : ''}`}>
+    <Card className={`hover:shadow-md transition-shadow ${therapist.status === 'inactive' && !therapist.currentLeave ? 'opacity-60' : ''}`}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0">
-            <div className="w-12 h-12 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold text-lg shrink-0">
+            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg shrink-0 ${
+              therapist.status === 'on-leave' ? 'bg-amber-100 text-amber-700' :
+              therapist.status === 'inactive' ? 'bg-gray-100 text-gray-400' :
+              'bg-teal-100 text-teal-700'
+            }`}>
               {therapist.name.charAt(0).toUpperCase()}
             </div>
             <div className="min-w-0">
@@ -316,9 +435,9 @@ export default function TherapistsPage() {
               </div>
             </div>
           </div>
-          <Badge variant={getStatusBadgeVariant(therapist.status)} className="shrink-0 mt-0.5">
+          <span className={`shrink-0 mt-0.5 text-xs font-medium px-2 py-1 rounded-full border ${getStatusBadge(therapist.status)}`}>
             {getStatusLabel(therapist.status)}
-          </Badge>
+          </span>
         </div>
       </CardHeader>
 
@@ -349,25 +468,39 @@ export default function TherapistsPage() {
               <EditIcon className="h-4 w-4 mr-1.5" />
               Edit
             </Button>
-            {therapist.status === 'inactive' ? (
+            {/* Leave management — super_admin only */}
+            {user?.role === 'super_admin' && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-amber-600 border-amber-200 hover:bg-amber-50"
+                onClick={() => onManageLeave(therapist)}
+                title="Kelola Cuti / Nonaktif"
+              >
+                <CalendarOffIcon className="h-4 w-4" />
+              </Button>
+            )}
+            {therapist.status === 'inactive' && !therapist.currentLeave ? (
               <Button
                 variant="outline"
                 size="sm"
                 className="text-green-700 border-green-300 hover:bg-green-50"
                 onClick={() => onReactivate(therapist)}
+                title="Aktifkan kembali"
               >
                 <PowerIcon className="h-4 w-4" />
               </Button>
-            ) : (
+            ) : therapist.status === 'active' ? (
               <Button
                 variant="outline"
                 size="sm"
                 className="text-red-600 border-red-200 hover:bg-red-50"
                 onClick={() => onDeactivate(therapist)}
+                title="Nonaktifkan akun"
               >
                 <PowerIcon className="h-4 w-4" />
               </Button>
-            )}
+            ) : null}
           </div>
         </PermissionGuard>
       </CardContent>
@@ -443,6 +576,7 @@ export default function TherapistsPage() {
               onEdit={openEditModal}
               onDeactivate={setConfirmDeactivate}
               onReactivate={handleReactivateTherapist}
+              onManageLeave={openLeaveModal}
             />
           ))}
         </div>
@@ -534,6 +668,157 @@ export default function TherapistsPage() {
               disabled={isDeactivating}
             >
               {isDeactivating ? 'Memproses...' : 'Nonaktifkan'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Leave Management Modal */}
+      <Dialog open={!!leaveModalTherapist} onOpenChange={(open) => !open && setLeaveModalTherapist(null)}>
+        <DialogContent size="md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <CalendarOffIcon className="h-5 w-5 text-amber-500" />
+              Cuti &amp; Nonaktif — {leaveModalTherapist?.name}
+            </DialogTitle>
+          </DialogHeader>
+
+          <div className="space-y-5 py-1">
+            {/* Existing leaves */}
+            <div>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Riwayat Cuti</p>
+              {leaveLoading ? (
+                <p className="text-sm text-gray-400 text-center py-4">Memuat...</p>
+              ) : leaves.length === 0 ? (
+                <p className="text-sm text-gray-400 text-center py-4">Belum ada riwayat cuti.</p>
+              ) : (
+                <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
+                  {leaves.map((lv) => {
+                    const start = new Date(lv.startDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' });
+                    const end = lv.endDate
+                      ? new Date(lv.endDate).toLocaleDateString('id-ID', { day: 'numeric', month: 'short', year: 'numeric' })
+                      : 'Sampai dicabut';
+                    const isActive = lv.status === 'active';
+                    return (
+                      <div
+                        key={lv._id}
+                        className={`flex items-start gap-3 p-3 rounded-lg border ${
+                          isActive ? 'bg-amber-50 border-amber-200' : 'bg-gray-50 border-gray-200 opacity-60'
+                        }`}
+                      >
+                        <div className="flex-shrink-0 mt-0.5">
+                          {lv.type === 'cuti'
+                            ? <UmbrellaIcon className="h-4 w-4 text-amber-500" />
+                            : <BanIcon className="h-4 w-4 text-red-500" />}
+                        </div>
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2">
+                            <span className={`text-xs font-bold ${lv.type === 'cuti' ? 'text-amber-700' : 'text-red-700'}`}>
+                              {lv.type === 'cuti' ? 'Cuti' : 'Nonaktif'}
+                            </span>
+                            {!isActive && (
+                              <span className="text-[10px] text-gray-400 font-medium">Dibatalkan</span>
+                            )}
+                          </div>
+                          <p className="text-xs text-gray-700 mt-0.5">{start} – {end}</p>
+                          {lv.reason && <p className="text-xs text-gray-500 mt-0.5 truncate">{lv.reason}</p>}
+                        </div>
+                        {isActive && (
+                          <button
+                            onClick={() => handleCancelLeave(lv._id)}
+                            disabled={cancellingLeaveId === lv._id}
+                            className="flex-shrink-0 text-xs text-red-600 hover:text-red-800 font-medium disabled:opacity-50"
+                            title="Batalkan cuti"
+                          >
+                            {cancellingLeaveId === lv._id ? '...' : <XIcon className="h-4 w-4" />}
+                          </button>
+                        )}
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
+            </div>
+
+            {/* Add new leave form */}
+            <div className="border-t border-gray-100 pt-4">
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Tambah Baru</p>
+              {leaveFormError && (
+                <div className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700 mb-3">
+                  <AlertCircleIcon className="h-4 w-4 shrink-0" />
+                  {leaveFormError}
+                </div>
+              )}
+              <div className="space-y-3">
+                {/* Type */}
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Tipe</label>
+                  <div className="flex gap-2 mt-1">
+                    {(['cuti', 'inactive'] as const).map((t) => (
+                      <button
+                        key={t}
+                        onClick={() => setLeaveForm(f => ({ ...f, type: t }))}
+                        className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
+                          leaveForm.type === t
+                            ? t === 'cuti' ? 'bg-amber-100 border-amber-400 text-amber-800' : 'bg-red-100 border-red-400 text-red-800'
+                            : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                        }`}
+                      >
+                        {t === 'cuti' ? <UmbrellaIcon className="h-3.5 w-3.5" /> : <BanIcon className="h-3.5 w-3.5" />}
+                        {t === 'cuti' ? 'Cuti' : 'Nonaktif'}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+                {/* Date range */}
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Mulai *</label>
+                    <input
+                      type="date"
+                      value={leaveForm.startDate}
+                      onChange={(e) => setLeaveForm(f => ({ ...f, startDate: e.target.value }))}
+                      className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm font-medium text-gray-700">Selesai <span className="text-gray-400">(kosong = sampai dicabut)</span></label>
+                    <input
+                      type="date"
+                      value={leaveForm.endDate}
+                      min={leaveForm.startDate}
+                      onChange={(e) => setLeaveForm(f => ({ ...f, endDate: e.target.value }))}
+                      className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                    />
+                  </div>
+                </div>
+                {/* Reason */}
+                <div>
+                  <label className="text-sm font-medium text-gray-700">Keterangan</label>
+                  <input
+                    type="text"
+                    value={leaveForm.reason}
+                    onChange={(e) => setLeaveForm(f => ({ ...f, reason: e.target.value }))}
+                    placeholder="Alasan cuti / nonaktif (opsional)"
+                    className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
+                  />
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setLeaveModalTherapist(null)} disabled={leaveSubmitting}>
+              Tutup
+            </Button>
+            <Button
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+              onClick={handleCreateLeave}
+              disabled={leaveSubmitting || !leaveForm.startDate}
+            >
+              {leaveSubmitting ? 'Menyimpan...' : (
+                <><PlusIcon className="h-4 w-4 mr-1.5" />Simpan Cuti</>
+              )}
             </Button>
           </DialogFooter>
         </DialogContent>

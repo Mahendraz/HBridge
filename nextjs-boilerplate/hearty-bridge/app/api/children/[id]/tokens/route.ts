@@ -4,8 +4,11 @@ import { withErrorHandling, SuccessResponse, ErrorResponse } from '@/lib/utils/e
 import connectToDatabase from '@/lib/db/mongodb';
 import Child from '@/models/Child';
 import TokenTransaction from '@/models/TokenTransaction';
+import Session from '@/models/Session';
 import Invoice from '@/models/Invoice';
 import Package from '@/models/Package';
+import WeeklySchedule from '@/models/WeeklySchedule';
+import Assessment from '@/models/Assessment';
 import mongoose from 'mongoose';
 
 function getChildId(req: NextRequest): string {
@@ -45,10 +48,63 @@ export const GET = withAnyAuth(
       .limit(50)
       .lean();
 
+    // Separate assessment vs therapy topup transactions
+    const assessmentTxIds = transactions
+      .filter((t: any) => t.type === 'topup' && t.therapyType === 'assessment')
+      .map((t: any) => t._id);
+    const therapyTxIds = transactions
+      .filter((t: any) => t.type === 'topup' && t.therapyType !== 'assessment')
+      .map((t: any) => t._id);
+
+    // Session count — only for therapy txs (assessment doesn't use Session records)
+    const sessionCountAgg = therapyTxIds.length > 0
+      ? await Session.aggregate([
+          { $match: { packageId: { $in: therapyTxIds }, isActive: true } },
+          { $group: { _id: '$packageId', count: { $sum: 1 } } },
+        ])
+      : [];
+    const sessionCountMap = new Map<string, number>(
+      sessionCountAgg.map((r: any) => [r._id.toString(), r.count as number])
+    );
+
+    // WeeklySchedule check — only for therapy txs
+    const therapyTxIdStrings = therapyTxIds.map((id: any) => id.toString());
+    const scheduledTherapySlots = therapyTxIdStrings.length > 0
+      ? await WeeklySchedule.find({ packageId: { $in: therapyTxIdStrings } })
+          .select('packageId').lean()
+      : [];
+    const scheduledTherapyPkgSet = new Set(
+      (scheduledTherapySlots as any[]).map((s: any) => s.packageId?.toString()).filter(Boolean)
+    );
+
+    // Assessment collection check — for assessment txs
+    const scheduledAssessmentSlots = assessmentTxIds.length > 0
+      ? await Assessment.find({ packageId: { $in: assessmentTxIds }, isActive: true })
+          .select('packageId').lean()
+      : [];
+    const scheduledAssessmentSet = new Set(
+      (scheduledAssessmentSlots as any[]).map((a: any) => a.packageId?.toString()).filter(Boolean)
+    );
+
+    const transactionsWithRemaining = transactions.map((t: any) => {
+      if (t.type === 'topup') {
+        const txIdStr = t._id.toString();
+        if (t.therapyType === 'assessment') {
+          const remaining = scheduledAssessmentSet.has(txIdStr) ? 0 : 1;
+          return { ...t, remainingSessions: remaining };
+        }
+        const isScheduled = scheduledTherapyPkgSet.has(txIdStr);
+        const used = sessionCountMap.get(txIdStr) ?? 0;
+        const remaining = isScheduled ? 0 : Math.max(0, (t.amount ?? 0) - used);
+        return { ...t, remainingSessions: remaining };
+      }
+      return t;
+    });
+
     return SuccessResponse.ok({
       data: {
         balance: (child as any).tokenBalance ?? 0,
-        transactions,
+        transactions: transactionsWithRemaining,
       },
     });
   })
@@ -141,7 +197,7 @@ export const POST = withAdminAuth(
     child.tokenBalance = balanceAfter;
     await child.save();
 
-    const txTherapyType = therapyType === 'both' ? null : (therapyType as 'OT' | 'TW');
+    const txTherapyType = therapyType === 'both' ? null : (therapyType as 'OT' | 'TW' | 'assessment');
     const transaction = await TokenTransaction.create({
       childId:    new mongoose.Types.ObjectId(childId),
       childName:  child.name,
@@ -178,7 +234,7 @@ export const POST = withAdminAuth(
       packageTransactionId: transaction._id,
       packageId:            new mongoose.Types.ObjectId(packageId),
       packageType:          packageName,
-      therapyType:          therapyType === 'both' ? 'OT' : (therapyType as 'OT' | 'TW'),
+      therapyType:          therapyType === 'both' ? 'OT' : (therapyType as 'OT' | 'TW' | 'assessment'),
       sessions:             amount,
       originalAmount:       price,
       discountAmount:       discount,

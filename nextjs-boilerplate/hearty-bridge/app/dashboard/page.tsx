@@ -18,6 +18,7 @@ import {
   CheckCircleIcon,
   UserPlusIcon,
   ReceiptIcon,
+  CakeIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { BorderBeam } from "@/components/magicui/border-beam";
@@ -78,6 +79,14 @@ interface UpcomingScheduleItem {
   totalSessions: number;
 }
 
+interface BirthdayItem {
+  childId: string;
+  name: string;
+  daysUntilBirthday: number;
+  turningAge: number;
+  photoUrl: string | null;
+}
+
 interface DashboardData {
   role: string;
   // admin / super_admin
@@ -131,9 +140,13 @@ export default function UnifiedDashboard() {
   const { user } = useAuth();
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [birthdays, setBirthdays] = useState<BirthdayItem[]>([]);
 
   useEffect(() => {
-    if (user) loadDashboardData();
+    if (user) {
+      loadDashboardData();
+      if (user.role !== "parent") loadBirthdays();
+    }
   }, [user]);
 
   const loadDashboardData = async () => {
@@ -152,6 +165,21 @@ export default function UnifiedDashboard() {
       console.error("Failed to load dashboard data:", err);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const loadBirthdays = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) return;
+      const res = await fetch("/api/dashboard/birthdays", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const json = await res.json();
+      setBirthdays(json.birthdays ?? []);
+    } catch {
+      // silent fail — birthday widget is non-critical
     }
   };
 
@@ -188,6 +216,11 @@ export default function UnifiedDashboard() {
         </div>
       </div>
 
+      {/* Birthday Reminders */}
+      {(role === "admin" || role === "super_admin" || role === "therapist") && birthdays.length > 0 && (
+        <BirthdayReminderWidget birthdays={birthdays} />
+      )}
+
       {/* Stats Cards */}
       {(role === "admin" || role === "super_admin") && data && (
         <AdminStatsCards data={data} role={role} />
@@ -207,6 +240,71 @@ export default function UnifiedDashboard() {
       {role === "parent" && data && (
         <ParentMainContent data={data} />
       )}
+    </div>
+  );
+}
+
+// ── Birthday Reminder Widget ──────────────────────────────────────────────────
+
+function BirthdayReminderWidget({ birthdays }: { birthdays: BirthdayItem[] }) {
+  return (
+    <div className="relative rounded-2xl border border-rose-200 bg-rose-50 shadow-sm overflow-hidden">
+      <BorderBeam size={120} duration={8} colorFrom="#f43f5e" colorTo="#fb923c" />
+      <div className="p-4 flex items-center gap-3 border-b border-rose-100">
+        <div className="h-9 w-9 rounded-xl bg-rose-100 flex items-center justify-center flex-shrink-0">
+          <CakeIcon className="h-5 w-5 text-rose-500" />
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold text-rose-900">Ulang Tahun Mendatang</h2>
+          <p className="text-xs text-rose-600">{birthdays.length} pasien dalam 7 hari ke depan</p>
+        </div>
+      </div>
+      <div className="p-4">
+        <div className="flex flex-wrap gap-2">
+          {birthdays.map((b) => (
+            <BirthdayCard key={b.childId} item={b} />
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function BirthdayCard({ item }: { item: BirthdayItem }) {
+  const label =
+    item.daysUntilBirthday === 0
+      ? "Hari ini! 🎉"
+      : item.daysUntilBirthday === 1
+      ? "Besok"
+      : `${item.daysUntilBirthday} hari lagi`;
+
+  const isToday = item.daysUntilBirthday === 0;
+
+  return (
+    <div
+      className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${
+        isToday
+          ? "bg-rose-100 border-rose-300 shadow-sm"
+          : "bg-white border-rose-100"
+      }`}
+    >
+      {/* Avatar */}
+      <div className="relative w-9 h-9 rounded-full overflow-hidden bg-rose-200 flex items-center justify-center flex-shrink-0">
+        {item.photoUrl ? (
+          <img src={item.photoUrl} alt="" className="absolute inset-0 w-full h-full object-cover" />
+        ) : (
+          <span className="text-sm font-bold text-rose-600">{item.name.charAt(0).toUpperCase()}</span>
+        )}
+      </div>
+      {/* Info */}
+      <div className="min-w-0">
+        <p className={`text-sm font-semibold truncate ${isToday ? "text-rose-900" : "text-gray-900"}`}>
+          {item.name}
+        </p>
+        <p className={`text-xs ${isToday ? "text-rose-700 font-medium" : "text-rose-500"}`}>
+          {label} · Ulang tahun ke-{item.turningAge}
+        </p>
+      </div>
     </div>
   );
 }

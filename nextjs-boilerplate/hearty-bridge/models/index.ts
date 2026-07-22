@@ -13,3 +13,4 @@ export { default as Attendance, type IAttendance, type IAttendanceModel } from '
 export { default as Invoice, type IInvoice, type IInvoiceModel } from './Invoice';
 export { default as ReportComment, type IReportComment, type IReportCommentModel } from './ReportComment';
 export { default as Package, type IPackage, type IPackageModel } from './Package';
+export { default as TherapistLeave, type ITherapistLeave, type ITherapistLeaveModel } from './TherapistLeave';
