@@ -310,9 +310,18 @@ function AssessmentCard({
       : '—'
     : 'Belum ada assessor';
 
+  const reportMissing =
+    assessment.status === 'completed' &&
+    !assessment.result?.OT &&
+    !assessment.result?.TW;
+
   return (
     <div
-      className="p-2 rounded-lg border text-xs cursor-pointer transition-all hover:shadow-sm hover:-translate-y-px bg-indigo-50 border-indigo-200 hover:bg-indigo-100"
+      className={`p-2 rounded-lg border text-xs cursor-pointer transition-all hover:shadow-sm hover:-translate-y-px ${
+        reportMissing
+          ? 'bg-amber-50 border-amber-300 hover:bg-amber-100'
+          : 'bg-indigo-50 border-indigo-200 hover:bg-indigo-100'
+      }`}
       onClick={onClick}
     >
       <div className="flex items-start justify-between gap-1 mb-0.5">
@@ -343,6 +352,11 @@ function AssessmentCard({
       <p className="truncate text-[11px] leading-snug text-indigo-700 mt-0.5">
         {assessorName.replace(/,.*/, '')}
       </p>
+      {reportMissing && (
+        <p className="mt-1 text-[10px] font-semibold text-amber-700 flex items-center gap-0.5">
+          ⚠️ Laporan belum diisi
+        </p>
+      )}
     </div>
   );
 }
@@ -1333,7 +1347,6 @@ export default function SchedulesPage() {
 
   const fetchAssessments = useCallback(async () => {
     if (!user) return;
-    if (user.role === 'parent') return;
     try {
       const token = localStorage.getItem('token');
       const res = await fetch(`/api/assessments?week=${weekStart}`, {
@@ -1982,9 +1995,32 @@ export default function SchedulesPage() {
                 </div>
               )}
 
-              <p className="text-xs text-gray-400 text-center">
-                Untuk mengisi hasil asesmen, buka profil anak.
-              </p>
+              {assessmentDetail.status === 'completed' &&
+                !assessmentDetail.result?.OT &&
+                !assessmentDetail.result?.TW && (
+                  <div className="rounded-lg bg-amber-50 border border-amber-200 p-3 flex items-start gap-2">
+                    <span className="text-amber-500 text-sm mt-0.5">⚠️</span>
+                    <div className="flex-1 min-w-0">
+                      <p className="text-xs font-semibold text-amber-800">Laporan asesmen belum diisi</p>
+                      <p className="text-[11px] text-amber-700 mt-0.5">
+                        Harap isi hasil asesmen di profil anak.
+                      </p>
+                      {typeof assessmentDetail.childId === 'object' && (
+                        <a
+                          href={`/dashboard/children/${assessmentDetail.childId._id}?tab=assessments`}
+                          className="mt-1.5 inline-block text-[11px] font-semibold text-amber-800 underline underline-offset-2 hover:text-amber-900"
+                        >
+                          Buka profil anak →
+                        </a>
+                      )}
+                    </div>
+                  </div>
+                )}
+              {!(assessmentDetail.status === 'completed' && !assessmentDetail.result?.OT && !assessmentDetail.result?.TW) && (
+                <p className="text-xs text-gray-400 text-center">
+                  Untuk mengisi hasil asesmen, buka profil anak.
+                </p>
+              )}
             </div>
           </DialogContent>
         </Dialog>

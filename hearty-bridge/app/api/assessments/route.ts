@@ -1,8 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server';
-import { withAdminAuth } from '@/lib/middleware/auth';
+import { withAdminAuth, withAnyAuth } from '@/lib/middleware/auth';
 import { withErrorHandling, SuccessResponse, ErrorResponse } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
 import Assessment from '@/models/Assessment';
+import Child from '@/models/Child';
 import TokenTransaction from '@/models/TokenTransaction';
 import mongoose from 'mongoose';
 import { z } from 'zod';
@@ -18,8 +19,8 @@ const createSchema = z.object({
   packageId: z.string().optional().nullable(),
 });
 
-export const GET = withAdminAuth(
-  withErrorHandling(async (req: NextRequest) => {
+export const GET = withAnyAuth(
+  withErrorHandling(async (req: NextRequest, user: any) => {
     await connectToDatabase();
 
     const params = new URL(req.url).searchParams;
@@ -28,7 +29,22 @@ export const GET = withAdminAuth(
     const week = params.get('week'); // YYYY-MM-DD (Monday)
 
     const query: Record<string, unknown> = { isActive: true };
-    if (childId) query.childId = childId;
+
+    if (user.role === 'parent') {
+      const children = await Child.find({ parentId: user.userId, isActive: true }).select('_id').lean();
+      const childIds = children.map((c: any) => c._id);
+      if (childId && childIds.some((id: any) => id.toString() === childId)) {
+        query.childId = new mongoose.Types.ObjectId(childId);
+      } else {
+        query.childId = { $in: childIds };
+      }
+    } else if (user.role === 'therapist') {
+      query.assessorId = new mongoose.Types.ObjectId(user.userId);
+      if (childId) query.childId = childId;
+    } else {
+      if (childId) query.childId = childId;
+    }
+
     if (status) query.status = status;
     if (week) {
       const weekStart = new Date(week + 'T00:00:00Z');
@@ -45,7 +61,7 @@ export const GET = withAdminAuth(
       .sort({ date: 1, time: 1 })
       .lean();
 
-    return SuccessResponse.ok({ assessments });
+    return NextResponse.json(SuccessResponse.ok({ assessments }));
   })
 );
 
