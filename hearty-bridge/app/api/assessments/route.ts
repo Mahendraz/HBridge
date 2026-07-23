@@ -38,9 +38,6 @@ export const GET = withAnyAuth(
       } else {
         query.childId = { $in: childIds };
       }
-    } else if (user.role === 'therapist') {
-      query.assessorId = new mongoose.Types.ObjectId(user.userId);
-      if (childId) query.childId = childId;
     } else {
       if (childId) query.childId = childId;
     }
@@ -61,7 +58,7 @@ export const GET = withAnyAuth(
       .sort({ date: 1, time: 1 })
       .lean();
 
-    return NextResponse.json(SuccessResponse.ok({ assessments }));
+    return SuccessResponse.ok({ assessments });
   })
 );
 
