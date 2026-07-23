@@ -19,25 +19,21 @@ const createSchema = z.object({
   packageId: z.string().optional().nullable(),
 });
 
-export const GET = withAnyAuth(
-  withErrorHandling(async (req: NextRequest, user: any) => {
+export const GET = withAnyAuth(async (req: NextRequest, user: any) => {
+  try {
     await connectToDatabase();
 
     const params = new URL(req.url).searchParams;
     const childId = params.get('childId');
-    const status = params.get('status');
-    const week = params.get('week'); // YYYY-MM-DD (Monday)
+    const status  = params.get('status');
+    const week    = params.get('week'); // YYYY-MM-DD (Monday)
 
     const query: Record<string, unknown> = { isActive: true };
 
     if (user.role === 'parent') {
       const children = await Child.find({ parentId: user.userId, isActive: true }).select('_id').lean();
       const childIds = children.map((c: any) => c._id);
-      if (childId && childIds.some((id: any) => id.toString() === childId)) {
-        query.childId = new mongoose.Types.ObjectId(childId);
-      } else {
-        query.childId = { $in: childIds };
-      }
+      query.childId = { $in: childIds };
     } else {
       if (childId) query.childId = childId;
     }
@@ -45,7 +41,7 @@ export const GET = withAnyAuth(
     if (status) query.status = status;
     if (week) {
       const weekStart = new Date(week + 'T00:00:00Z');
-      const weekEnd = new Date(week + 'T00:00:00Z');
+      const weekEnd   = new Date(week + 'T00:00:00Z');
       weekEnd.setUTCDate(weekEnd.getUTCDate() + 6);
       weekEnd.setUTCHours(23, 59, 59, 999);
       query.date = { $gte: weekStart, $lte: weekEnd };
@@ -58,9 +54,12 @@ export const GET = withAnyAuth(
       .sort({ date: 1, time: 1 })
       .lean();
 
-    return SuccessResponse.ok({ assessments });
-  })
-);
+    return NextResponse.json({ success: true, assessments });
+  } catch (err) {
+    console.error('[GET /api/assessments]', err);
+    return NextResponse.json({ success: false, error: 'Internal server error' }, { status: 500 });
+  }
+});
 
 export const POST = withAdminAuth(
   withErrorHandling(async (req: NextRequest, user: any) => {

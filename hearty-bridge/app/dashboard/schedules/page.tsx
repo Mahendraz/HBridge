@@ -1355,9 +1355,11 @@ export default function SchedulesPage() {
       if (res.ok) {
         const result = await res.json();
         setAssessments(result.assessments ?? []);
+      } else {
+        console.error('[fetchAssessments] status:', res.status, await res.text());
       }
-    } catch {
-      // silently fail — assessments section just won't show
+    } catch (err) {
+      console.error('[fetchAssessments] error:', err);
     }
   }, [user, weekStart]);
 
