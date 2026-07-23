@@ -223,11 +223,6 @@ function SlotCard({
       }`}
       onClick={onClick}
     >
-      {isTherapistOnLeave && (
-        <span className="absolute top-1 right-1 z-10 text-[9px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded leading-none">
-          CUTI
-        </span>
-      )}
       <div className="flex gap-2">
         {/* Avatar — large, left column */}
         <div className="w-10 h-10 rounded-full overflow-hidden bg-teal-100 border-2 border-teal-200 flex items-center justify-center shrink-0 relative">
@@ -252,9 +247,16 @@ function SlotCard({
               </span>
             )}
           </div>
-          <p className={`truncate text-[11px] leading-snug mt-0.5 ${highlight ? "text-teal-700" : "text-blue-700"}`}>
-            {slot.therapistName.replace(/,.*/, "")}
-          </p>
+          <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
+            <p className={`truncate text-[11px] leading-snug ${highlight ? "text-teal-700" : "text-blue-700"}`}>
+              {slot.therapistName.replace(/,.*/, "")}
+            </p>
+            {isTherapistOnLeave && (
+              <span className="flex-shrink-0 text-[9px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded leading-none">
+                CUTI
+              </span>
+            )}
+          </div>
           {slot.sessionId && (
             <span className={`inline-block mt-1 px-1.5 py-0.5 rounded text-[10px] font-medium leading-none ${
               slot.sessionStatus === 'completed' ? 'bg-green-100 text-green-700' :
