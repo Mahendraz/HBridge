@@ -697,7 +697,7 @@ function ReportViewDialog({
             </div>
 
             {/* ── Seen by ── */}
-            {seenBy.length > 0 && (
+            {seenBy.length > 0 && user?.role !== 'parent' && (
               <div className="pt-3 border-t border-gray-100">
                 <p className="text-xs text-gray-400">
                   Dilihat oleh:{' '}
@@ -746,7 +746,7 @@ function ReportViewDialog({
                             <span className="text-[10px] text-gray-400 capitalize">{comment.authorRole}</span>
                             <span className="text-[10px] text-gray-400">{relativeTime(comment.createdAt)}</span>
                           </div>
-                          {comment.isResolved && (
+                          {comment.isResolved && canResolve && (
                             <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
                               <CheckCircle2Icon className="h-3 w-3" /> Selesai
                             </span>
