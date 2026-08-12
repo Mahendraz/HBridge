@@ -48,6 +48,8 @@ import {
   CheckCircle2Icon,
   CornerDownRightIcon,
   SendIcon,
+  LayoutGridIcon,
+  ListIcon,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -113,6 +115,8 @@ interface Report {
   createdAt: string;
   updatedAt: string;
   dueDate?: string;
+  sessionDate?: string;
+  sessionHour?: number;
   tags?: string[];
   fileUrl?: string;
   mediaFiles?: ReportMediaFile[];
@@ -126,6 +130,7 @@ interface Report {
 // ─────────────────────────────────────────────────────────────────────────────
 function getTypeLabel(type: string) {
   if (type === "assessment") return "Asesmen";
+  if (type === "hero_bridge") return "Hero Bridge";
   return "Harian";
 }
 
@@ -139,6 +144,7 @@ function getStatusLabel(status: string) {
 
 function getTypeColor(type: string) {
   if (type === "assessment") return "bg-indigo-100 text-indigo-800";
+  if (type === "hero_bridge") return "bg-emerald-100 text-emerald-800";
   return "bg-teal-100 text-teal-800";
 }
 
@@ -594,11 +600,12 @@ function ReportViewDialog({
                   {new Date(report.createdAt).toLocaleDateString("id-ID")}
                 </p>
               </div>
-              {report.dueDate && (
+              {(report.sessionDate || report.dueDate) && (
                 <div>
-                  <p className="text-xs text-gray-500 mb-0.5">Waktu Terapi</p>
+                  <p className="text-xs text-gray-500 mb-0.5">Tanggal Sesi</p>
                   <p className="text-gray-900">
-                    {new Date(report.dueDate).toLocaleDateString("id-ID")}
+                    {new Date(report.sessionDate ?? report.dueDate!).toLocaleDateString("id-ID", { day: "2-digit", month: "long", year: "numeric" })}
+                    {report.sessionHour != null ? ` · ${report.sessionHour}:00` : ''}
                   </p>
                 </div>
               )}
@@ -885,6 +892,7 @@ export default function ReportsPage() {
   const [activeTab, setActiveTab] = useState("all");
   const [viewingReport, setViewingReport] = useState<Report | null>(null);
   const [showPatientPicker, setShowPatientPicker] = useState(false);
+  const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
@@ -978,6 +986,94 @@ export default function ReportsPage() {
     }
   };
 
+  // Column widths shared between header and rows
+  const COL = {
+    type:      'w-20 shrink-0',
+    patient:   'hidden sm:block w-32 shrink-0',
+    therapist: 'hidden md:block w-36 shrink-0',
+    date:      'hidden lg:block w-28 shrink-0',
+    status:    'w-20 shrink-0',
+    actions:   'w-24 shrink-0',
+  } as const;
+
+  // ── ReportListItem ──────────────────────────────────────────────────────────
+  const ReportListItem = ({ report }: { report: Report }) => {
+    const downloadUrl = report.mediaFiles?.[0]?.url ?? report.fileUrl;
+    return (
+      <div className="flex items-center gap-4 py-2.5 px-4 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0 group">
+
+        {/* Jenis */}
+        <div className={COL.type}>
+          <span className={`inline-block text-[10px] font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${getTypeColor(report.type)}`}>
+            {getTypeLabel(report.type)}
+          </span>
+        </div>
+
+        {/* Judul — flex-1, comment badge inline */}
+        <div className="flex-1 min-w-0 flex items-center gap-1.5">
+          <p
+            className="min-w-0 text-sm font-medium text-gray-900 truncate cursor-pointer hover:text-teal-700 transition-colors"
+            onClick={() => setViewingReport(report)}
+          >
+            {report.title}
+          </p>
+          {(report.unresolvedCommentCount ?? 0) > 0 && (
+            <span className="shrink-0 flex items-center gap-0.5 text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
+              <MessageCircleIcon className="h-2.5 w-2.5" />
+              {report.unresolvedCommentCount}
+            </span>
+          )}
+        </div>
+
+        {/* Pasien */}
+        <div className={COL.patient}>
+          <span className="text-xs text-gray-600 truncate block">{report.childName}</span>
+        </div>
+
+        {/* Terapis */}
+        <div className={COL.therapist}>
+          <span className="text-xs text-gray-600 truncate block">{report.therapistName}</span>
+        </div>
+
+        {/* Tgl Sesi */}
+        <div className={COL.date}>
+          <span className="text-xs text-gray-600">
+            {report.sessionDate
+              ? new Date(report.sessionDate).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })
+              : "—"}
+          </span>
+        </div>
+
+        {/* Status */}
+        <div className={COL.status}>
+          <Badge variant={getStatusBadgeVariant(report.status)} className="text-[10px] whitespace-nowrap">
+            {getStatusLabel(report.status)}
+          </Badge>
+        </div>
+
+        {/* Aksi */}
+        <div className={`${COL.actions} flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity`}>
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setViewingReport(report)} title="Lihat detail">
+            <EyeIcon className="h-3.5 w-3.5" />
+          </Button>
+          <PermissionGuard userRole={user?.role || "parent"} permissions={["reports:create", "reports:view_all"]}>
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => router.push(`/dashboard/reports/${report._id}/edit`)} title="Edit">
+              <EditIcon className="h-3.5 w-3.5" />
+            </Button>
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-400 hover:text-red-600 hover:bg-red-50" onClick={() => handleDelete(report._id)} title="Hapus">
+              <TrashIcon className="h-3.5 w-3.5" />
+            </Button>
+          </PermissionGuard>
+          {downloadUrl && (
+            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => window.open(downloadUrl, "_blank")} title="Unduh">
+              <DownloadIcon className="h-3.5 w-3.5" />
+            </Button>
+          )}
+        </div>
+      </div>
+    );
+  };
+
   // ── ReportCard ──────────────────────────────────────────────────────────────
   const ReportCard = ({ report }: { report: Report }) => {
     const hasMedia = report.mediaFiles && report.mediaFiles.length > 0;
@@ -1042,10 +1138,10 @@ export default function ReportsPage() {
                 <UserIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
                 <span className="truncate">{report.therapistName}</span>
               </div>
-              {report.dueDate && (
+              {(report.sessionDate || report.dueDate) && (
                 <div className="flex items-center gap-1.5 text-gray-600">
                   <CalendarIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                  <span>{new Date(report.dueDate).toLocaleDateString("id-ID")}</span>
+                  <span>{new Date(report.sessionDate ?? report.dueDate!).toLocaleDateString("id-ID")}</span>
                 </div>
               )}
             </div>
@@ -1134,6 +1230,7 @@ export default function ReportsPage() {
     const typeMap: Record<string, string> = {
       progress: "Harian",
       assessment: "Asesmen",
+      hero_bridge: "Hero Bridge",
     };
 
     return (
@@ -1193,19 +1290,44 @@ export default function ReportsPage() {
     const showDraft = draftHook.hasDraft && draftHook.draft && !draftHook.draft.editingId &&
       (activeTab === "all" || activeTab === "draft");
 
-    return filteredReports.length === 0 && !showDraft ? (
-      <div className="text-center py-12">
-        <FileIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
-        <h3 className="text-lg font-medium text-gray-900 mb-2">
-          Tidak ada laporan ditemukan
-        </h3>
-        <p className="text-gray-600">
-          {searchTerm || typeFilter !== "all" || statusFilter !== "all"
-            ? "Coba sesuaikan kriteria pencarian."
-            : "Mulai dengan membuat laporan pertama."}
-        </p>
-      </div>
-    ) : (
+    if (filteredReports.length === 0 && !showDraft) {
+      return (
+        <div className="text-center py-12">
+          <FileIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">
+            Tidak ada laporan ditemukan
+          </h3>
+          <p className="text-gray-600">
+            {searchTerm || typeFilter !== "all" || statusFilter !== "all"
+              ? "Coba sesuaikan kriteria pencarian."
+              : "Mulai dengan membuat laporan pertama."}
+          </p>
+        </div>
+      );
+    }
+
+    if (viewMode === 'list') {
+      return (
+        <div className="rounded-xl border border-gray-200 overflow-hidden">
+          {/* List header */}
+          <div className="flex items-center gap-4 px-4 py-2.5 bg-gray-50 border-b border-gray-200 text-[11px] font-semibold text-gray-500 uppercase tracking-wide select-none">
+            <span className={COL.type}>Jenis</span>
+            <span className="flex-1">Judul</span>
+            <span className={COL.patient}>Pasien</span>
+            <span className={COL.therapist}>Terapis</span>
+            <span className={COL.date}>Tgl Sesi</span>
+            <span className={COL.status}>Status</span>
+            <span className={`${COL.actions} text-right`}>Aksi</span>
+          </div>
+          {showDraft && <LocalDraftCard />}
+          {filteredReports.map((r) => (
+            <ReportListItem key={r._id} report={r} />
+          ))}
+        </div>
+      );
+    }
+
+    return (
       <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
         {showDraft && (
           <BlurFade delay={0} inView>
@@ -1265,6 +1387,7 @@ export default function ReportsPage() {
                   { value: "all", label: "Semua Jenis" },
                   { value: "progress", label: "Harian" },
                   { value: "assessment", label: "Asesmen" },
+                  { value: "hero_bridge", label: "Hero Bridge" },
                 ]}
               />
               <Select
@@ -1276,6 +1399,23 @@ export default function ReportsPage() {
                   { value: "completed", label: "Selesai" },
                 ]}
               />
+              {/* View toggle */}
+              <div className="flex items-center gap-0.5 border border-gray-200 rounded-lg p-0.5 shrink-0">
+                <button
+                  onClick={() => setViewMode('grid')}
+                  title="Grid view"
+                  className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-teal-50 text-teal-700' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                  <LayoutGridIcon className="h-4 w-4" />
+                </button>
+                <button
+                  onClick={() => setViewMode('list')}
+                  title="List view"
+                  className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-teal-50 text-teal-700' : 'text-gray-400 hover:text-gray-600'}`}
+                >
+                  <ListIcon className="h-4 w-4" />
+                </button>
+              </div>
             </div>
           </div>
 

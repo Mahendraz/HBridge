@@ -7,7 +7,7 @@ export interface IWeeklySchedule extends Document {
   patientName: string;
   therapistId: string;
   therapistName: string;
-  therapyType: 'OT' | 'TW' | null;
+  therapyType: 'OT' | 'TW' | 'HB' | null;
   diagnosis: string;
   notes: string;
   effectiveFrom: Date | null;
@@ -37,7 +37,7 @@ const WeeklyScheduleSchema = new Schema<IWeeklySchedule>(
     patientName:  { type: String, required: [true, 'Patient name is required'], trim: true },
     therapistId:  { type: String, required: [true, 'Therapist ID is required'] },
     therapistName:{ type: String, required: [true, 'Therapist name is required'], trim: true },
-    therapyType:  { type: String, default: null, enum: { values: ['OT', 'TW'], message: 'Therapy type must be OT or TW' }, trim: true },
+    therapyType:  { type: String, default: null, enum: { values: ['OT', 'TW', 'HB'], message: 'Therapy type must be OT, TW, or HB' }, trim: true },
     diagnosis:    { type: String, default: '', trim: true },
     notes:        { type: String, default: '', trim: true },
     effectiveFrom: { type: Date, default: null, index: true },

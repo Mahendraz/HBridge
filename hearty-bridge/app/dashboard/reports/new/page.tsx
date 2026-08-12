@@ -41,7 +41,7 @@ interface FormState {
   childId: string;
   childName: string;
   dueDate: string;
-  type: "progress" | "assessment";
+  type: "progress" | "assessment" | "hero_bridge";
 }
 
 const EMPTY_FORM: FormState = {
@@ -125,7 +125,7 @@ export default function NewReportPage() {
         childId: d.childId || "",
         childName: d.childName || "",
         dueDate: d.dueDate || "",
-        type: (d.type === 'assessment' ? 'assessment' : 'progress'),
+        type: (d.type === 'assessment' ? 'assessment' : d.type === 'hero_bridge' ? 'hero_bridge' : 'progress'),
       });
     }
   // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -397,6 +397,17 @@ export default function NewReportPage() {
               }`}
             >
               Asesmen
+            </button>
+            <button
+              type="button"
+              onClick={() => setForm((f) => ({ ...f, type: 'hero_bridge' }))}
+              className={`flex-1 text-sm py-1.5 rounded-md font-medium transition-all ${
+                form.type === 'hero_bridge'
+                  ? 'bg-emerald-600 text-white shadow-sm'
+                  : 'text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              Hero Bridge
             </button>
           </div>
 

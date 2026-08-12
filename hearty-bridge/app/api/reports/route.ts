@@ -163,7 +163,7 @@ export const POST = withAnyAuth(
       title: title.trim(),
       description: description?.trim() || '',
       content: content?.trim() || '',
-      type: (type === 'assessment' ? 'assessment' : 'progress'),
+      type: (type === 'assessment' ? 'assessment' : type === 'hero_bridge' ? 'hero_bridge' : 'progress'),
       status: status || 'draft',
       childId: new mongoose.Types.ObjectId(childId),
       childName: childName?.trim() || '',

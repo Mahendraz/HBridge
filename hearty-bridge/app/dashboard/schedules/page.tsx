@@ -69,6 +69,26 @@ function slotSessionDate(weekStart: string, day: string): string {
   return offset >= 0 ? addDays(weekStart, offset) : weekStart;
 }
 
+const DOW_NAMES = ["minggu", "senin", "selasa", "rabu", "kamis", "jumat", "sabtu"];
+
+/** Day name (senin..sabtu) for a YYYY-MM-DD date string, or null if it falls on Sunday. */
+function dateStrToDayName(dateStr: string): string | null {
+  if (!dateStr) return null;
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dow = new Date(Date.UTC(y, m - 1, d)).getUTCDay();
+  return dow === 0 ? null : DOW_NAMES[dow];
+}
+
+/** Monday (UTC) of the week containing the given YYYY-MM-DD date string. */
+function mondayOfDateStr(dateStr: string): string {
+  const [y, m, d] = dateStr.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  const dow = dt.getUTCDay();
+  const toMon = dow === 0 ? -6 : 1 - dow;
+  dt.setUTCDate(dt.getUTCDate() + toMon);
+  return dateUTCStr(dt);
+}
+
 function getTodayStr(): string {
   return dateUTCStr(new Date());
 }
@@ -206,27 +226,46 @@ function SlotCard({
   onClick: () => void;
   onOpenReportModal: (slot: WeeklySlot, sessionDate: string) => void;
 }) {
-  const highlight = isOwn || isParentView;
   const sessionDate = slotSessionDate(weekStart, slot.day);
   const hasReport = !!reportMap[`${slot.patientId}_${sessionDate}`];
   const sp = slot.sessionProgress;
   const currentNum = sp?.sessionNumber ?? (sp ? sp.completed + 1 : null);
 
+  const tc = slot.therapyType === 'OT' ? {
+    card: isTherapistOnLeave ? 'bg-red-50 border-red-300 hover:bg-red-100' : 'bg-blue-50 border-blue-200 hover:bg-blue-100',
+    avatar: 'bg-blue-100 border-blue-200',
+    avatarText: 'text-blue-600',
+    badge: 'bg-blue-600',
+    text: 'text-blue-700',
+  } : slot.therapyType === 'TW' ? {
+    card: isTherapistOnLeave ? 'bg-red-50 border-red-300 hover:bg-red-100' : 'bg-purple-50 border-purple-200 hover:bg-purple-100',
+    avatar: 'bg-purple-100 border-purple-200',
+    avatarText: 'text-purple-600',
+    badge: 'bg-purple-600',
+    text: 'text-purple-700',
+  } : slot.therapyType === 'HB' ? {
+    card: isTherapistOnLeave ? 'bg-red-50 border-red-300 hover:bg-red-100' : 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100',
+    avatar: 'bg-emerald-100 border-emerald-200',
+    avatarText: 'text-emerald-600',
+    badge: 'bg-emerald-600',
+    text: 'text-emerald-700',
+  } : {
+    card: isTherapistOnLeave ? 'bg-red-50 border-red-300 hover:bg-red-100' : 'bg-slate-50 border-slate-200 hover:bg-slate-100',
+    avatar: 'bg-slate-100 border-slate-200',
+    avatarText: 'text-slate-600',
+    badge: 'bg-slate-500',
+    text: 'text-slate-600',
+  };
+
   return (
     <div
-      className={`p-2 rounded-lg border text-xs cursor-pointer transition-all hover:shadow-sm hover:-translate-y-px relative ${
-        isTherapistOnLeave
-          ? "bg-red-50 border-red-300 hover:bg-red-100"
-          : highlight
-          ? "bg-teal-50 border-teal-200 hover:bg-teal-100"
-          : "bg-blue-50 border-blue-100 hover:bg-blue-100"
-      }`}
+      className={`p-2 rounded-lg border text-xs cursor-pointer transition-all hover:shadow-sm hover:-translate-y-px relative ${tc.card}`}
       onClick={onClick}
     >
       <div className="flex gap-2">
         {/* Avatar — large, left column */}
-        <div className="w-10 h-10 rounded-full overflow-hidden bg-teal-100 border-2 border-teal-200 flex items-center justify-center shrink-0 relative">
-          <span className="text-sm font-bold text-teal-600 leading-none">
+        <div className={`w-10 h-10 rounded-full overflow-hidden ${tc.avatar} border-2 flex items-center justify-center shrink-0 relative`}>
+          <span className={`text-sm font-bold ${tc.avatarText} leading-none`}>
             {slot.patientName.charAt(0).toUpperCase()}
           </span>
           {patientPhotoUrl && (
@@ -242,13 +281,18 @@ function SlotCard({
               {slot.patientName}{slot.therapyType ? ` (${slot.therapyType})` : ''}
             </p>
             {sp && currentNum !== null && (
-              <span className="flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-teal-600 text-white leading-none">
+              <span className={`flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold ${tc.badge} text-white leading-none`}>
                 {currentNum}/{sp.total}
+              </span>
+            )}
+            {slot.therapyType === 'HB' && (
+              <span className={`flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold ${tc.badge} text-white leading-none`}>
+                Sekali
               </span>
             )}
           </div>
           <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-            <p className={`truncate text-[11px] leading-snug ${highlight ? "text-teal-700" : "text-blue-700"}`}>
+            <p className={`truncate text-[11px] leading-snug ${tc.text}`}>
               {slot.therapistName.replace(/,.*/, "")}
             </p>
             {isTherapistOnLeave && (
@@ -419,6 +463,11 @@ function SlotModal({
     notes: slot.notes || "",
   });
   const [effectiveChoice, setEffectiveChoice] = useState<"this" | "next">("this");
+  const [isHeroBridge, setIsHeroBridge] = useState(slot.therapyType === 'HB');
+  const [heroBridgeDate, setHeroBridgeDate] = useState(
+    slotSessionDate(weekStart, slot.day || 'senin')
+  );
+  const [manualTherapistName, setManualTherapistName] = useState(slot.therapistName || '');
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
@@ -429,7 +478,9 @@ function SlotModal({
   const [assessmentPackageLoading, setAssessmentPackageLoading] = useState(false);
 
   useEffect(() => {
-    if (!form.patientId) {
+    // Hero Bridge doesn't use packages/tokens — skip the lookup so the therapist
+    // dropdown falls back to the full unfiltered list below.
+    if (!form.patientId || isHeroBridge) {
       setPatientTherapyTypes([]);
       return;
     }
@@ -456,7 +507,7 @@ function SlotModal({
         setPatientTherapyTypes(specificTypes);
       })
       .catch(() => setPatientTherapyTypes([]));
-  }, [form.patientId]);
+  }, [form.patientId, isHeroBridge]);
 
   // Fetch assessment package ID when assessment child is selected
   useEffect(() => {
@@ -503,12 +554,20 @@ function SlotModal({
     setForm((f) => ({ ...f, therapistId, therapistName: t?.name || "" }));
   };
 
+  const heroBridgeDay = dateStrToDayName(heroBridgeDate);
+
   const handleSave = async () => {
     setSaveError(null);
     setSaving(true);
     try {
-      const effectiveFrom = effectiveChoice === "this" ? thisWeek : nextWeek;
-      await onSave({ ...form, effectiveFrom });
+      const therapyType = isHeroBridge ? 'HB' : (form.therapyType === 'HB' ? '' : form.therapyType);
+      const day = isHeroBridge ? (heroBridgeDay || form.day) : form.day;
+      const effectiveFrom = isHeroBridge
+        ? mondayOfDateStr(heroBridgeDate)
+        : (effectiveChoice === "this" ? thisWeek : nextWeek);
+      const therapistName = isHeroBridge ? manualTherapistName.trim() : form.therapistName;
+      const therapistId = isHeroBridge ? manualTherapistName.trim() : form.therapistId;
+      await onSave({ ...form, day, therapyType, therapistId, therapistName, effectiveFrom });
     } catch (err) {
       setSaveError(err instanceof Error ? err.message : "Gagal menyimpan slot.");
     } finally {
@@ -545,7 +604,9 @@ function SlotModal({
 
   const assessmentPatients = patients.filter((p) => (p.therapyBalance?.assessment ?? 0) > 0);
 
-  const isValid = Boolean(form.patientId && form.therapistId && form.day);
+  const isValid = isHeroBridge
+    ? Boolean(form.patientId && manualTherapistName.trim() && heroBridgeDate && heroBridgeDay)
+    : Boolean(form.patientId && form.therapistId && form.day);
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -603,19 +664,58 @@ function SlotModal({
             </div>
           )}
 
-          {/* Day + Hour */}
+          {/* Jenis Terapi — Reguler (OT/TW, berbasis paket, berulang tiap minggu) vs Hero Bridge (jadwal satu kali, tanpa paket/token) */}
+          <div>
+            <label className="text-xs font-medium text-gray-700 mb-1 block">Jenis Terapi</label>
+            <div className="flex rounded-lg border border-gray-200 p-1 bg-gray-50">
+              <button
+                type="button"
+                onClick={() => setIsHeroBridge(false)}
+                className={`flex-1 text-sm py-1.5 rounded-md font-medium transition-all ${
+                  !isHeroBridge ? 'bg-white text-gray-900 shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Reguler (OT/TW)
+              </button>
+              <button
+                type="button"
+                onClick={() => setIsHeroBridge(true)}
+                className={`flex-1 text-sm py-1.5 rounded-md font-medium transition-all ${
+                  isHeroBridge ? 'bg-emerald-600 text-white shadow-sm' : 'text-gray-500 hover:text-gray-700'
+                }`}
+              >
+                Hero Bridge
+              </button>
+            </div>
+          </div>
+
+          {/* Day/Date + Hour — Reguler: hari berulang. Hero Bridge: tanggal spesifik, satu kali. */}
           <div className="grid grid-cols-2 gap-3">
             <div>
-              <label className="text-xs font-medium text-gray-700 mb-1 block">Hari</label>
-              <select
-                value={form.day}
-                onChange={(e) => setForm((f) => ({ ...f, day: e.target.value }))}
-                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
-              >
-                {DAYS.map((d) => (
-                  <option key={d} value={d}>{DAY_LABELS[d]}</option>
-                ))}
-              </select>
+              <label className="text-xs font-medium text-gray-700 mb-1 block">
+                {isHeroBridge ? 'Tanggal' : 'Hari'}
+              </label>
+              {isHeroBridge ? (
+                <input
+                  type="date"
+                  value={heroBridgeDate}
+                  onChange={(e) => setHeroBridgeDate(e.target.value)}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+                />
+              ) : (
+                <select
+                  value={form.day}
+                  onChange={(e) => setForm((f) => ({ ...f, day: e.target.value }))}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+                >
+                  {DAYS.map((d) => (
+                    <option key={d} value={d}>{DAY_LABELS[d]}</option>
+                  ))}
+                </select>
+              )}
+              {isHeroBridge && heroBridgeDate && !heroBridgeDay && (
+                <p className="text-xs text-red-600 mt-1">Pilih tanggal Senin–Sabtu.</p>
+              )}
             </div>
             <div>
               <label className="text-xs font-medium text-gray-700 mb-1 block">Jam</label>
@@ -632,8 +732,13 @@ function SlotModal({
               </select>
             </div>
           </div>
+          {isHeroBridge && (
+            <p className="text-[11px] text-emerald-600 -mt-2">
+              Sesi Hero Bridge hanya tampil sekali pada tanggal ini, tidak berulang tiap minggu.
+            </p>
+          )}
 
-          {/* Patient — only those with active package (tokenBalance > 0) */}
+          {/* Patient — Reguler: only those with active package (tokenBalance > 0). Hero Bridge: semua pasien. */}
           <div>
             <label className="text-xs font-medium text-gray-700 mb-1 block">
               <UserIcon className="inline h-3 w-3 mr-1" />
@@ -645,20 +750,21 @@ function SlotModal({
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
             >
               <option value="">Pilih pasien...</option>
-              {patients
-                .filter((p) => {
-                  if ((p.tokenBalance ?? 0) <= 0) return false;
-                  const b = p.therapyBalance ?? {};
-                  if (Object.keys(b).length === 0) return true; // 'both' packages have no breakdown
-                  return Object.entries(b).some(([type, v]) => type !== 'assessment' && (v as number) > 0);
-                })
-                .map((p) => (
-                  <option key={p._id} value={p._id}>
-                    {p.name} ({formatTherapyLabel(p)})
-                  </option>
-                ))}
+              {(isHeroBridge
+                ? patients
+                : patients.filter((p) => {
+                    if ((p.tokenBalance ?? 0) <= 0) return false;
+                    const b = p.therapyBalance ?? {};
+                    if (Object.keys(b).length === 0) return true; // 'both' packages have no breakdown
+                    return Object.entries(b).some(([type, v]) => type !== 'assessment' && (v as number) > 0);
+                  })
+              ).map((p) => (
+                <option key={p._id} value={p._id}>
+                  {isHeroBridge ? p.name : `${p.name} (${formatTherapyLabel(p)})`}
+                </option>
+              ))}
             </select>
-            {patients.filter((p) => {
+            {!isHeroBridge && patients.filter((p) => {
               if ((p.tokenBalance ?? 0) <= 0) return false;
               const b = p.therapyBalance ?? {};
               if (Object.keys(b).length === 0) return true;
@@ -670,12 +776,13 @@ function SlotModal({
             )}
           </div>
 
-          {/* Therapist — filtered by patient's active package therapyType, disabled until patient selected */}
+          {/* Therapist — Reguler: pilih dari terapis terdaftar, difilter sesuai jenis paket pasien.
+              Hero Bridge: isi nama manual, tidak harus terapis yang terdaftar di sistem. */}
           <div>
-            <label className={`text-xs font-medium mb-1 flex items-center gap-1.5 ${form.patientId ? 'text-gray-700' : 'text-gray-400'}`}>
+            <label className={`text-xs font-medium mb-1 flex items-center gap-1.5 ${(isHeroBridge || form.patientId) ? 'text-gray-700' : 'text-gray-400'}`}>
               <StethoscopeIcon className="inline h-3 w-3" />
               Terapis
-              {patientTherapyTypes.map((type) => (
+              {!isHeroBridge && patientTherapyTypes.map((type) => (
                 <span key={type} className={`text-[10px] font-semibold px-1.5 py-0.5 rounded ${
                   type === 'OT' ? 'bg-blue-100 text-blue-700' : 'bg-purple-100 text-purple-700'
                 }`}>
@@ -683,25 +790,37 @@ function SlotModal({
                 </span>
               ))}
             </label>
-            <select
-              value={form.therapistId}
-              onChange={(e) => handleTherapistChange(e.target.value)}
-              disabled={!form.patientId}
-              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
-            >
-              <option value="">Pilih terapis...</option>
-              {(patientTherapyTypes.length > 0
-                ? therapists.filter((t) => t.therapyType == null || patientTherapyTypes.includes(t.therapyType!))
-                : therapists
-              ).map((t) => (
-                <option key={t._id} value={t._id}>{t.name}</option>
-              ))}
-            </select>
-            {patientTherapyTypes.length > 0 &&
-              therapists.filter((t) => patientTherapyTypes.includes(t.therapyType!)).length === 0 && (
-              <p className="text-xs text-amber-600 mt-1">
-                Belum ada terapis {patientTherapyTypes.join('/')} terdaftar.
-              </p>
+            {isHeroBridge ? (
+              <input
+                type="text"
+                value={manualTherapistName}
+                onChange={(e) => setManualTherapistName(e.target.value)}
+                placeholder="Tulis nama terapis/pengisi sesi..."
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-emerald-500 focus:border-transparent"
+              />
+            ) : (
+              <>
+                <select
+                  value={form.therapistId}
+                  onChange={(e) => handleTherapistChange(e.target.value)}
+                  disabled={!form.patientId}
+                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent disabled:bg-gray-50 disabled:text-gray-400 disabled:cursor-not-allowed"
+                >
+                  <option value="">Pilih terapis...</option>
+                  {(patientTherapyTypes.length > 0
+                    ? therapists.filter((t) => t.therapyType == null || patientTherapyTypes.includes(t.therapyType!))
+                    : therapists
+                  ).map((t) => (
+                    <option key={t._id} value={t._id}>{t.name}</option>
+                  ))}
+                </select>
+                {patientTherapyTypes.length > 0 &&
+                  therapists.filter((t) => patientTherapyTypes.includes(t.therapyType!)).length === 0 && (
+                  <p className="text-xs text-amber-600 mt-1">
+                    Belum ada terapis {patientTherapyTypes.join('/')} terdaftar.
+                  </p>
+                )}
+              </>
             )}
           </div>
 
@@ -718,42 +837,44 @@ function SlotModal({
             />
           </div>
 
-          {/* effectiveFrom choice */}
-          <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 space-y-2">
-            <p className="text-xs font-semibold text-gray-600">Perubahan berlaku mulai:</p>
-            <div className="flex gap-6">
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="radio"
-                  name="effectiveFrom"
-                  checked={effectiveChoice === "this"}
-                  onChange={() => setEffectiveChoice("this")}
-                  className="accent-teal-600"
-                />
-                <span>
-                  Minggu ini
-                  <span className="text-gray-400 text-xs ml-1">
-                    ({formatShortDate(thisWeek)})
+          {/* effectiveFrom choice — hanya untuk slot reguler (OT/TW); Hero Bridge sudah pakai tanggal spesifik di atas */}
+          {!isHeroBridge && (
+            <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 space-y-2">
+              <p className="text-xs font-semibold text-gray-600">Perubahan berlaku mulai:</p>
+              <div className="flex gap-6">
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    name="effectiveFrom"
+                    checked={effectiveChoice === "this"}
+                    onChange={() => setEffectiveChoice("this")}
+                    className="accent-teal-600"
+                  />
+                  <span>
+                    Minggu ini
+                    <span className="text-gray-400 text-xs ml-1">
+                      ({formatShortDate(thisWeek)})
+                    </span>
                   </span>
-                </span>
-              </label>
-              <label className="flex items-center gap-2 text-sm cursor-pointer">
-                <input
-                  type="radio"
-                  name="effectiveFrom"
-                  checked={effectiveChoice === "next"}
-                  onChange={() => setEffectiveChoice("next")}
-                  className="accent-teal-600"
-                />
-                <span>
-                  Minggu depan
-                  <span className="text-gray-400 text-xs ml-1">
-                    ({formatShortDate(nextWeek)})
+                </label>
+                <label className="flex items-center gap-2 text-sm cursor-pointer">
+                  <input
+                    type="radio"
+                    name="effectiveFrom"
+                    checked={effectiveChoice === "next"}
+                    onChange={() => setEffectiveChoice("next")}
+                    className="accent-teal-600"
+                  />
+                  <span>
+                    Minggu depan
+                    <span className="text-gray-400 text-xs ml-1">
+                      ({formatShortDate(nextWeek)})
+                    </span>
                   </span>
-                </span>
-              </label>
+                </label>
+              </div>
             </div>
-          </div>
+          )}
         </div>
         )} {/* end slot tab */}
 

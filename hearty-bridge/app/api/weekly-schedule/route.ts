@@ -319,8 +319,12 @@ export const POST = withAnyAuth(
     const body = await req.json();
     const { _id, effectiveFrom: effectiveFromStr, ...data } = body;
 
+    // Hero Bridge slots are schedule-only — no package/token requirement, no
+    // auto-detection from TokenTransaction, and no package-linking below.
+    const isHeroBridge = data.therapyType === 'HB';
+
     // Block slot creation if patient has no active package (tokenBalance = 0)
-    if (data.patientId) {
+    if (data.patientId && !isHeroBridge) {
       const patient = await Child.findOne({ _id: data.patientId, isActive: true })
         .select('tokenBalance name')
         .lean();
@@ -354,13 +358,20 @@ export const POST = withAnyAuth(
     }
 
     // Normalize therapyType: empty string → null so enum validator doesn't reject it
-    if (data.therapyType !== 'OT' && data.therapyType !== 'TW') {
+    if (data.therapyType !== 'OT' && data.therapyType !== 'TW' && data.therapyType !== 'HB') {
       data.therapyType = null;
     }
 
     const effectiveFrom = effectiveFromStr
       ? new Date(effectiveFromStr + 'T00:00:00Z')
       : getMondayOfWeek();
+
+    // Hero Bridge is a one-off session, not a recurring weekly template — pin
+    // effectiveUntil to the same week so it only appears on its single occurrence
+    // instead of repeating every week like OT/TW slots.
+    if (isHeroBridge) {
+      data.effectiveUntil = effectiveFrom;
+    }
 
     const existing = await WeeklySchedule.findOne({
       day: data.day,
@@ -381,7 +392,9 @@ export const POST = withAnyAuth(
     }
 
     // ── Link package + auto-generate remaining sessions ──
-    if (data.patientId) {
+    // Skipped entirely for Hero Bridge — it has no package/token backing, so
+    // linking here would incorrectly attach an unrelated OT/TW package to it.
+    if (data.patientId && !isHeroBridge) {
       const allPkgs = await TokenTransaction.find({
         childId: new mongoose.Types.ObjectId(data.patientId),
         type: 'topup',

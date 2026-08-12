@@ -168,6 +168,7 @@ export default function SessionReportModal({
               <option value="">Pilih jenis terapi...</option>
               <option value="OT">OT (Terapi Okupasi)</option>
               <option value="TW">TW (Terapi Wicara)</option>
+              <option value="HB">Hero Bridge</option>
             </select>
           </div>
 

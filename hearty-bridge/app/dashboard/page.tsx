@@ -492,7 +492,7 @@ function AdminMainContent({ data, role }: { data: DashboardData; role: string })
                     <td className="py-3 px-4 text-gray-600 font-mono text-xs">{apt.parentPhone}</td>
                     <td className="py-3 px-4 text-gray-600">{apt.therapistName}</td>
                     <td className="py-3 px-4">
-                      <Badge className={`text-xs font-semibold ${apt.therapyType === "OT" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>
+                      <Badge className={`text-xs font-semibold ${apt.therapyType === "OT" ? "bg-blue-100 text-blue-700" : apt.therapyType === "HB" ? "bg-emerald-100 text-emerald-700" : "bg-purple-100 text-purple-700"}`}>
                         {apt.therapyType}
                       </Badge>
                     </td>
@@ -620,7 +620,7 @@ function TherapistMainContent({ data }: { data: DashboardData }) {
                   <div key={i} className="flex items-center justify-between px-3 py-2 rounded-lg bg-gray-50 border border-gray-100">
                     <div className="flex items-center gap-2 min-w-0">
                       <span className="text-sm font-medium text-gray-900 truncate">{slot.patientName}</span>
-                      <Badge className={`text-xs flex-shrink-0 ${slot.therapyType === "OT" ? "bg-blue-100 text-blue-700" : "bg-purple-100 text-purple-700"}`}>
+                      <Badge className={`text-xs flex-shrink-0 ${slot.therapyType === "OT" ? "bg-blue-100 text-blue-700" : slot.therapyType === "HB" ? "bg-emerald-100 text-emerald-700" : "bg-purple-100 text-purple-700"}`}>
                         {slot.therapyType}
                       </Badge>
                       {slot.totalSessions > 0 && (
@@ -672,7 +672,7 @@ function TherapistMainContent({ data }: { data: DashboardData }) {
                   <div className="min-w-0">
                     <p className="text-sm font-semibold text-gray-900 truncate">{p.childName}</p>
                     <p className="text-xs text-gray-500 mt-0.5">
-                      <span className={`font-medium ${p.therapyType === "OT" ? "text-blue-600" : "text-purple-600"}`}>
+                      <span className={`font-medium ${p.therapyType === "OT" ? "text-blue-600" : p.therapyType === "HB" ? "text-emerald-600" : "text-purple-600"}`}>
                         {p.therapyType}
                       </span>
                       {" · "}{dateLabel}{" · "}{slotTime(p.hour)}
