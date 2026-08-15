@@ -57,9 +57,10 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
   const [commentBadge, setCommentBadge] = useState(0);
   const { user, logout } = useAuth();
   const pathname = usePathname();
+  const permissions = usePermissions(user?.role ?? "parent");
 
   useEffect(() => {
-    if (!user || (user.role !== 'admin' && user.role !== 'therapist' && user.role !== 'super_admin')) return;
+    if (!user || !permissions.hasPermission('reports:resolve_comment')) return;
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     if (!token) return;
     fetch('/api/reports/comments/unresolved-count', {
@@ -68,11 +69,10 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
       .then((r) => r.json())
       .then((d) => setCommentBadge(d?.count ?? 0))
       .catch(() => {});
-  }, [user, pathname]);
+  }, [user, pathname, permissions]);
 
   if (!user) return null;
 
-  const permissions = usePermissions(user.role);
   const navigationItems = permissions.getNavigationItems();
 
   const isCurrentPage = (href: string) => {

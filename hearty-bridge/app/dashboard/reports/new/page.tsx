@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/contexts/auth-context";
+import { usePermissions } from "@/lib/utils/permissions";
 import { useReportDraft } from "@/lib/hooks/useReportDraft";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -61,6 +62,7 @@ export default function NewReportPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { user } = useAuth();
+  const permissions = usePermissions(user?.role ?? "parent");
   const draftHook = useReportDraft();
 
   // Patient info passed from the picker (URL search params)
@@ -88,10 +90,10 @@ export default function NewReportPage() {
 
   // Auth guard – parent cannot create reports
   useEffect(() => {
-    if (user && user.role === "parent") {
+    if (user && !permissions.hasPermission("reports:create")) {
       router.replace("/dashboard/reports");
     }
-  }, [user, router]);
+  }, [user, permissions, router]);
 
   // Fetch children list
   useEffect(() => {
@@ -258,7 +260,7 @@ export default function NewReportPage() {
     }
   }, [form, pendingFiles, draftHook, router]);
 
-  if (user?.role === "parent") return null;
+  if (!permissions.hasPermission("reports:create")) return null;
 
   function getInitials(name: string) {
     return name

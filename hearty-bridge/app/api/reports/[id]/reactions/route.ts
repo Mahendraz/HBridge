@@ -3,6 +3,7 @@ import { withAnyAuth } from '@/lib/middleware/auth';
 import { withErrorHandling, SuccessResponse, ErrorResponse } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
 import { Report } from '@/models';
+import { canAccessReport } from '@/lib/utils/report-access';
 import mongoose from 'mongoose';
 
 const ALLOWED_EMOJIS = ['👍', '❤️', '🎉', '😮', '😢'];
@@ -32,8 +33,11 @@ export const POST = withAnyAuth(
 
     await connectToDatabase();
 
-    const report = await Report.findOne({ _id: id, isActive: true }).select('reactions').lean();
+    const report = await Report.findOne({ _id: id, isActive: true })
+      .select('reactions childId therapistId')
+      .lean();
     if (!report) return ErrorResponse.notFound('Report');
+    if (!(await canAccessReport(report, user))) return ErrorResponse.forbidden();
 
     const reactions = ((report as any).reactions ?? []) as Array<{ emoji: string; userId: any }>;
     const alreadyReacted = reactions.some(

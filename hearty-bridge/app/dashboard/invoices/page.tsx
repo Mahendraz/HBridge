@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/contexts/auth-context";
+import { usePermissions } from "@/lib/utils/permissions";
 import {
   ReceiptIcon, CalendarIcon, CheckCircleIcon,
   XCircleIcon, ClockIcon, EyeIcon, EyeOffIcon, FilterIcon,
@@ -67,7 +68,8 @@ function formatDate(d: string) {
 
 export default function InvoicesPage() {
   const { user } = useAuth();
-  const isAdmin = user?.role === 'admin' || user?.role === 'super_admin';
+  const permissions = usePermissions(user?.role ?? "parent");
+  const isAdmin = permissions.hasPermission('invoices:manage');
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
   const [loading, setLoading] = useState(true);

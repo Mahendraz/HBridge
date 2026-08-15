@@ -3,6 +3,7 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { useParams } from "next/navigation";
 import { useAuth } from "@/lib/contexts/auth-context";
+import { usePermissions } from "@/lib/utils/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -92,6 +93,7 @@ function formatDate(d: string) {
 export default function PatientDetailPage() {
   const params = useParams();
   const { user } = useAuth();
+  const permissions = usePermissions(user?.role ?? "parent");
   const id = params?.id as string;
 
   const [child, setChild] = useState<ChildDetail | null>(null);
@@ -167,10 +169,10 @@ export default function PatientDetailPage() {
   }, [id]);
 
   useEffect(() => {
-    if (user?.role === 'admin' || user?.role === 'super_admin') {
+    if (permissions.hasPermission('patients:assign')) {
       fetchAvailablePackages();
     }
-  }, [user?.role]);
+  }, [permissions]);
 
   const fetchChild = async () => {
     try {
@@ -530,7 +532,7 @@ export default function PatientDetailPage() {
                 </span>
               )}
             </div>
-            {(user?.role === "admin" || user?.role === "super_admin") && (
+            {permissions.hasPermission('patients:edit') && (
               <button
                 onClick={() => photoInputRef.current?.click()}
                 disabled={photoUploading}
@@ -562,7 +564,7 @@ export default function PatientDetailPage() {
             <p className="text-sm text-gray-500 mt-0.5">
               {child.age} tahun &bull; {child.gender === "male" ? "Laki-laki" : "Perempuan"}
             </p>
-            {(user?.role === "admin" || user?.role === "super_admin") && photoUrl && (
+            {permissions.hasPermission('patients:edit') && photoUrl && (
               <button
                 onClick={handlePhotoDelete}
                 disabled={photoUploading}
@@ -577,7 +579,7 @@ export default function PatientDetailPage() {
             )}
           </div>
         </div>
-        {(user?.role === "admin" || user?.role === "super_admin") && (
+        {permissions.hasPermission('patients:edit') && (
           <Button size="sm" onClick={openEdit}>
             <PencilIcon className="h-4 w-4 mr-2" />
             Edit Data
@@ -700,7 +702,7 @@ export default function PatientDetailPage() {
                     </span>
                   )}
                 </CardTitle>
-                {(user?.role === 'admin' || user?.role === 'super_admin') && (
+                {permissions.hasPermission('patients:assign') && (
                   <Button
                     size="sm"
                     variant="outline"
@@ -727,7 +729,7 @@ export default function PatientDetailPage() {
               )}
 
               {/* Assign form (admin/super_admin, collapsible) */}
-              {(user?.role === 'admin' || user?.role === 'super_admin') && showAssignForm && (
+              {permissions.hasPermission('patients:assign') && showAssignForm && (
                 <div className="rounded-xl border-2 border-teal-100 bg-teal-50/40 p-4 space-y-4">
                   <p className="text-sm font-semibold text-teal-800">Assign Paket Baru</p>
 
@@ -896,7 +898,7 @@ export default function PatientDetailPage() {
                 <div className="rounded-xl border-2 border-dashed border-gray-200 py-10 text-center">
                   <PackageIcon className="h-10 w-10 text-gray-300 mx-auto mb-2" />
                   <p className="text-sm font-medium text-gray-500">Belum ada paket terapi</p>
-                  {(user?.role === 'admin' || user?.role === 'super_admin') && (
+                  {permissions.hasPermission('patients:assign') && (
                     <p className="text-xs text-gray-400 mt-1">Klik "Tambah Paket" untuk assign paket baru</p>
                   )}
                 </div>

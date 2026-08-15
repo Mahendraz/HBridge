@@ -469,7 +469,7 @@ export default function TherapistsPage() {
               Edit
             </Button>
             {/* Leave management — super_admin only */}
-            {user?.role === 'super_admin' && (
+            {permissions.hasPermission('therapists:manage_leave') && (
               <Button
                 variant="outline"
                 size="sm"

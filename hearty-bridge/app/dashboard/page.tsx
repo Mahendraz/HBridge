@@ -23,6 +23,9 @@ import {
 import Link from "next/link";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { NumberTicker } from "@/components/magicui/number-ticker";
+import { usePermissions } from "@/lib/utils/permissions";
+import type { UserRole } from "@/lib/types/auth";
+import { AnnouncementWall } from "@/components/dashboard/announcement-wall";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -216,6 +219,10 @@ export default function UnifiedDashboard() {
         </div>
       </div>
 
+      {/* Announcement Wall — shared by all four roles, so it belongs above
+          the role-forking content below, not inside any one role's section. */}
+      <AnnouncementWall />
+
       {/* Birthday Reminders */}
       {(role === "admin" || role === "super_admin" || role === "therapist") && birthdays.length > 0 && (
         <BirthdayReminderWidget birthdays={birthdays} />
@@ -312,6 +319,7 @@ function BirthdayCard({ item }: { item: BirthdayItem }) {
 // ── Admin Stats Cards ─────────────────────────────────────────────────────────
 
 function AdminStatsCards({ data, role }: { data: DashboardData; role: string }) {
+  const permissions = usePermissions(role as UserRole);
   const cards = [
     {
       title: "Pasien Aktif",
@@ -340,7 +348,7 @@ function AdminStatsCards({ data, role }: { data: DashboardData; role: string }) 
       bgClass: "bg-purple-500/10",
       sub: "terlaksana / terencana",
     },
-    ...(role === "super_admin" && data.financialSummary
+    ...(permissions.hasPermission("financial:view_all") && data.financialSummary
       ? [
           {
             title: "Total Pendapatan",
@@ -443,6 +451,7 @@ function TherapistStatsCards({ data }: { data: DashboardData }) {
 // ── Admin Main Content ────────────────────────────────────────────────────────
 
 function AdminMainContent({ data, role }: { data: DashboardData; role: string }) {
+  const permissions = usePermissions(role as UserRole);
   const appointments = data.todaySchedule ?? [];
 
   return (
@@ -515,7 +524,7 @@ function AdminMainContent({ data, role }: { data: DashboardData; role: string })
       </div>
 
       {/* Recent Activity — super_admin only */}
-      {role === "super_admin" && data.recentActivity && data.recentActivity.length > 0 && (
+      {permissions.hasPermission("dashboard:activity") && data.recentActivity && data.recentActivity.length > 0 && (
         <RecentActivityWidget activities={data.recentActivity} />
       )}
     </div>

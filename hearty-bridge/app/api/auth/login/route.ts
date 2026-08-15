@@ -3,16 +3,26 @@ import connectToDatabase from '@/lib/db/mongodb';
 import User from '@/models/User';
 import { generateAccessToken } from '@/lib/utils/jwt';
 import { loginSchema } from '@/lib/validation/auth';
-import { 
-  withErrorHandling, 
-  ErrorResponse, 
-  SuccessResponse, 
-  handleValidationError, 
+import { withIpRateLimit } from '@/lib/middleware/auth';
+import {
+  withErrorHandling,
+  ErrorResponse,
+  SuccessResponse,
+  handleValidationError,
   logRequest,
   ErrorCodes
 } from '@/lib/utils/error-handler';
 
-export const POST = withErrorHandling(async (request: NextRequest) => {
+// 10 attempts per 15 minutes, per IP — blocks credential-stuffing/brute-force
+// without meaningfully affecting a real user who mistypes their password a
+// couple of times.
+const loginRateLimit = withIpRateLimit({
+  windowMs: 15 * 60 * 1000,
+  maxRequests: 10,
+  message: 'Terlalu banyak percobaan login. Coba lagi dalam beberapa menit.',
+});
+
+export const POST = withErrorHandling(loginRateLimit(async (request: NextRequest) => {
   // Log the request
   logRequest('POST', '/api/auth/login');
 
@@ -93,7 +103,7 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
   });
 
   return response;
-});
+}));
 
 // Handle unsupported methods
 export async function GET() {

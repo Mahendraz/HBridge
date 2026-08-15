@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import { useAuth } from "@/lib/contexts/auth-context";
+import { usePermissions } from "@/lib/utils/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -48,6 +49,7 @@ const EMPTY_FORM = { name: "", sessions: 1, price: 0, therapyType: "OT" as "OT" 
 
 export default function SuperAdminPackagesPage() {
   const { user } = useAuth();
+  const permissions = usePermissions(user?.role ?? "parent");
   const [packages, setPackages] = useState<PackageData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -154,7 +156,7 @@ export default function SuperAdminPackagesPage() {
     } catch {}
   };
 
-  if (user?.role !== "super_admin") {
+  if (!permissions.hasPermission("packages:view")) {
     return (
       <div className="py-20 text-center text-gray-500">
         <XCircleIcon className="h-10 w-10 mx-auto mb-3 text-red-400" />

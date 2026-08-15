@@ -5,26 +5,12 @@ import connectToDatabase from '@/lib/db/mongodb';
 import { Report } from '@/models';
 import ReportComment from '@/models/ReportComment';
 import mongoose from 'mongoose';
+import { canAccessReport as canAccess } from '@/lib/utils/report-access';
 
 function getReportId(req: NextRequest): string {
   const parts = new URL(req.url).pathname.split('/');
   const idx = parts.indexOf('reports');
   return idx >= 0 && parts[idx + 1] ? parts[idx + 1] : '';
-}
-
-async function canAccess(report: any, user: any): Promise<boolean> {
-  if (user.role === 'admin' || user.role === 'super_admin') return true;
-  if (user.role === 'therapist') return report.therapistId?.toString() === user.userId;
-  if (user.role === 'parent') {
-    const Child = mongoose.models.Child ||
-      mongoose.model('Child', new mongoose.Schema({ parentId: mongoose.Schema.Types.ObjectId }));
-    const child = await Child.findOne({
-      _id: report.childId,
-      parentId: new mongoose.Types.ObjectId(user.userId),
-    }).lean();
-    return !!child;
-  }
-  return false;
 }
 
 /**

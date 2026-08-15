@@ -3,6 +3,7 @@ import { withAnyAuth } from '@/lib/middleware/auth';
 import { withErrorHandling, SuccessResponse, ErrorResponse } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
 import { Report } from '@/models';
+import { canAccessReport } from '@/lib/utils/report-access';
 import mongoose from 'mongoose';
 
 function getReportId(req: NextRequest): string {
@@ -22,6 +23,12 @@ export const POST = withAnyAuth(
     if (!mongoose.Types.ObjectId.isValid(id)) return ErrorResponse.badRequest('Invalid report ID');
 
     await connectToDatabase();
+
+    const report = await Report.findOne({ _id: id, isActive: true })
+      .select('childId therapistId')
+      .lean();
+    if (!report) return ErrorResponse.notFound('Report');
+    if (!(await canAccessReport(report, user))) return ErrorResponse.forbidden();
 
     const db = mongoose.connection.db;
     if (!db) return ErrorResponse.internalServerError('Database not connected');

@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/contexts/auth-context";
+import { usePermissions } from "@/lib/utils/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -85,6 +86,7 @@ function formatDate(d: string) {
 
 export default function SuperAdminFinancialPage() {
   const { user } = useAuth();
+  const permissions = usePermissions(user?.role ?? "parent");
   const [activeTab, setActiveTab] = useState<"invoices" | "transactions">("invoices");
 
   // Invoices
@@ -173,7 +175,7 @@ export default function SuperAdminFinancialPage() {
     }
   };
 
-  if (user?.role !== "super_admin") {
+  if (!permissions.hasPermission("financial:view_all")) {
     return (
       <div className="py-20 text-center text-gray-500">
         <XCircleIcon className="h-10 w-10 mx-auto mb-3 text-red-400" />

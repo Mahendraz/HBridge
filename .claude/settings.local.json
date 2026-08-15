@@ -60,7 +60,8 @@
       "Grep",
       "Bash(python3 -c \"import sys, re; content = sys.stdin.read\\(\\); text = re.sub\\(r'<[^>]+>', ' ', content\\); print\\(text[:3000]\\)\")",
       "PowerShell(Out-File *)",
-      "PowerShell(cd \"F:\\\\Kerja\\\\HB\\\\HBridge\\\\hearty-bridge\"; npx tsc --noEmit > \"C:\\\\Users\\\\Mahendra\\\\AppData\\\\Local\\\\Temp\\\\tsc-out.txt\" 2>&1; $content = Get-Content \"C:\\\\Users\\\\Mahendra\\\\AppData\\\\Local\\\\Temp\\\\tsc-out.txt\"; $content | Where-Object { $_ -match \"reports\" } | Select-Object -First 20)"
+      "PowerShell(cd \"F:\\\\Kerja\\\\HB\\\\HBridge\\\\hearty-bridge\"; npx tsc --noEmit > \"C:\\\\Users\\\\Mahendra\\\\AppData\\\\Local\\\\Temp\\\\tsc-out.txt\" 2>&1; $content = Get-Content \"C:\\\\Users\\\\Mahendra\\\\AppData\\\\Local\\\\Temp\\\\tsc-out.txt\"; $content | Where-Object { $_ -match \"reports\" } | Select-Object -First 20)",
+      "Bash(npx eslint *)"
     ],
     "deny": []
   }

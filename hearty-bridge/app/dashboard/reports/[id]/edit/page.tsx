@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef, useCallback } from "react";
 import { useRouter, useParams } from "next/navigation";
 import { useAuth } from "@/lib/contexts/auth-context";
+import { usePermissions } from "@/lib/utils/permissions";
 import { useReportDraft } from "@/lib/hooks/useReportDraft";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -68,6 +69,7 @@ export default function EditReportPage() {
   const params = useParams();
   const reportId = typeof params.id === "string" ? params.id : Array.isArray(params.id) ? params.id[0] : "";
   const { user } = useAuth();
+  const permissions = usePermissions(user?.role ?? "parent");
   const draftHook = useReportDraft();
 
   const [form, setForm] = useState<FormState>({
@@ -94,10 +96,10 @@ export default function EditReportPage() {
 
   // Auth guard – parent cannot edit reports
   useEffect(() => {
-    if (user && user.role === "parent") {
+    if (user && !permissions.hasPermission("reports:create")) {
       router.replace("/dashboard/reports");
     }
-  }, [user, router]);
+  }, [user, permissions, router]);
 
   // Fetch children list and report data in parallel
   useEffect(() => {
@@ -310,7 +312,7 @@ export default function EditReportPage() {
   }, [form, pendingFiles, reportId, token, draftHook, router]);
 
   // ── Render states ──────────────────────────────────────────────────────────
-  if (user?.role === "parent") return null;
+  if (!permissions.hasPermission("reports:create")) return null;
 
   if (loadingReport) {
     return (

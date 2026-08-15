@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/auth-context";
-import { usePermissions, PermissionGuard } from "@/lib/utils/permissions";
+import { usePermissions, PermissionGuard, canActOnOwnRecord } from "@/lib/utils/permissions";
 import { useReportDraft } from "@/lib/hooks/useReportDraft";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -448,6 +448,7 @@ function ReportViewDialog({
   onClose: () => void;
 }) {
   const { user } = useAuth();
+  const permissions = usePermissions(user?.role ?? "parent");
   const [lightboxIdx, setLightboxIdx] = React.useState<number | null>(null);
   const [reactions, setReactions] = React.useState<ReportReaction[]>(initialReport.reactions ?? []);
   const [seenBy, setSeenBy] = React.useState<ReportSeenBy[]>(initialReport.seenBy ?? []);
@@ -528,7 +529,7 @@ function ReportViewDialog({
     }
   };
 
-  const canResolve = user?.role === 'admin' || user?.role === 'super_admin' || (user?.role === 'therapist' && report.therapistId === user?._id);
+  const canResolve = canActOnOwnRecord(user?.role ?? 'parent', user?._id ?? '', report.therapistId);
 
   // Group: root comments + their replies
   const rootComments = comments.filter((c) => !c.parentCommentId);
@@ -704,7 +705,7 @@ function ReportViewDialog({
             </div>
 
             {/* ── Seen by ── */}
-            {seenBy.length > 0 && user?.role !== 'parent' && (
+            {seenBy.length > 0 && permissions.hasPermission('reports:view_seen_by') && (
               <div className="pt-3 border-t border-gray-100">
                 <p className="text-xs text-gray-400">
                   Dilihat oleh:{' '}

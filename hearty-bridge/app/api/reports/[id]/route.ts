@@ -5,27 +5,10 @@ import connectToDatabase from '@/lib/db/mongodb';
 import { Report } from '@/models';
 import mongoose from 'mongoose';
 import { getR2SignedUrl, deleteFromR2 } from '@/lib/services/r2-storage';
+import { canAccessReport } from '@/lib/utils/report-access';
 
 function getReportId(req: NextRequest): string {
   return new URL(req.url).pathname.split('/').at(-1) ?? '';
-}
-
-async function canAccessReport(report: any, user: any): Promise<boolean> {
-  if (user.role === 'admin' || user.role === 'super_admin') return true;
-  if (user.role === 'therapist') {
-    return report.therapistId?.toString() === user.userId;
-  }
-  if (user.role === 'parent') {
-    // Check if the child belongs to this parent
-    const Child = mongoose.models.Child ||
-      mongoose.model('Child', new mongoose.Schema({ parentId: mongoose.Schema.Types.ObjectId }));
-    const child = await Child.findOne({
-      _id: report.childId,
-      parentId: new mongoose.Types.ObjectId(user.userId),
-    }).lean();
-    return !!child;
-  }
-  return false;
 }
 
 /**
@@ -83,7 +66,7 @@ export const PUT = withAnyAuth(
       return NextResponse.json({ success: false, error: 'Report not found' }, { status: 404 });
     }
 
-    if (user.role !== 'admin' && user.role !== 'super_admin' && report.therapistId?.toString() !== user.userId) {
+    if (!(await canAccessReport(report, user))) {
       return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 });
     }
 
@@ -133,7 +116,7 @@ export const DELETE = withAnyAuth(
       return NextResponse.json({ success: false, error: 'Report not found' }, { status: 404 });
     }
 
-    if (user.role !== 'admin' && user.role !== 'super_admin' && report.therapistId?.toString() !== user.userId) {
+    if (!(await canAccessReport(report, user))) {
       return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 });
     }
 

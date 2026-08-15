@@ -2,6 +2,7 @@
 
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/contexts/auth-context";
+import { usePermissions } from "@/lib/utils/permissions";
 import {
   Card,
   CardContent,
@@ -158,6 +159,7 @@ function WeeklyStatusCell({ status, isFuture }: { status: "on-time" | "late" | "
 
 export default function AttendancePage() {
   const { user } = useAuth();
+  const permissions = usePermissions(user?.role ?? "parent");
 
   const [selectedDate, setSelectedDate] = useState<string>(todayWIB());
   const [adminData, setAdminData] = useState<AdminData | null>(null);
@@ -453,7 +455,7 @@ export default function AttendancePage() {
       )}
 
       {/* ── STAFF OVERVIEW (admin + therapist) ── */}
-      {(user.role === "admin" || user.role === "therapist" || user.role === "super_admin") && (
+      {permissions.hasPermission("attendance:view") && (
         <>
           {/* Summary cards */}
           {adminData && (
@@ -671,8 +673,9 @@ export default function AttendancePage() {
         </>
       )}
 
-      {/* ── PERSONAL HISTORY (therapist) ── */}
-      {user.role !== "admin" && history.length > 0 && (
+      {/* ── PERSONAL HISTORY (therapist only — admin/super_admin are covered by
+          the staff overview above; parent has no attendance record at all) ── */}
+      {user.role === "therapist" && history.length > 0 && (
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-base">
@@ -732,7 +735,7 @@ export default function AttendancePage() {
         </Card>
       )}
 
-      {user.role !== "admin" && !loading && history.length === 0 && (
+      {user.role === "therapist" && !loading && history.length === 0 && (
         <Card>
           <CardContent className="py-10 text-center text-gray-500">
             <ClipboardCheckIcon className="h-10 w-10 mx-auto mb-3 text-gray-300" />

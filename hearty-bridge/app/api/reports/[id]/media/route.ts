@@ -5,6 +5,7 @@ import connectToDatabase from '@/lib/db/mongodb';
 import { Report } from '@/models';
 import { uploadToR2, deleteFromR2 } from '@/lib/services/r2-storage';
 import { compressImage, compressVideo } from '@/lib/utils/compress';
+import { canAccessReport } from '@/lib/utils/report-access';
 import mongoose from 'mongoose';
 
 const ALLOWED_MIME_TYPES = new Set([
@@ -58,7 +59,7 @@ export const POST = withAnyAuth(
       return NextResponse.json({ success: false, error: 'Report not found' }, { status: 404 });
     }
 
-    if (user.role !== 'admin' && report.therapistId?.toString() !== user.userId) {
+    if (!(await canAccessReport(report, user))) {
       return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 });
     }
 
@@ -156,7 +157,7 @@ export const DELETE = withAnyAuth(
       return NextResponse.json({ success: false, error: 'Report not found' }, { status: 404 });
     }
 
-    if (user.role !== 'admin' && report.therapistId?.toString() !== user.userId) {
+    if (!(await canAccessReport(report, user))) {
       return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 });
     }
 

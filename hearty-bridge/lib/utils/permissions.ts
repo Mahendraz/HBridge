@@ -8,68 +8,83 @@ import type { UserRole } from "@/lib/types/auth";
 
 export type { UserRole };
 
-export type Permission = 
+export type Permission =
   // Dashboard permissions
   | "dashboard:view"
   | "dashboard:analytics"
-  
+  | "dashboard:activity"
+
+  // Announcement permissions
+  | "announcements:view"
+  | "announcements:manage"
+
   // Patient management permissions
   | "patients:view"
   | "patients:create"
   | "patients:edit"
+  | "patients:edit_medical_only"
   | "patients:delete"
+  | "patients:delete_own"
   | "patients:assign"
   | "patients:view_own"
   | "patients:view_assigned"
-  
+
   // Therapist management permissions
   | "therapists:view"
+  | "therapists:view_own"
   | "therapists:create"
   | "therapists:edit"
   | "therapists:delete"
   | "therapists:invite"
   | "therapists:assign_patients"
-  
+  | "therapists:manage_leave"
+
   // Schedule management permissions
   | "schedules:view"
   | "schedules:edit"
   | "schedules:create"
   | "schedules:view_own"
   | "schedules:manage_all"
-  
+
   // Reports permissions
   | "reports:view"
   | "reports:create"
+  | "reports:edit"
+  | "reports:edit_own"
+  | "reports:delete"
   | "reports:view_own"
   | "reports:view_all"
+  | "reports:view_seen_by"
+  | "reports:resolve_comment"
   | "reports:export"
   | "reports:system_analytics"
-  
+
   // Session permissions
   | "sessions:view"
   | "sessions:create"
   | "sessions:edit"
   | "sessions:view_own"
   | "sessions:view_assigned"
-  
+  | "sessions:bulk_schedule"
+
   // Family/Parent permissions
   | "families:view"
   | "families:create"
   | "families:edit"
   | "families:view_own"
-  
+
   // Settings permissions
   | "settings:view"
   | "settings:edit"
   | "settings:system"
-  
+
   // User management permissions
   | "users:view"
   | "users:create"
   | "users:edit"
   | "users:delete"
   | "users:manage_roles"
-  
+
   // Financial permissions
   | "billing:view"
   | "billing:manage"
@@ -78,6 +93,23 @@ export type Permission =
   // Invoice permissions
   | "invoices:manage"
   | "invoices:view_own"
+
+  // Token / package-balance permissions
+  | "tokens:manage"
+
+  // Assessment permissions
+  | "assessments:view"
+  | "assessments:view_own"
+  | "assessments:create"
+  | "assessments:edit"
+  | "assessments:edit_own"
+  | "assessments:delete"
+  | "assessments:manage"
+
+  // Therapist leave-request permissions
+  | "leaves:view_all"
+  | "leaves:view_own"
+  | "leaves:manage"
 
   // Attendance permissions
   | "attendance:view"
@@ -99,6 +131,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     // All admin permissions
     "dashboard:view",
     "dashboard:analytics",
+    "announcements:view",
+    "announcements:manage",
     "patients:view",
     "patients:create",
     "patients:edit",
@@ -116,12 +150,17 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "schedules:manage_all",
     "reports:view",
     "reports:create",
+    "reports:edit",
+    "reports:delete",
     "reports:view_all",
+    "reports:view_seen_by",
+    "reports:resolve_comment",
     "reports:export",
     "reports:system_analytics",
     "sessions:view",
     "sessions:create",
     "sessions:edit",
+    "sessions:bulk_schedule",
     "families:view",
     "families:create",
     "families:edit",
@@ -136,9 +175,19 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "billing:view",
     "billing:manage",
     "invoices:manage",
+    "tokens:manage",
+    "assessments:view",
+    "assessments:create",
+    "assessments:edit",
+    "assessments:delete",
+    "assessments:manage",
     "attendance:view",
     "attendance:checkin",
     // Super admin exclusive
+    "dashboard:activity",
+    "leaves:view_all",
+    "leaves:manage",
+    "therapists:manage_leave",
     "packages:view",
     "packages:create",
     "packages:edit",
@@ -151,63 +200,83 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     // Dashboard
     "dashboard:view",
     "dashboard:analytics",
-    
+
+    // Announcements
+    "announcements:view",
+    "announcements:manage",
+
     // Patient management
     "patients:view",
-    "patients:create", 
+    "patients:create",
     "patients:edit",
     "patients:delete",
     "patients:assign",
-    
+
     // Therapist management
     "therapists:view",
     "therapists:create",
-    "therapists:edit", 
+    "therapists:edit",
     "therapists:delete",
     "therapists:invite",
     "therapists:assign_patients",
-    
+
     // Schedule management
     "schedules:view",
     "schedules:edit",
     "schedules:create",
     "schedules:manage_all",
-    
+
     // Reports
     "reports:view",
     "reports:create",
+    "reports:edit",
+    "reports:delete",
     "reports:view_all",
+    "reports:view_seen_by",
+    "reports:resolve_comment",
     "reports:export",
     "reports:system_analytics",
-    
+
     // Sessions
     "sessions:view",
     "sessions:create",
     "sessions:edit",
-    
+    "sessions:bulk_schedule",
+
     // Families
     "families:view",
     "families:create",
     "families:edit",
-    
+
     // Settings
     "settings:view",
     "settings:edit",
     "settings:system",
-    
+
     // User management
     "users:view",
     "users:create",
     "users:edit",
     "users:delete",
     "users:manage_roles",
-    
+
     // Financial
     "billing:view",
     "billing:manage",
 
     // Invoices
     "invoices:manage",
+    "tokens:manage",
+
+    // Assessments
+    "assessments:view",
+    "assessments:create",
+    "assessments:edit",
+    "assessments:delete",
+    "assessments:manage",
+
+    // Therapist leave requests — view only; approval/creation is super_admin-only
+    "leaves:view_all",
 
     // Attendance
     "attendance:view",
@@ -217,28 +286,46 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   therapist: [
     // Dashboard
     "dashboard:view",
-    
+
+    // Announcements (view only)
+    "announcements:view",
+
     // Patients (only assigned)
     "patients:view_assigned",
-    "patients:edit", // Can edit assigned patients only
-    
+    "patients:edit", // TODO: overbroad vs reality — the children/[id] PUT route
+    // actually restricts therapists to medicalInfo fields only. Narrow this to
+    // "patients:edit_medical_only" below when the children edit page/route is
+    // migrated onto PermissionChecker (tracked in the refactor plan, Part C follow-on).
+    "patients:edit_medical_only",
+
     // Schedule (own only)
     "schedules:view_own",
     "schedules:edit", // Can edit own schedule only
-    
+
     // Reports (own and assigned patients)
     "reports:view",
     "reports:create",
+    "reports:edit_own",
     "reports:view_own",
-    
+    "reports:view_seen_by",
+    "reports:resolve_comment", // enforced per-record via canActOnOwnRecord() — own reports only
+
     // Sessions (assigned patients)
     "sessions:view_assigned",
     "sessions:create",
     "sessions:edit",
-    
+
+    // Assessments (own assigned assessments)
+    "assessments:view_own",
+    "assessments:edit_own",
+
+    // Therapist self-service
+    "therapists:view_own",
+    "leaves:view_own",
+
     // Settings (limited)
     "settings:view",
-    
+
     // Attendance
     "attendance:view",
     "attendance:checkin"
@@ -247,26 +334,33 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
   parent: [
     // Dashboard
     "dashboard:view",
-    
+
+    // Announcements (view only)
+    "announcements:view",
+
     // Own children only
     "patients:view_own",
-    
+    "patients:delete_own", // parent can remove their own child record
+
     // Own family info
     "families:view_own",
     "families:edit", // Can edit own family info
-    
+
     // Sessions for own children
     "sessions:view_own",
-    
+
     // Reports for own children
     "reports:view_own",
-    
+
+    // Assessments for own children
+    "assessments:view_own",
+
     // Schedule viewing for assigned therapists
     "schedules:view",
-    
+
     // Settings (limited)
     "settings:view",
-    
+
     // Own billing
     "billing:view_own",
 
@@ -323,6 +417,23 @@ export const PERMISSION_CATEGORIES = {
 };
 
 /**
+ * Ownership check for "can THIS user act on THIS specific record" — the one
+ * thing PermissionChecker (role-only) can't answer, since it's constructed from
+ * a role alone with no record context. Elevated roles always pass; everyone else
+ * must be the record's owner. Exported as a plain function (not a PermissionChecker
+ * method) so API routes can import it directly too, not just React components.
+ */
+export function canActOnOwnRecord(
+  userRole: UserRole,
+  userId: string,
+  ownerId: string | null | undefined,
+  elevatedRoles: UserRole[] = ["admin", "super_admin"]
+): boolean {
+  if (elevatedRoles.includes(userRole)) return true;
+  return !!ownerId && ownerId === userId;
+}
+
+/**
  * Permission checker class
  */
 export class PermissionChecker {
@@ -368,11 +479,13 @@ export class PermissionChecker {
   canView(resource: string): boolean {
     const viewPermissions: Record<string, Permission[]> = {
       "patients": ["patients:view", "patients:view_own", "patients:view_assigned"],
-      "therapists": ["therapists:view"],
+      "therapists": ["therapists:view", "therapists:view_own"],
       "schedules": ["schedules:view", "schedules:view_own", "schedules:manage_all"],
       "reports": ["reports:view", "reports:view_own", "reports:view_all"],
+      "assessments": ["assessments:view", "assessments:view_own"],
       "settings": ["settings:view", "settings:edit", "settings:system"],
-      "billing": ["billing:view", "billing:manage", "billing:view_own"]
+      "billing": ["billing:view", "billing:manage", "billing:view_own"],
+      "invoices": ["invoices:manage", "invoices:view_own", "billing:view", "billing:view_own"]
     };
 
     const resourcePermissions = viewPermissions[resource];
@@ -384,12 +497,14 @@ export class PermissionChecker {
    */
   canEdit(resource: string): boolean {
     const editPermissions: Record<string, Permission[]> = {
-      "patients": ["patients:edit"],
+      "patients": ["patients:edit", "patients:edit_medical_only"],
       "therapists": ["therapists:edit"],
       "schedules": ["schedules:edit", "schedules:manage_all"],
-      "reports": ["reports:create"],
+      "reports": ["reports:edit", "reports:edit_own"],
+      "assessments": ["assessments:edit", "assessments:edit_own"],
       "settings": ["settings:edit", "settings:system"],
-      "billing": ["billing:manage"]
+      "billing": ["billing:manage"],
+      "invoices": ["invoices:manage"]
     };
 
     const resourcePermissions = editPermissions[resource];
@@ -405,6 +520,7 @@ export class PermissionChecker {
       "therapists": ["therapists:create", "therapists:invite"],
       "schedules": ["schedules:create", "schedules:manage_all"],
       "reports": ["reports:create"],
+      "assessments": ["assessments:create", "assessments:manage"],
       "users": ["users:create"]
     };
 
@@ -417,8 +533,9 @@ export class PermissionChecker {
    */
   canDelete(resource: string): boolean {
     const deletePermissions: Record<string, Permission[]> = {
-      "patients": ["patients:delete"],
+      "patients": ["patients:delete", "patients:delete_own"],
       "therapists": ["therapists:delete"],
+      "assessments": ["assessments:delete"],
       "users": ["users:delete"]
     };
 
@@ -748,10 +865,15 @@ export class PermissionChecker {
 }
 
 /**
- * Hook for easy permission checking in components
+ * Hook for easy permission checking in components.
+ * Memoized on userRole — callers pass the returned PermissionChecker into
+ * useEffect/useCallback dependency arrays, and an unmemoized `new` here would
+ * hand back a fresh reference every render, defeating that memoization and
+ * re-running those effects/callbacks on every render instead of only when the
+ * role actually changes.
  */
 export function usePermissions(userRole: UserRole) {
-  return new PermissionChecker(userRole);
+  return React.useMemo(() => new PermissionChecker(userRole), [userRole]);
 }
 
 /**

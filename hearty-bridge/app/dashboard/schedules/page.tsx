@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/auth-context";
+import { usePermissions } from "@/lib/utils/permissions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import {
@@ -1334,6 +1335,7 @@ function PackageSessionModal({
 
 export default function SchedulesPage() {
   const { user } = useAuth();
+  const permissions = usePermissions(user?.role ?? "parent");
   const router = useRouter();
 
   const [weekStart, setWeekStart] = useState(getCurrentMondayStr);
@@ -1438,7 +1440,7 @@ export default function SchedulesPage() {
   // ---- Fetch therapist leaves for the current week ----
 
   const fetchLeaves = useCallback(async () => {
-    if (!user || user.role === 'parent') return;
+    if (!user || !permissions.hasAnyPermission(['leaves:view_all', 'leaves:view_own'])) return;
     try {
       const token = localStorage.getItem('token');
       const weekEnd = addDays(weekStart, 5);
@@ -1462,7 +1464,7 @@ export default function SchedulesPage() {
     } catch {
       // silently fail
     }
-  }, [user, weekStart]);
+  }, [user, weekStart, permissions]);
 
   // ---- Fetch assessments for the current week ----
 
@@ -1553,10 +1555,10 @@ export default function SchedulesPage() {
       fetchSlots();
       fetchAssessments();
       fetchLeaves();
-      if (user.role === "admin" || user.role === "super_admin") fetchDropdownData();
+      if (permissions.hasPermission("schedules:manage_all")) fetchDropdownData();
       else fetchPhotoMap();
     }
-  }, [user, weekStart, fetchSlots, fetchAssessments, fetchLeaves, fetchDropdownData, fetchPhotoMap]);
+  }, [user, weekStart, permissions, fetchSlots, fetchAssessments, fetchLeaves, fetchDropdownData, fetchPhotoMap]);
 
   // ---- Mutations ----
 
@@ -1795,7 +1797,7 @@ export default function SchedulesPage() {
             {user?.role === "parent" && "Jadwal sesi terapi anak Anda"}
           </p>
         </div>
-        {(user?.role === "admin" || user?.role === "super_admin") && (
+        {permissions.hasPermission("schedules:manage_all") && (
           <Button onClick={() => openNewSlot()}>
             <PlusIcon className="h-4 w-4 mr-2" />
             Tambah Slot
@@ -1835,7 +1837,7 @@ export default function SchedulesPage() {
       </div>
 
       {/* Therapist legend */}
-      {user?.role === "therapist" && (
+      {permissions.hasPermission("schedules:view_own") && (
         <div className="flex items-center gap-4 text-xs text-gray-500 bg-white border border-gray-200 rounded-lg px-4 py-2.5">
           <span className="font-medium text-gray-700">Keterangan:</span>
           <span className="flex items-center gap-1.5">
@@ -1931,7 +1933,7 @@ export default function SchedulesPage() {
                               key={a._id}
                               assessment={a}
                               onClick={() => {
-                                if (user?.role === 'admin' || user?.role === 'super_admin') {
+                                if (permissions.hasPermission('assessments:manage')) {
                                   setAssessmentDetail(a);
                                   const aid = a.assessorId;
                                   setEditAssessorId(aid ? (typeof aid === 'object' ? aid._id : aid) : '');
@@ -1947,13 +1949,13 @@ export default function SchedulesPage() {
                                 user?.role === "therapist" &&
                                 slot.therapistId === user?._id
                               }
-                              isParentView={user?.role === "parent"}
+                              isParentView={!permissions.hasAnyPermission(['schedules:edit', 'schedules:manage_all'])}
                               weekStart={weekStart}
                               reportMap={reportMap}
                               patientPhotoUrl={patientPhotoMap[slot.patientId] ?? null}
                               isTherapistOnLeave={leaveSet.has(`${slot.therapistId}_${dateStr}`)}
                               onClick={() => {
-                                if (user?.role === "admin" || user?.role === "super_admin") openEditSlot(slot);
+                                if (permissions.hasPermission("schedules:manage_all")) openEditSlot(slot);
                               }}
                               onOpenReportModal={(s, sd) => {
                                 const existingReportId = reportMap[`${s.patientId}_${sd}`];
@@ -1972,7 +1974,7 @@ export default function SchedulesPage() {
                               }}
                             />
                           ))}
-                          {(user?.role === "admin" || user?.role === "super_admin") && (
+                          {permissions.hasPermission("schedules:manage_all") && (
                             <button
                               className="w-full h-7 flex items-center justify-center text-gray-300 hover:text-teal-500 hover:bg-teal-50 rounded border border-dashed border-gray-200 hover:border-teal-300 transition-colors"
                               onClick={() => openNewSlot(day, hour)}
@@ -2170,7 +2172,7 @@ export default function SchedulesPage() {
           onClose={closeModal}
           onSave={handleSave}
           onDelete={editingSlot._id ? handleDelete : undefined}
-          showTabs={user?.role === 'admin' || user?.role === 'super_admin'}
+          showTabs={permissions.hasPermission("schedules:manage_all")}
           onSaveAssessment={handleCreateAssessment}
         />
       )}

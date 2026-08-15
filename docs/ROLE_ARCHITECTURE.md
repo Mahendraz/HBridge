@@ -113,11 +113,20 @@ role, not just whether the call is allowed.
      create/edit/delete controls and full dropdown data (lines 1798, 1934, 1956,
      1975); therapists get a read/leave-request view (line 1838); parents get
      `isParentView` (line 1950), which strips all interactive controls.
-   - `components/schedule/session-report-modal.tsx:531` —
+   - `app/dashboard/reports/page.tsx:531` (inside the `ReportViewDialog`
+     sub-component) —
      `canResolve = admin || super_admin || (therapist && report.therapistId === user._id)`,
-     mirroring the backend ownership rule in the UI.
-   - `components/schedule/session-report-modal.tsx:707` — hides the "seen by"
-     read-receipt row from parents.
+     mirroring the backend ownership rule in the UI. As of the permissions
+     refactor this is now `canActOnOwnRecord()` from `lib/utils/permissions.ts`
+     — see `docs/ROLE_PERMISSION_REFACTOR_PLAN.md`.
+   - `app/dashboard/reports/page.tsx:707` — hides the "seen by" read-receipt
+     row from parents (now `reports:view_seen_by`).
+
+> Correction (post-refactor): an earlier version of this doc mis-cited the
+> `canResolve`/`seenBy` logic above as living in
+> `components/schedule/session-report-modal.tsx`. That component has no
+> role/comment logic at all — the checks are in `app/dashboard/reports/page.tsx`.
+> Fixed here.
 
 ---
 

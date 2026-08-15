@@ -262,6 +262,59 @@ export function withRateLimit(options: RateLimitOptions) {
 }
 
 /**
+ * IP-keyed rate limiting for routes that run BEFORE authentication exists
+ * (login, register, change-password) — withRateLimit above wraps withAuth and
+ * keys by user.userId, which doesn't work here since there's no user yet.
+ */
+export interface IpRateLimitOptions {
+  windowMs: number; // Time window in milliseconds
+  maxRequests: number; // Max requests per window, per IP
+  message?: string;
+}
+
+const ipRateLimitStore = new Map<string, { count: number; resetTime: number }>();
+
+function getClientIp(request: NextRequest): string {
+  const forwardedFor = request.headers.get('x-forwarded-for');
+  if (forwardedFor) return forwardedFor.split(',')[0].trim();
+  const realIp = request.headers.get('x-real-ip');
+  if (realIp) return realIp;
+  return 'unknown';
+}
+
+export function withIpRateLimit(options: IpRateLimitOptions) {
+  return function (handler: UnauthenticatedHandler) {
+    return async (request: NextRequest): Promise<NextResponse> => {
+      const key = getClientIp(request);
+      const now = Date.now();
+      const record = ipRateLimitStore.get(key);
+
+      if (!record || now > record.resetTime) {
+        ipRateLimitStore.set(key, {
+          count: 1,
+          resetTime: now + options.windowMs
+        });
+      } else if (record.count >= options.maxRequests) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: options.message ?? 'Terlalu banyak percobaan. Coba lagi nanti.',
+            code: 'RATE_LIMIT_EXCEEDED',
+            retryAfter: Math.ceil((record.resetTime - now) / 1000)
+          },
+          { status: 429 }
+        );
+      } else {
+        record.count++;
+        ipRateLimitStore.set(key, record);
+      }
+
+      return await handler(request);
+    };
+  };
+}
+
+/**
  * Request validation middleware
  */
 export function withValidation<T>(

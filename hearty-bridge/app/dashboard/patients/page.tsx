@@ -103,9 +103,9 @@ export default function UnifiedPatientsPage() {
 
   useEffect(() => {
     fetchPatients();
-    if (user?.role === 'admin' || user?.role === 'super_admin') fetchAllParents();
+    if (permissions.hasPermission('users:view')) fetchAllParents();
     if (user?.role === 'parent') fetchCompletedSessions();
-  }, [user]);
+  }, [user, permissions]);
 
   const fetchCompletedSessions = async () => {
     try {
@@ -349,7 +349,7 @@ export default function UnifiedPatientsPage() {
 
   // For therapist: derive unique parents from their assigned patients
   // For admin: use allParents (fetched separately, includes parents with no children)
-  const displayParents = (user?.role === 'admin' || user?.role === 'super_admin')
+  const displayParents = permissions.hasPermission('users:view')
     ? allParents
     : (() => {
         const map = new Map<string, { _id: string; name: string; email: string; phone?: string }>();
@@ -409,7 +409,7 @@ export default function UnifiedPatientsPage() {
         </div>
 
         <div className="flex gap-2">
-          {(user?.role === "admin" || user?.role === "super_admin") && (
+          {permissions.hasPermission('users:create') && (
             <Button variant="outline" onClick={() => setShowCreateParentModal(true)}>
               <UserPlusIcon className="h-4 w-4 mr-2" />
               Tambah Orang Tua
@@ -691,7 +691,7 @@ export default function UnifiedPatientsPage() {
                           </div>
                         </div>
                       </div>
-                      {(user?.role === 'admin' || user?.role === 'super_admin') && (
+                      {permissions.hasPermission('patients:edit') && (
                         <Button
                           size="sm"
                           variant="outline"
@@ -760,10 +760,10 @@ export default function UnifiedPatientsPage() {
                 <CardContent className="py-8 text-center text-gray-500">
                   <UsersIcon className="h-12 w-12 mx-auto mb-3 text-gray-300" />
                   <p className="font-medium text-gray-900">
-                    {(user?.role === 'admin' || user?.role === 'super_admin') ? 'Belum ada orang tua terdaftar' : 'Tidak ada pasien yang ditugaskan'}
+                    {permissions.hasPermission('users:view') ? 'Belum ada orang tua terdaftar' : 'Tidak ada pasien yang ditugaskan'}
                   </p>
                   <p className="text-sm mt-1">
-                    {(user?.role === 'admin' || user?.role === 'super_admin')
+                    {permissions.hasPermission('users:view')
                       ? 'Tambahkan orang tua terlebih dahulu, lalu tambahkan anak mereka.'
                       : 'Hubungi admin untuk penugasan pasien.'}
                   </p>
