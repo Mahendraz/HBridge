@@ -10,6 +10,7 @@ import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { DatePicker } from "@/components/ui/date-picker";
 import { Select } from "@/components/ui/select";
+import { fetchWithTimeout } from "@/lib/utils/fetch-with-timeout";
 import {
   Dialog,
   DialogContent,
@@ -82,6 +83,7 @@ export default function UnifiedPatientsPage() {
 
   const [patients, setPatients] = useState<Patient[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
   const [completedSessions, setCompletedSessions] = useState(0);
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
@@ -126,9 +128,10 @@ export default function UnifiedPatientsPage() {
   const fetchPatients = async () => {
     try {
       setLoading(true);
+      setLoadError(null);
       const token = localStorage.getItem('token');
 
-      const response = await fetch('/api/children', {
+      const response = await fetchWithTimeout('/api/children', {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -191,11 +194,16 @@ export default function UnifiedPatientsPage() {
         }
       } else {
         console.error('Failed to fetch patients:', response.statusText);
-        // Fallback to empty array
+        setLoadError('Gagal memuat data pasien. Silakan coba lagi.');
         setPatients([]);
       }
     } catch (error) {
       console.error('Error fetching patients:', error);
+      setLoadError(
+        error instanceof Error && error.message.startsWith('Request timed out')
+          ? 'Memuat data pasien terlalu lama. Periksa koneksi Anda dan coba lagi.'
+          : 'Terjadi kesalahan saat memuat data pasien.'
+      );
       setPatients([]);
     } finally {
       setLoading(false);
@@ -317,9 +325,17 @@ export default function UnifiedPatientsPage() {
     );
   }
 
-  // If no patients loaded, use empty array
-  if (patients.length === 0 && !loading) {
-    console.log('No patients loaded from API');
+  if (loadError) {
+    return (
+      <div className="flex items-center justify-center h-64">
+        <div className="text-center space-y-3">
+          <p className="text-red-600">{loadError}</p>
+          <Button variant="outline" onClick={fetchPatients}>
+            Coba Lagi
+          </Button>
+        </div>
+      </div>
+    );
   }
 
   // Filter patients based on role

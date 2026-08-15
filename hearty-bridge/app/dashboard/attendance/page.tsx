@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { usePermissions } from "@/lib/utils/permissions";
+import { fetchWithTimeout } from "@/lib/utils/fetch-with-timeout";
 import {
   Card,
   CardContent,
@@ -166,6 +167,7 @@ export default function AttendancePage() {
   const [weeklyRecords, setWeeklyRecords] = useState<Record<string, AttendanceRecord[]>>({});
   const [history, setHistory] = useState<HistoryRecord[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadError, setLoadError] = useState<string | null>(null);
 
   // Check-in state
   const [checking, setChecking] = useState(false);
@@ -177,16 +179,19 @@ export default function AttendancePage() {
   const fetchData = useCallback(async () => {
     if (!user) return;
     setLoading(true);
+    setLoadError(null);
     try {
       const token = localStorage.getItem("token");
       const headers = { Authorization: `Bearer ${token}` };
 
-      // Admin and therapist: fetch all staff data + weekly recap + own history
+      // Admin and therapist: fetch all staff data + weekly recap + own history.
+      // A single stalled request among these would otherwise hang Promise.all
+      // (and the loading spinner) forever, so every request carries a timeout.
       const weekDays = getWeekDays(selectedDate);
       const [mainRes, histRes, ...weeklyRaw] = await Promise.all([
-        fetch(`/api/attendance?date=${selectedDate}`, { headers }),
-        fetch(`/api/attendance?history=true`, { headers }),
-        ...weekDays.map((d) => fetch(`/api/attendance?date=${d}`, { headers })),
+        fetchWithTimeout(`/api/attendance?date=${selectedDate}`, { headers }),
+        fetchWithTimeout(`/api/attendance?history=true`, { headers }),
+        ...weekDays.map((d) => fetchWithTimeout(`/api/attendance?date=${d}`, { headers })),
       ]);
       if (mainRes.ok) {
         const r = await mainRes.json();
@@ -206,8 +211,12 @@ export default function AttendancePage() {
         }
       }
       setWeeklyRecords(wMap);
-    } catch {
-      // silently fail
+    } catch (error) {
+      setLoadError(
+        error instanceof Error && error.message.startsWith('Request timed out')
+          ? 'Memuat data absensi terlalu lama. Periksa koneksi Anda dan coba lagi.'
+          : 'Terjadi kesalahan saat memuat data absensi.'
+      );
     } finally {
       setLoading(false);
     }
@@ -341,6 +350,15 @@ export default function AttendancePage() {
           </Button>
         </div>
       </div>
+
+      {loadError && (
+        <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center justify-between gap-3">
+          <span>{loadError}</span>
+          <Button size="sm" variant="outline" onClick={fetchData}>
+            Coba Lagi
+          </Button>
+        </div>
+      )}
 
       {/* ── MY CHECK-IN PANEL (admin + therapist) ── */}
       {isToday && (

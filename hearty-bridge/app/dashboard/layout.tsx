@@ -21,18 +21,30 @@ const ALL_ROLES: UserRole[] = ['super_admin', 'admin', 'therapist', 'parent'];
 // finer-grained gating happens inside the page/API), since most pages gate specific
 // content rather than the whole page and guessing at a stricter rule here risks
 // locking out a legitimate view we haven't verified.
-const ROUTE_PERMISSIONS: Array<{ prefix: string; permission: Permission }> = [
+// allowedRoles for each entry is resolved once here (not per-render) so
+// allowedRolesForPath always hands back the SAME array reference for a given
+// path. It's passed straight into ProtectedRoute's `allowedRoles` prop, which
+// sits in that component's useEffect dependency array — a fresh array every
+// render would re-run that effect on every render instead of only when the
+// route actually changes (same pitfall usePermissions had before it was
+// memoized; see the comment on usePermissions in lib/utils/permissions.ts).
+const ROUTE_PERMISSION_SOURCE: Array<{ prefix: string; permission: Permission }> = [
   { prefix: '/dashboard/super-admin/packages', permission: 'packages:view' },
   { prefix: '/dashboard/super-admin/financial', permission: 'financial:view_all' },
   { prefix: '/dashboard/therapists', permission: 'therapists:view' },
 ];
 
+const ROUTE_PERMISSIONS: Array<{ prefix: string; allowedRoles: UserRole[] }> =
+  ROUTE_PERMISSION_SOURCE.map(({ prefix, permission }) => ({
+    prefix,
+    allowedRoles: ALL_ROLES.filter((role) => new PermissionChecker(role).hasPermission(permission)),
+  }));
+
 function allowedRolesForPath(pathname: string): UserRole[] {
   const match = ROUTE_PERMISSIONS.find(
     (r) => pathname === r.prefix || pathname.startsWith(r.prefix + '/')
   );
-  if (!match) return ALL_ROLES;
-  return ALL_ROLES.filter((role) => new PermissionChecker(role).hasPermission(match.permission));
+  return match ? match.allowedRoles : ALL_ROLES;
 }
 
 export default function Layout({ children }: Props) {
