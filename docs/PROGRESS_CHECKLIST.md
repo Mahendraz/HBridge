@@ -28,7 +28,7 @@ Checklist eksekusi untuk `docs/TASK_BREAKDOWN.md` (detail teknis per item ada di
 - [ ] 3.2 Pelaporan & Analitik terpotong di mobile
 - [ ] 3.3 Rekomendasi CSS/layout responsif (prinsip umum, tercakup di 3.1/3.2)
 - [ ] 3.4 Upload video lambat
-- [ ] 3.5 Tidak ada notifikasi komentar baru untuk terapis
+- [x] 3.5 Tidak ada notifikasi komentar baru untuk terapis — sudah terselesaikan oleh sistem notifikasi (1.2), diverifikasi manual
 
 ## 4. Rangkuman Fitur & Kebutuhan Admin
 - [ ] 4.1 Frekuensi terapi mingguan per anak
