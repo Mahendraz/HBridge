@@ -987,6 +987,29 @@ export default function ReportsPage() {
     }
   };
 
+  const handleDownloadPdf = async (reportId: string, title: string) => {
+    try {
+      const res = await fetch(`/api/reports/${reportId}/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        alert("Gagal membuat PDF laporan.");
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `Laporan-${title.replace(/[^a-zA-Z0-9]+/g, "-")}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert("Gagal membuat PDF laporan.");
+    }
+  };
+
   // Column widths shared between header and rows
   const COL = {
     type:      'w-20 shrink-0',
@@ -999,7 +1022,6 @@ export default function ReportsPage() {
 
   // ── ReportListItem ──────────────────────────────────────────────────────────
   const ReportListItem = ({ report }: { report: Report }) => {
-    const downloadUrl = report.mediaFiles?.[0]?.url ?? report.fileUrl;
     return (
       <div className="flex items-center gap-4 py-2.5 px-4 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0 group">
 
@@ -1070,11 +1092,9 @@ export default function ReportsPage() {
               <TrashIcon className="h-3.5 w-3.5" />
             </Button>
           </PermissionGuard>
-          {downloadUrl && (
-            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => window.open(downloadUrl, "_blank")} title="Unduh">
-              <DownloadIcon className="h-3.5 w-3.5" />
-            </Button>
-          )}
+          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleDownloadPdf(report._id, report.childName)} title="Unduh Laporan Harian (PDF)">
+            <DownloadIcon className="h-3.5 w-3.5" />
+          </Button>
         </div>
       </div>
     );
@@ -1083,8 +1103,6 @@ export default function ReportsPage() {
   // ── ReportCard ──────────────────────────────────────────────────────────────
   const ReportCard = ({ report }: { report: Report }) => {
     const hasMedia = report.mediaFiles && report.mediaFiles.length > 0;
-    const firstMedia = report.mediaFiles?.[0];
-    const downloadUrl = firstMedia?.url ?? report.fileUrl;
 
     return (
       <div className="rounded-xl shadow-sm hover:shadow-lg transition-shadow">
@@ -1186,17 +1204,15 @@ export default function ReportsPage() {
                   <EyeIcon className="h-3.5 w-3.5 mr-1" />
                   Lihat
                 </Button>
-                {downloadUrl && (
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="h-7 text-xs px-3"
-                    onClick={() => window.open(downloadUrl, "_blank")}
-                  >
-                    <DownloadIcon className="h-3.5 w-3.5 mr-1" />
-                    Unduh
-                  </Button>
-                )}
+                <Button
+                  variant="outline"
+                  size="sm"
+                  className="h-7 text-xs px-3"
+                  onClick={() => handleDownloadPdf(report._id, report.childName)}
+                >
+                  <DownloadIcon className="h-3.5 w-3.5 mr-1" />
+                  Unduh
+                </Button>
               </div>
             </div>
           </div>
