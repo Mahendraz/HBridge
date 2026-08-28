@@ -23,6 +23,7 @@ export interface IInvoice extends Document {
   paymentProofKey?: string | null;
   paymentMessage?: string;
   paymentSubmittedAt?: Date | null;
+  seenByParentAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -62,6 +63,7 @@ const InvoiceSchema = new Schema<IInvoice>(
     paymentProofKey:    { type: String, default: null },
     paymentMessage:     { type: String, default: '' },
     paymentSubmittedAt: { type: Date, default: null },
+    seenByParentAt:     { type: Date, default: null },
   },
   {
     timestamps: true,

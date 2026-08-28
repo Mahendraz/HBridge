@@ -399,13 +399,13 @@ async function parentStats(user: JWTPayload): Promise<NextResponse> {
     .lean();
 
   if (children.length === 0) {
-    return SuccessResponse.ok({ data: { role: 'parent', children: [], weeklyReports: [], upcomingSchedule: [] } });
+    return SuccessResponse.ok({ data: { role: 'parent', children: [], weeklyReports: [], upcomingSchedule: [], unseenInvoiceCount: 0 } });
   }
 
   const childIds       = children.map(c => c._id as mongoose.Types.ObjectId);
   const childStringIds = children.map(c => c._id.toString());
 
-  const [allSlots, weeklyReportsRaw] = await Promise.all([
+  const [allSlots, weeklyReportsRaw, unseenInvoiceCount] = await Promise.all([
     WeeklySchedule.find({ patientId: { $in: childStringIds } }).lean(),
     Report.find({
       childId: { $in: childIds },
@@ -414,6 +414,11 @@ async function parentStats(user: JWTPayload): Promise<NextResponse> {
     }).sort({ createdAt: -1 })
       .select('childName title type status createdAt')
       .lean(),
+    Invoice.countDocuments({
+      childId: { $in: childIds },
+      isVisibleToParent: true,
+      seenByParentAt: null,
+    }),
   ]);
 
   const completedMap = await buildCompletedCountByPackage(allSlots as any[]);
@@ -452,6 +457,7 @@ async function parentStats(user: JWTPayload): Promise<NextResponse> {
       children:        children.map(c => ({ childId: c._id.toString(), childName: c.name })),
       weeklyReports,
       upcomingSchedule,
+      unseenInvoiceCount,
     },
   });
 }

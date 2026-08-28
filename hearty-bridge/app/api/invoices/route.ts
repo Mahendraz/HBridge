@@ -64,6 +64,14 @@ export const GET = withAnyAuth(
       status: inv.status === 'unpaid' && new Date(inv.dueDate) < now ? 'overdue' : inv.status,
     }));
 
+    if (user.role === 'parent') {
+      // Opening the invoice list counts as "seeing" any unseen invoices — clears the dashboard badge.
+      await Invoice.updateMany(
+        { parentId: new mongoose.Types.ObjectId(user.userId), isVisibleToParent: true, seenByParentAt: null },
+        { $set: { seenByParentAt: now } }
+      );
+    }
+
     return SuccessResponse.ok({ invoices: enriched, total, page, limit });
   })
 );

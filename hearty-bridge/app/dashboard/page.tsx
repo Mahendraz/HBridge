@@ -117,6 +117,7 @@ interface DashboardData {
   children?: ChildInfo[];
   weeklyReports?: WeeklyReport[];
   upcomingSchedule?: UpcomingScheduleItem[];
+  unseenInvoiceCount?: number;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -716,11 +717,30 @@ function TherapistMainContent({ data }: { data: DashboardData }) {
 // ── Parent Main Content ───────────────────────────────────────────────────────
 
 function ParentMainContent({ data }: { data: DashboardData }) {
-  const weeklyReports    = data.weeklyReports    ?? [];
-  const upcomingSchedule = data.upcomingSchedule ?? [];
+  const weeklyReports      = data.weeklyReports    ?? [];
+  const upcomingSchedule   = data.upcomingSchedule ?? [];
+  const unseenInvoiceCount = data.unseenInvoiceCount ?? 0;
 
   return (
     <div className="space-y-6">
+      {/* Notifikasi invoice belum dilihat */}
+      {unseenInvoiceCount > 0 && (
+        <Link href="/dashboard/invoices">
+          <div className="flex items-center gap-3 p-4 rounded-2xl border border-amber-200 bg-amber-50 hover:bg-amber-100 transition-colors cursor-pointer">
+            <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
+              <ReceiptIcon className="h-5 w-5 text-amber-700" />
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-sm font-semibold text-amber-900">
+                {unseenInvoiceCount} invoice baru belum dilihat
+              </p>
+              <p className="text-xs text-amber-700 mt-0.5">Klik untuk melihat detail invoice Anda</p>
+            </div>
+            <Badge className="bg-amber-500 text-white flex-shrink-0">{unseenInvoiceCount}</Badge>
+          </div>
+        </Link>
+      )}
+
       {/* Laporan minggu ini */}
       <div className="relative rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <BorderBeam size={120} duration={10} colorFrom="#14b8a6" colorTo="#8b5cf6" />
