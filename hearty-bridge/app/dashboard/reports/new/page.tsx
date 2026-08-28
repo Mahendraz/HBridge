@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { usePermissions } from "@/lib/utils/permissions";
 import { useReportDraft } from "@/lib/hooks/useReportDraft";
+import { uploadFileWithProgress } from "@/lib/utils/upload-with-progress";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
@@ -26,6 +27,7 @@ function formatDisplayDate(dateStr: string): string {
   const months = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"];
   return `${d} ${months[m - 1]} ${y}`;
 }
+
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -84,6 +86,7 @@ export default function NewReportPage() {
   const [allChildren, setAllChildren] = useState<ChildOption[]>([]);
   const [pendingFiles, setPendingFiles] = useState<{ file: File; preview: string }[]>([]);
   const [savingAs, setSavingAs] = useState<"draft" | "completed" | null>(null);
+  const [uploadPercent, setUploadPercent] = useState<number | null>(null);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [loadingChildren, setLoadingChildren] = useState(true);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -236,25 +239,42 @@ export default function NewReportPage() {
 
       const reportId: string = result.data._id;
 
-      // Upload pending media files
-      for (const { file } of pendingFiles) {
-        const fd = new FormData();
-        fd.append("file", file);
-        const uploadRes = await fetch(`/api/reports/${reportId}/media`, {
-          method: "POST",
-          headers: { Authorization: `Bearer ${token}` },
-          body: fd,
-        });
-        if (!uploadRes.ok) {
-          const uploadErr = await uploadRes.json().catch(() => ({}));
-          console.warn("Media upload warning:", uploadErr.error);
+      // Upload pending media files — sequential (server processes one at a time
+      // anyway), but tracked via XHR progress so large videos show a real
+      // percentage instead of an indefinite spinner.
+      if (pendingFiles.length > 0) {
+        const totalBytes = pendingFiles.reduce((sum, { file }) => sum + file.size, 0);
+        let uploadedBytesSoFar = 0;
+        setUploadPercent(0);
+
+        for (const { file } of pendingFiles) {
+          const fd = new FormData();
+          fd.append("file", file);
+          try {
+            await uploadFileWithProgress(
+              `/api/reports/${reportId}/media`,
+              fd,
+              token || "",
+              (loaded) => {
+                const percent = totalBytes > 0
+                  ? Math.round(((uploadedBytesSoFar + loaded) / totalBytes) * 100)
+                  : 0;
+                setUploadPercent(percent);
+              }
+            );
+          } catch (uploadErr) {
+            console.warn("Media upload warning:", uploadErr);
+          }
+          uploadedBytesSoFar += file.size;
         }
+        setUploadPercent(null);
       }
 
       draftHook.clear();
       router.push("/dashboard/reports");
     } catch (err: unknown) {
       setSaveError(err instanceof Error ? err.message : "Terjadi kesalahan.");
+      setUploadPercent(null);
     } finally {
       setSavingAs(null);
     }
@@ -517,6 +537,21 @@ export default function NewReportPage() {
           {saveError && (
             <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">
               {saveError}
+            </div>
+          )}
+
+          {uploadPercent !== null && (
+            <div>
+              <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
+                <span>Mengunggah media...</span>
+                <span>{uploadPercent}%</span>
+              </div>
+              <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
+                <div
+                  className="h-full bg-teal-500 transition-all duration-200"
+                  style={{ width: `${uploadPercent}%` }}
+                />
+              </div>
             </div>
           )}
 

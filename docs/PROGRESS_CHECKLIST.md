@@ -26,8 +26,8 @@ Checklist eksekusi untuk `docs/TASK_BREAKDOWN.md` (detail teknis per item ada di
 ## 3. POV Terapis
 - [x] 3.1 Jadwal terpotong di mobile portrait — diverifikasi manual (viewport 390px, desktop tidak regresi)
 - [x] 3.2 Pelaporan & Analitik terpotong di mobile — diverifikasi manual (viewport 390px)
-- [ ] 3.3 Rekomendasi CSS/layout responsif (prinsip umum, tercakup di 3.1/3.2)
-- [ ] 3.4 Upload video lambat
+- [x] 3.3 Rekomendasi CSS/layout responsif (prinsip umum, tercakup di 3.1/3.2) — tidak ada kerjaan terpisah
+- [x] 3.4 Upload video lambat — tahap 1 (progress bar XHR) dikerjakan & diverifikasi manual; tahap 2 (transcode async) & 3 (multipart/presigned) belum — lihat catatan di TASK_BREAKDOWN.md
 - [x] 3.5 Tidak ada notifikasi komentar baru untuk terapis — sudah terselesaikan oleh sistem notifikasi (1.2), diverifikasi manual
 
 ## 4. Rangkuman Fitur & Kebutuhan Admin
