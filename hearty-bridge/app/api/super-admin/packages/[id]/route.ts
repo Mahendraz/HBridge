@@ -15,7 +15,7 @@ const updateSchema = z.object({
   name: z.string().min(1).max(100).trim().optional(),
   sessions: z.number().int().min(1).optional(),
   price: z.number().min(0).optional(),
-  therapyType: z.enum(['OT', 'TW', 'both']).optional(),
+  therapyType: z.enum(['OT', 'TW', 'both', 'assessment']).optional(),
   description: z.string().max(500).optional(),
   isActive: z.boolean().optional(),
 });
@@ -51,6 +51,16 @@ export const PUT = withSuperAdminAuth(
     }
 
     await connectToDatabase();
+
+    const existing = await Package.findById(id).lean();
+    if (!existing) return ErrorResponse.notFound('Package');
+
+    const effectiveTherapyType = result.data.therapyType ?? (existing as any).therapyType;
+    const effectiveSessions = result.data.sessions ?? (existing as any).sessions;
+    if (effectiveTherapyType === 'assessment' && effectiveSessions !== 1) {
+      return ErrorResponse.badRequest('Paket assessment harus memiliki tepat 1 sesi');
+    }
+
     const pkg = await Package.findByIdAndUpdate(
       id,
       { $set: result.data },
