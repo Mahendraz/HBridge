@@ -741,7 +741,7 @@ function ReportViewDialog({
                       <div
                         key={comment._id}
                         className={`rounded-xl border p-3 transition-colors ${
-                          comment.isResolved ? 'border-gray-100 bg-gray-50 opacity-60' : 'border-gray-200 bg-white'
+                          comment.isResolved ? 'border-gray-100 bg-white' : 'border-gray-200 bg-white'
                         }`}
                       >
                         {/* Comment header */}
@@ -754,7 +754,7 @@ function ReportViewDialog({
                             <span className="text-[10px] text-gray-400 capitalize">{comment.authorRole}</span>
                             <span className="text-[10px] text-gray-400">{relativeTime(comment.createdAt)}</span>
                           </div>
-                          {comment.isResolved && canResolve && (
+                          {comment.isResolved && (
                             <span className="inline-flex items-center gap-0.5 text-[10px] font-semibold text-green-600 bg-green-50 px-1.5 py-0.5 rounded-full">
                               <CheckCircle2Icon className="h-3 w-3" /> Selesai
                             </span>
@@ -820,7 +820,7 @@ function ReportViewDialog({
                             {replies.map((reply) => (
                               <div key={reply._id} className="flex gap-2">
                                 <CornerDownRightIcon className="h-3.5 w-3.5 text-gray-300 flex-shrink-0 mt-0.5" />
-                                <div className="flex-1 bg-gray-50 rounded-lg px-3 py-2">
+                                <div className="flex-1 bg-white border-l-2 border-teal-100 pl-3 py-1">
                                   <div className="flex items-center gap-1.5 mb-0.5">
                                     <span className="text-xs font-semibold text-gray-700">{reply.authorName}</span>
                                     <span className="text-[10px] text-gray-400 capitalize">{reply.authorRole}</span>
