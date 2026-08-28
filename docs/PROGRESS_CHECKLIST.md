@@ -31,7 +31,7 @@ Checklist eksekusi untuk `docs/TASK_BREAKDOWN.md` (detail teknis per item ada di
 - [x] 3.5 Tidak ada notifikasi komentar baru untuk terapis — sudah terselesaikan oleh sistem notifikasi (1.2), diverifikasi manual
 
 ## 4. Rangkuman Fitur & Kebutuhan Admin
-- [ ] 4.1 Frekuensi terapi mingguan per anak
+- [x] 4.1 Frekuensi terapi mingguan per anak — diverifikasi manual (nilai bervariasi sesuai jadwal asli)
 - [ ] 4.2 Pencarian anak tidak jalan
 - [ ] 4.3 Tambah jadwal susulan di tengah paket berjalan
 - [ ] 4.4 Cari anak di halaman jadwal

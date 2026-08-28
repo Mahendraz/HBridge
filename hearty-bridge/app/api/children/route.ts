@@ -264,6 +264,23 @@ export const GET = withAnyAuth(
           child.sessionProgress = sp ? { completed: sp.completed, total: sp.total } : null;
           child.sessionsThisMonth = sp?.completedThisMonth ?? 0;
         }
+
+        // Weekly therapy frequency = number of distinct days/week with an active
+        // recurring slot (e.g. Senin+Rabu+Jumat = "3x/minggu"). Was previously a
+        // hardcoded "2x/minggu" string never actually computed from WeeklySchedule.
+        const childStringIdsForFreq = formattedChildren.map((c: any) => c.id);
+        const freqAgg = childStringIdsForFreq.length > 0
+          ? await WeeklySchedule.aggregate([
+              { $match: { patientId: { $in: childStringIdsForFreq } } },
+              { $group: { _id: '$patientId', days: { $addToSet: '$day' } } },
+            ])
+          : [];
+        const freqByChild = new Map<string, number>(
+          freqAgg.map((r: any) => [r._id, (r.days as string[]).length])
+        );
+        for (const child of formattedChildren) {
+          child.weeklyFrequency = freqByChild.get(child.id) ?? 0;
+        }
       }
 
       // Sign R2 photo keys

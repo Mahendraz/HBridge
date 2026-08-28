@@ -74,6 +74,7 @@ interface Patient {
   sessionProgress?: { completed: number; total: number } | null;
   therapyBalance?: Record<string, number>;
   createdAt?: string;
+  weeklyFrequency?: number;
 }
 
 export default function UnifiedPatientsPage() {
@@ -172,7 +173,7 @@ export default function UnifiedPatientsPage() {
               {
                 id: "1",
                 name: 'General Therapy',
-                frequency: "2x/minggu",
+                frequency: child.weeklyFrequency ? `${child.weeklyFrequency}x/minggu` : 'Belum terjadwal',
                 progress: child.progressScore || 50,
                 nextSession: child.nextSession || new Date().toISOString()
               }
@@ -187,7 +188,8 @@ export default function UnifiedPatientsPage() {
             tokenExpiry: child.tokenExpiry ?? null,
             sessionProgress: child.sessionProgress ?? null,
             therapyBalance: child.therapyBalance ?? {},
-            createdAt: child.createdAt
+            createdAt: child.createdAt,
+            weeklyFrequency: child.weeklyFrequency ?? 0
           };
           });
           setPatients(convertedPatients);
@@ -592,6 +594,11 @@ export default function UnifiedPatientsPage() {
                             ? `${child.sessionProgress.completed}/${child.sessionProgress.total} sesi`
                             : 'Belum ada sesi'}
                         </span>
+                        {!!child.weeklyFrequency && (
+                          <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                            Terapi {child.weeklyFrequency}x/minggu
+                          </span>
+                        )}
                       </div>
                     </div>
                   </div>
@@ -754,6 +761,11 @@ export default function UnifiedPatientsPage() {
                                   ? `${child.sessionProgress.completed}/${child.sessionProgress.total} sesi`
                                   : 'Belum ada sesi'}
                               </span>
+                              {!!child.weeklyFrequency && (
+                                <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-indigo-100 text-indigo-700">
+                                  {child.weeklyFrequency}x/minggu
+                                </span>
+                              )}
                               <Badge variant={child.status === 'active' ? 'default' : 'secondary'}>
                                 {child.status === 'active' ? 'Aktif' : child.status === 'inactive' ? 'Tidak Aktif' : 'Tertunda'}
                               </Badge>
