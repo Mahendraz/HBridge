@@ -14,7 +14,7 @@ interface Invoice {
   invoiceNumber: string;
   childName: string;
   packageType: 'gold' | 'platinum' | 'diamond';
-  therapyType: 'OT' | 'TW';
+  therapyType: 'OT' | 'TW' | 'both' | 'assessment';
   sessions: number;
   amount: number;
   dueDate: string;
@@ -35,9 +35,12 @@ const PACKAGE_COLOR: Record<string, string> = {
   platinum: 'bg-gray-100 text-gray-700',
   diamond:  'bg-blue-100 text-blue-800',
 };
+const THERAPY_LABEL: Record<string, string> = { OT: 'OT', TW: 'TW', both: 'OT & TW', assessment: 'Asesmen' };
 const THERAPY_COLOR: Record<string, string> = {
-  OT: 'bg-blue-50 text-blue-700',
-  TW: 'bg-purple-50 text-purple-700',
+  OT:         'bg-blue-50 text-blue-700',
+  TW:         'bg-purple-50 text-purple-700',
+  both:       'bg-teal-50 text-teal-700',
+  assessment: 'bg-amber-50 text-amber-700',
 };
 
 function StatusBadge({ status }: { status: Invoice['status'] }) {
@@ -295,7 +298,7 @@ export default function InvoicesPage() {
                     {PACKAGE_LABEL[inv.packageType]}
                   </span>
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${THERAPY_COLOR[inv.therapyType]}`}>
-                    {inv.therapyType}
+                    {THERAPY_LABEL[inv.therapyType] ?? inv.therapyType}
                   </span>
                   <span className="text-xs text-gray-500">{inv.sessions} sesi</span>
                 </div>
@@ -514,7 +517,7 @@ export default function InvoicesPage() {
                           {PACKAGE_LABEL[inv.packageType]}
                         </span>
                         <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${THERAPY_COLOR[inv.therapyType]}`}>
-                          {inv.therapyType}
+                          {THERAPY_LABEL[inv.therapyType] ?? inv.therapyType}
                         </span>
                         <span className="text-xs text-gray-400">{inv.sessions} sesi</span>
                       </div>

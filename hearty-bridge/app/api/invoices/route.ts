@@ -112,7 +112,8 @@ export const POST = withAdminAuth(
     }
 
     const packageType = (tx as any).packageType as string;
-    const therapyType = (tx as any).therapyType as string;
+    // TokenTransaction.therapyType is null for combined OT+TW packages.
+    const therapyType = ((tx as any).therapyType as string | null) ?? 'both';
     const sessions    = (tx as any).amount as number;
     const amount      = PACKAGE_PRICES[packageType] ?? 0;
 
@@ -135,7 +136,7 @@ export const POST = withAdminAuth(
       parentId:             (child as any).parentId,
       packageTransactionId: new mongoose.Types.ObjectId(packageTransactionId),
       packageType:          packageType,
-      therapyType: therapyType as 'OT' | 'TW',
+      therapyType: therapyType as 'OT' | 'TW' | 'both' | 'assessment',
       sessions,
       amount,
       dueDate,

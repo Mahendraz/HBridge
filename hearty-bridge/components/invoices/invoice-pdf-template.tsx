@@ -41,6 +41,7 @@ function formatRupiah(amount: number): string {
 }
 
 const STATUS_LABEL: Record<string, string> = { paid: "LUNAS", unpaid: "BELUM DIBAYAR", overdue: "JATUH TEMPO" };
+const THERAPY_LABEL: Record<string, string> = { OT: "OT", TW: "TW", both: "OT & TW", assessment: "Asesmen" };
 const STATUS_STYLE: Record<string, { backgroundColor: string; color: string }> = {
   paid: { backgroundColor: "#dcfce7", color: "#15803d" },
   unpaid: { backgroundColor: "#fef9c3", color: "#a16207" },
@@ -105,7 +106,7 @@ export function InvoicePdfDocument({ invoice }: { invoice: InvoicePdfData }) {
             <Text style={[styles.colAmount, styles.headerCell]}>Jumlah</Text>
           </View>
           <View style={styles.tableRow}>
-            <Text style={styles.colDesc}>Paket {invoice.packageType} — Terapi {invoice.therapyType}</Text>
+            <Text style={styles.colDesc}>Paket {invoice.packageType} — Terapi {THERAPY_LABEL[invoice.therapyType] ?? invoice.therapyType}</Text>
             <Text style={styles.colQty}>{invoice.sessions}</Text>
             <Text style={styles.colAmount}>{formatRupiah(invoice.originalAmount || invoice.amount)}</Text>
           </View>

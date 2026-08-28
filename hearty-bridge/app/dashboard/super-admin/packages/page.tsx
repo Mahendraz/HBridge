@@ -45,7 +45,7 @@ function formatRupiah(n: number) {
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
 }
 
-const EMPTY_FORM = { name: "", sessions: 1, price: 0, therapyType: "OT" as "OT" | "TW" | "both" | "assessment", description: "" };
+const EMPTY_FORM = { name: "", sessions: 1, price: 0, therapyType: "both" as "OT" | "TW" | "both" | "assessment", description: "" };
 
 export default function SuperAdminPackagesPage() {
   const { user } = useAuth();
@@ -155,6 +155,13 @@ export default function SuperAdminPackagesPage() {
       if (res.ok) fetchPackages();
     } catch {}
   };
+
+  // OT-only/TW-only are legacy — only offered when editing a package that's already
+  // one of those types (so the current value stays selectable), never for a new package.
+  const therapyTypeOptions =
+    editingId && (form.therapyType === "OT" || form.therapyType === "TW")
+      ? (["OT", "TW", "both", "assessment"] as const)
+      : (["both", "assessment"] as const);
 
   if (!permissions.hasPermission("packages:view")) {
     return (
@@ -313,8 +320,10 @@ export default function SuperAdminPackagesPage() {
             </div>
             <div>
               <label className="block text-xs font-medium text-gray-700 mb-1">Jenis Terapi *</label>
-              <div className="grid grid-cols-4 gap-2">
-                {(["OT", "TW", "both", "assessment"] as const).map((t) => (
+              {/* Paket OT-only/TW-only terpisah sudah digabung — hanya bisa dipilih lagi saat
+                  mengedit paket lama yang masih bertipe itu, tidak untuk paket baru. */}
+              <div className={`grid gap-2 ${therapyTypeOptions.length === 4 ? "grid-cols-4" : "grid-cols-2"}`}>
+                {therapyTypeOptions.map((t) => (
                   <button
                     key={t}
                     onClick={() => setForm({ ...form, therapyType: t, sessions: t === "assessment" ? 1 : form.sessions })}

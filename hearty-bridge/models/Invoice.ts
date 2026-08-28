@@ -8,7 +8,7 @@ export interface IInvoice extends Document {
   packageTransactionId: mongoose.Types.ObjectId;
   packageId?: mongoose.Types.ObjectId | null;
   packageType: string;
-  therapyType: 'OT' | 'TW' | 'assessment';
+  therapyType: 'OT' | 'TW' | 'both' | 'assessment';
   sessions: number;
   originalAmount: number;
   discountAmount: number;
@@ -41,7 +41,7 @@ const InvoiceSchema = new Schema<IInvoice>(
     packageType: { type: String, required: true, trim: true },
     therapyType: {
       type: String,
-      enum: ['OT', 'TW', 'assessment'],
+      enum: ['OT', 'TW', 'both', 'assessment'],
       required: true,
     },
     sessions:        { type: Number, required: true, min: 1 },

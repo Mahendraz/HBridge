@@ -234,7 +234,7 @@ export const POST = withAdminAuth(
       packageTransactionId: transaction._id,
       packageId:            new mongoose.Types.ObjectId(packageId),
       packageType:          packageName,
-      therapyType:          therapyType === 'both' ? 'OT' : (therapyType as 'OT' | 'TW' | 'assessment'),
+      therapyType:          therapyType as 'OT' | 'TW' | 'both' | 'assessment',
       sessions:             amount,
       originalAmount:       price,
       discountAmount:       discount,
