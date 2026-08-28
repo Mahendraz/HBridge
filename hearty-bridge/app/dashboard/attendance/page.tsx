@@ -55,6 +55,23 @@ interface AdminData {
 
 interface HistoryRecord extends AttendanceRecord {}
 
+interface RecapRow {
+  userId: string;
+  userName: string;
+  userRole: string;
+  onTime: number;
+  late: number;
+  absent: number;
+  attendanceRate: number;
+}
+
+interface RecapData {
+  from: string;
+  to: string;
+  workingDays: number;
+  rows: RecapRow[];
+}
+
 interface CheckInResult {
   status: "on-time" | "late";
   isWithinLocation: boolean;
@@ -173,6 +190,61 @@ export default function AttendancePage() {
   const [checking, setChecking] = useState(false);
   const [gpsError, setGpsError] = useState<string | null>(null);
   const [checkInResult, setCheckInResult] = useState<CheckInResult | null>(null);
+
+  /* ─ Monthly recap state ─ */
+  const [recapFrom, setRecapFrom] = useState<string>(() => {
+    const [y, m] = todayWIB().split("-");
+    return `${y}-${m}-01`;
+  });
+  const [recapTo, setRecapTo] = useState<string>(todayWIB());
+  const [recapData, setRecapData] = useState<RecapData | null>(null);
+  const [recapLoading, setRecapLoading] = useState(false);
+  const [recapError, setRecapError] = useState<string | null>(null);
+
+  const fetchRecap = useCallback(async () => {
+    setRecapLoading(true);
+    setRecapError(null);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetchWithTimeout(
+        `/api/attendance/recap?from=${recapFrom}&to=${recapTo}`,
+        { headers: { Authorization: `Bearer ${token}` } }
+      );
+      const r = await res.json();
+      if (res.ok && r.success) {
+        setRecapData(r.data);
+      } else {
+        setRecapError(r.error || "Gagal memuat rekap.");
+      }
+    } catch {
+      setRecapError("Terjadi kesalahan saat memuat rekap.");
+    } finally {
+      setRecapLoading(false);
+    }
+  }, [recapFrom, recapTo]);
+
+  useEffect(() => {
+    fetchRecap();
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  const downloadRecapCsv = () => {
+    if (!recapData) return;
+    const header = ["Nama", "Role", "Tepat Waktu", "Terlambat", "Tidak Hadir", "Persentase Kehadiran"];
+    const rows = recapData.rows.map((r) => [
+      r.userName, r.userRole, r.onTime, r.late, r.absent, `${r.attendanceRate}%`,
+    ]);
+    const csv = [header, ...rows].map((row) => row.map((v) => `"${v}"`).join(",")).join("\n");
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8;" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = `Rekap-Absensi-${recapData.from}_${recapData.to}.csv`;
+    document.body.appendChild(a);
+    a.click();
+    a.remove();
+    URL.revokeObjectURL(url);
+  };
 
   /* ─ Fetch ─ */
 
@@ -698,6 +770,89 @@ export default function AttendancePage() {
               </Card>
             );
           })()}
+
+          {/* ── Rekap Bulanan (date-range) ── */}
+          <Card>
+            <CardHeader className="pb-3">
+              <div className="flex flex-wrap items-end justify-between gap-3">
+                <div>
+                  <CardTitle className="text-base">Rekap Absensi (Rentang Tanggal)</CardTitle>
+                  <p className="text-xs text-gray-500 mt-1">
+                    Ringkasan kehadiran per staff untuk periode yang dipilih.
+                  </p>
+                </div>
+                <div className="flex flex-wrap items-end gap-2">
+                  <div>
+                    <label className="block text-[11px] text-gray-500 mb-0.5">Dari</label>
+                    <input
+                      type="date"
+                      value={recapFrom}
+                      onChange={(e) => setRecapFrom(e.target.value)}
+                      className="border border-gray-200 rounded-md px-2 py-1.5 text-sm"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-[11px] text-gray-500 mb-0.5">Sampai</label>
+                    <input
+                      type="date"
+                      value={recapTo}
+                      onChange={(e) => setRecapTo(e.target.value)}
+                      className="border border-gray-200 rounded-md px-2 py-1.5 text-sm"
+                    />
+                  </div>
+                  <Button size="sm" onClick={fetchRecap} disabled={recapLoading}>
+                    {recapLoading ? "Memuat..." : "Terapkan"}
+                  </Button>
+                  <Button size="sm" variant="outline" onClick={downloadRecapCsv} disabled={!recapData || recapLoading}>
+                    Unduh Rekap (CSV)
+                  </Button>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-0">
+              {recapError ? (
+                <div className="px-4 py-6 text-sm text-red-600">{recapError}</div>
+              ) : recapLoading ? (
+                <div className="px-4 py-8 text-center text-sm text-gray-400">Memuat rekap...</div>
+              ) : !recapData || recapData.rows.length === 0 ? (
+                <div className="px-4 py-8 text-center text-sm text-gray-400">Tidak ada data untuk periode ini.</div>
+              ) : (
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Nama</th>
+                        <th className="text-left px-4 py-3 font-medium text-gray-600">Role</th>
+                        <th className="text-center px-3 py-3 font-medium text-gray-600">Tepat Waktu</th>
+                        <th className="text-center px-3 py-3 font-medium text-gray-600">Terlambat</th>
+                        <th className="text-center px-3 py-3 font-medium text-gray-600">Tidak Hadir</th>
+                        <th className="text-center px-3 py-3 font-medium text-gray-600">Kehadiran</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-100">
+                      {recapData.rows.map((r) => (
+                        <tr key={r.userId} className="hover:bg-gray-50">
+                          <td className="px-4 py-2.5 font-medium text-gray-900 whitespace-nowrap">{r.userName}</td>
+                          <td className="px-4 py-2.5">
+                            <Badge variant="outline" className="capitalize text-xs">{r.userRole}</Badge>
+                          </td>
+                          <td className="px-3 py-2.5 text-center text-green-700 font-semibold">{r.onTime}</td>
+                          <td className="px-3 py-2.5 text-center text-yellow-600 font-semibold">{r.late}</td>
+                          <td className="px-3 py-2.5 text-center text-red-500 font-semibold">{r.absent}</td>
+                          <td className="px-3 py-2.5 text-center font-semibold">{r.attendanceRate}%</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              )}
+              {recapData && (
+                <div className="px-4 py-2 border-t text-xs text-gray-500">
+                  Periode {formatDate(recapData.from)} s/d {formatDate(recapData.to)} · {recapData.workingDays} hari kerja
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </>
       )}
 

@@ -20,7 +20,7 @@ Checklist eksekusi untuk `docs/TASK_BREAKDOWN.md` (detail teknis per item ada di
 - [x] 2.3 Field Harga & Jumlah Sesi tidak bisa dikosongkan — diverifikasi manual
 - [x] 2.4 Download Invoice + template standar — diverifikasi manual (admin list + detail pasien)
 - [x] 2.5 Hapus fitur Check-in untuk Super Admin — diverifikasi manual (nav, page guard, API 403, admin tidak regresi)
-- [ ] 2.6 Rekap absensi terapis bulanan/rentang tanggal
+- [x] 2.6 Rekap absensi terapis bulanan/rentang tanggal — diverifikasi manual (API + UI + unduh CSV)
 - [ ] 2.7 Chart tren jumlah pasien
 
 ## 3. POV Terapis
