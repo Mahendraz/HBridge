@@ -38,8 +38,8 @@ function toWIBISOString(utcDate: Date): string {
 export const POST = withAnyAuth(
   withErrorHandling(async (req: NextRequest, user: any) => {
     // Only admin and therapist may check-in
-    if (user.role === 'parent') {
-      return ErrorResponse.forbidden('Orang tua tidak perlu absen');
+    if (!['admin', 'therapist'].includes(user.role)) {
+      return ErrorResponse.forbidden('Anda tidak memiliki akses check-in');
     }
 
     const body = await req.json();

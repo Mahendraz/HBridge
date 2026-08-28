@@ -316,6 +316,16 @@ export default function AttendancePage() {
       })
     : [];
 
+  if (!permissions.hasPermission("attendance:view")) {
+    return (
+      <div className="py-20 text-center text-gray-500">
+        <XCircleIcon className="h-10 w-10 mx-auto mb-3 text-red-400" />
+        <p className="font-medium text-gray-700">Akses Ditolak</p>
+        <p className="text-sm">Anda tidak memiliki izin untuk melihat halaman ini.</p>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-6">
       {/* Header */}

@@ -21,8 +21,8 @@ function todayWIB(): string {
  */
 export const GET = withAnyAuth(
   withErrorHandling(async (req: NextRequest, user: any) => {
-    if (user.role === 'parent') {
-      return ErrorResponse.forbidden('Orang tua tidak memiliki absensi');
+    if (!['admin', 'therapist'].includes(user.role)) {
+      return ErrorResponse.forbidden('Anda tidak memiliki akses absensi');
     }
 
     await connectToDatabase();

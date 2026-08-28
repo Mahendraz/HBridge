@@ -19,7 +19,7 @@ Checklist eksekusi untuk `docs/TASK_BREAKDOWN.md` (detail teknis per item ada di
 - [x] 2.2 Gabungkan Paket OT & TW jadi satu tipe — diverifikasi manual (create form, edit legacy, invoice data)
 - [x] 2.3 Field Harga & Jumlah Sesi tidak bisa dikosongkan — diverifikasi manual
 - [x] 2.4 Download Invoice + template standar — diverifikasi manual (admin list + detail pasien)
-- [ ] 2.5 Hapus fitur Check-in untuk Super Admin
+- [x] 2.5 Hapus fitur Check-in untuk Super Admin — diverifikasi manual (nav, page guard, API 403, admin tidak regresi)
 - [ ] 2.6 Rekap absensi terapis bulanan/rentang tanggal
 - [ ] 2.7 Chart tren jumlah pasien
 
