@@ -23,6 +23,7 @@ import {
   PlusIcon,
   CameraIcon,
   Trash2Icon,
+  DownloadIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -385,6 +386,27 @@ export default function PatientDetailPage() {
       }
     } catch {
       // silently fail
+    }
+  };
+
+  const handleDownloadInvoicePdf = async (invoiceId: string, invoiceNumber: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/invoices/${invoiceId}/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) { alert('Gagal membuat PDF invoice.'); return; }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Invoice-${invoiceNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('Gagal membuat PDF invoice.');
     }
   };
 
@@ -955,6 +977,12 @@ export default function PatientDetailPage() {
                                 {invStatusLabel[inv.status] ?? inv.status}
                               </span>
                               <span className="text-[10px] text-gray-400 font-mono">{inv.invoiceNumber}</span>
+                              <button
+                                onClick={() => handleDownloadInvoicePdf(inv._id, inv.invoiceNumber)}
+                                className="inline-flex items-center gap-1 text-[10px] text-teal-600 hover:text-teal-800 font-medium"
+                              >
+                                <DownloadIcon className="h-2.5 w-2.5" /> Unduh Invoice
+                              </button>
                             </div>
                           ) : (
                             <span className="text-xs text-gray-300 italic">Belum ada invoice</span>

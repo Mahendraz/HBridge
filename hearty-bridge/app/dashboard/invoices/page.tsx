@@ -494,6 +494,7 @@ export default function InvoicesPage() {
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Bukti Bayar</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Kirim ke Orang Tua</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Unduh</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -640,6 +641,16 @@ export default function InvoicesPage() {
                         ) : (
                           <><EyeOffIcon className="h-3 w-3" /> Kirim</>
                         )}
+                      </button>
+                    </td>
+
+                    {/* Unduh */}
+                    <td className="px-4 py-3">
+                      <button
+                        onClick={() => handleDownloadInvoicePdf(inv._id, inv.invoiceNumber)}
+                        className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 transition-colors"
+                      >
+                        <DownloadIcon className="h-3 w-3" /> Unduh
                       </button>
                     </td>
                   </tr>
