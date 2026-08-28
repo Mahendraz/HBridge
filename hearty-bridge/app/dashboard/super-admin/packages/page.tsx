@@ -56,7 +56,7 @@ export default function SuperAdminPackagesPage() {
 
   const [showDialog, setShowDialog] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
-  const [form, setForm] = useState({ ...EMPTY_FORM });
+  const [form, setForm] = useState<Omit<typeof EMPTY_FORM, "sessions" | "price"> & { sessions: number | string; price: number | string }>({ ...EMPTY_FORM });
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
 
@@ -106,9 +106,12 @@ export default function SuperAdminPackagesPage() {
   };
 
   const handleSave = async () => {
+    const sessions = form.therapyType === "assessment" ? 1 : Number(form.sessions) || 0;
+    const price = Number(form.price) || 0;
+
     if (!form.name.trim()) { setSaveError("Nama paket wajib diisi"); return; }
-    if (form.sessions < 1) { setSaveError("Jumlah sesi minimal 1"); return; }
-    if (form.price < 0)    { setSaveError("Harga tidak boleh negatif"); return; }
+    if (sessions < 1) { setSaveError("Jumlah sesi minimal 1"); return; }
+    if (price < 0)    { setSaveError("Harga tidak boleh negatif"); return; }
 
     setSaving(true);
     setSaveError(null);
@@ -118,7 +121,7 @@ export default function SuperAdminPackagesPage() {
       const res = await fetch(url, {
         method,
         headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-        body: JSON.stringify(form),
+        body: JSON.stringify({ ...form, sessions, price }),
       });
       const result = await res.json();
       if (res.ok && result.success) {
@@ -302,7 +305,8 @@ export default function SuperAdminPackagesPage() {
                   readOnly={form.therapyType === "assessment"}
                   onChange={(e) => {
                     if (form.therapyType !== "assessment") {
-                      setForm({ ...form, sessions: parseInt(e.target.value) || 1 });
+                      const v = e.target.value;
+                      setForm({ ...form, sessions: v === "" ? "" : parseInt(v) || "" });
                     }
                   }}
                   className={form.therapyType === "assessment" ? "bg-gray-50 text-gray-500 cursor-not-allowed" : ""}
@@ -314,7 +318,10 @@ export default function SuperAdminPackagesPage() {
                   type="number"
                   min={0}
                   value={form.price}
-                  onChange={(e) => setForm({ ...form, price: parseInt(e.target.value) || 0 })}
+                  onChange={(e) => {
+                    const v = e.target.value;
+                    setForm({ ...form, price: v === "" ? "" : parseInt(v) || "" });
+                  }}
                 />
               </div>
             </div>
