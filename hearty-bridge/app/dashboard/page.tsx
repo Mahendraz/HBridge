@@ -207,8 +207,8 @@ export default function UnifiedDashboard() {
             <HeartIcon className="h-6 w-6 text-teal-600" />
           </div>
           <div>
-            <h1 className="text-xl font-bold text-gray-900">
-              Selamat datang kembali, {user?.name?.split(" ")[0]}!
+            <h1 className={role === "parent" ? "text-2xl md:text-3xl font-bold text-gray-900" : "text-xl font-bold text-gray-900"}>
+              {role === "parent" ? "Halo Parent!" : `Selamat datang kembali, ${user?.name?.split(" ")[0]}!`}
             </h1>
             <p className="text-gray-500 text-sm mt-0.5">
               {role === "admin" && "Kelola sistem praktik terapi Anda"}
