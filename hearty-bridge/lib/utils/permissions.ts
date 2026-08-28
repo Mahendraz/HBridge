@@ -607,6 +607,12 @@ export class PermissionChecker {
           icon: "DollarSignIcon",
           permissions: ["financial:view_all"]
         },
+        {
+          name: "Analitik",
+          href: "/dashboard/super-admin/analytics",
+          icon: "TrendingUpIcon",
+          permissions: ["reports:system_analytics"]
+        },
       ],
 
       admin: [
@@ -651,6 +657,12 @@ export class PermissionChecker {
           href: "/dashboard/invoices",
           icon: "ReceiptIcon",
           permissions: ["invoices:manage"]
+        },
+        {
+          name: "Analitik",
+          href: "/dashboard/super-admin/analytics",
+          icon: "TrendingUpIcon",
+          permissions: ["reports:system_analytics"]
         }
       ],
       therapist: [

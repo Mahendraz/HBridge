@@ -24,6 +24,7 @@ import {
   ReceiptIcon,
   PackageIcon,
   DollarSignIcon,
+  TrendingUpIcon,
 } from "lucide-react";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { UserRole } from "@/lib/types/auth";
@@ -47,6 +48,7 @@ const iconMap = {
   ReceiptIcon,
   PackageIcon,
   DollarSignIcon,
+  TrendingUpIcon,
 };
 
 interface DashboardSidebarProps {
