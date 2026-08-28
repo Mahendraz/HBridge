@@ -15,6 +15,16 @@ const DAY_MAP: Record<number, string> = {
   1: 'senin', 2: 'selasa', 3: 'rabu', 4: 'kamis', 5: 'jumat', 6: 'sabtu',
 };
 
+const DOW_OF_DAY: Record<string, number> = { senin: 1, selasa: 2, rabu: 3, kamis: 4, jumat: 5, sabtu: 6 };
+
+// Days-from-today (0 = today) until the next real-calendar occurrence of `day`.
+// Uses actual weekday numbers (0-6, Sun-Sat) rather than DAY_ORDER's array index,
+// since DAY_ORDER skips Sunday and an index-based mod-6 offset undercounts by one
+// whenever the projection window crosses a Sunday.
+function daysUntil(day: string, todayDow: number): number {
+  return ((DOW_OF_DAY[day] ?? 0) - todayDow + 7) % 7;
+}
+
 function getTodayName(): string {
   return DAY_MAP[new Date().getDay()] ?? '';
 }
@@ -388,7 +398,6 @@ async function therapistStats(user: JWTPayload): Promise<NextResponse> {
 // ── parent ────────────────────────────────────────────────────────────────────
 
 async function parentStats(user: JWTPayload): Promise<NextResponse> {
-  const todayName  = getTodayName();
   const parentOid  = toOid(user.userId);
   const { startOfWeek, endOfWeek } = getDateRanges();
 
@@ -424,23 +433,32 @@ async function parentStats(user: JWTPayload): Promise<NextResponse> {
   const completedMap = await buildCompletedCountByPackage(allSlots as any[]);
 
   const childNameMap = new Map(children.map(c => [c._id.toString(), c.name]));
-  const todayIdx     = DAY_ORDER.indexOf(todayName);
+  const today        = new Date();
+  const todayDow     = today.getDay();
 
   const upcomingSchedule = (allSlots as any[])
     .sort((a, b) => {
-      const ai = (DAY_ORDER.indexOf(a.day) - todayIdx + 6) % 6;
-      const bi = (DAY_ORDER.indexOf(b.day) - todayIdx + 6) % 6;
+      const ai = daysUntil(a.day, todayDow);
+      const bi = daysUntil(b.day, todayDow);
       return ai !== bi ? ai - bi : a.hour - b.hour;
     })
-    .map(slot => ({
-      childName:     childNameMap.get(slot.patientId) ?? slot.patientName,
-      day:           slot.day,
-      hour:          slot.hour,
-      therapistName: slot.therapistName,
-      therapyType:   slot.therapyType,
-      sessionNumber: slot.packageId ? (completedMap.get(slot.packageId) ?? 0) : 0,
-      totalSessions: slot.totalSessions ?? 0,
-    }));
+    .map(slot => {
+      const offset   = daysUntil(slot.day, todayDow);
+      const slotDate = new Date(today);
+      slotDate.setDate(today.getDate() + offset);
+      const date = `${slotDate.getFullYear()}-${String(slotDate.getMonth() + 1).padStart(2, '0')}-${String(slotDate.getDate()).padStart(2, '0')}`;
+
+      return {
+        childName:     childNameMap.get(slot.patientId) ?? slot.patientName,
+        day:           slot.day,
+        date,
+        hour:          slot.hour,
+        therapistName: slot.therapistName,
+        therapyType:   slot.therapyType,
+        sessionNumber: slot.packageId ? (completedMap.get(slot.packageId) ?? 0) : 0,
+        totalSessions: slot.totalSessions ?? 0,
+      };
+    });
 
   const weeklyReports = (weeklyReportsRaw as any[]).map(r => ({
     id:        r._id.toString(),

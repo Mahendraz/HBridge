@@ -75,6 +75,7 @@ interface WeeklyReport {
 interface UpcomingScheduleItem {
   childName: string;
   day: string;
+  date: string;
   hour: number;
   therapistName: string;
   therapyType: string;
@@ -814,7 +815,9 @@ function ParentMainContent({ data }: { data: DashboardData }) {
                       {DAY_LABELS[apt.day] ?? apt.day}
                     </p>
                     <p className={`text-xs mt-0.5 ${i === 0 ? "text-teal-600" : "text-gray-500"}`}>
-                      {slotTime(apt.hour)}
+                      {apt.date
+                        ? new Date(apt.date + "T00:00:00").toLocaleDateString("id-ID", { day: "numeric", month: "short" })
+                        : ""} · {slotTime(apt.hour)}
                     </p>
                   </div>
                 </div>

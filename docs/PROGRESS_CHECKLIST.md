@@ -6,7 +6,7 @@ Checklist eksekusi untuk `docs/TASK_BREAKDOWN.md` (detail teknis per item ada di
 - [x] 1.1 Notifikasi invoice tidak muncul di dashboard — diperbaiki & diverifikasi manual
 - [x] 1.2 Lonceng notifikasi umum tidak tersedia — dibuat (model + endpoint + bell + trigger invoice/komentar/laporan), diverifikasi manual via trigger invoice
 - [x] 1.3 "Halo Citra..." → "Halo Parent" + perbesar font — diverifikasi manual
-- [ ] 1.4 Tanggal janji temu hilang di dashboard
+- [x] 1.4 Tanggal janji temu hilang di dashboard — diverifikasi manual (juga fix bug offset hari yang salah lewat hari Minggu)
 - [ ] 1.5 Widget "Sisa Sesi Anda" font besar
 - [ ] 1.6 Dual tanggal laporan (tgl sesi vs tgl upload)
 - [ ] 1.7 Template download Laporan Harian
