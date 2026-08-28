@@ -32,7 +32,7 @@ Checklist eksekusi untuk `docs/TASK_BREAKDOWN.md` (detail teknis per item ada di
 
 ## 4. Rangkuman Fitur & Kebutuhan Admin
 - [x] 4.1 Frekuensi terapi mingguan per anak — diverifikasi manual (nilai bervariasi sesuai jadwal asli)
-- [ ] 4.2 Pencarian anak tidak jalan
+- [x] 4.2 Pencarian anak tidak jalan — diverifikasi manual (server-side search, network + UI)
 - [ ] 4.3 Tambah jadwal susulan di tengah paket berjalan
 - [ ] 4.4 Cari anak di halaman jadwal
 - [ ] 4.5 Filter jadwal per terapis

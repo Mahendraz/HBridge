@@ -110,6 +110,20 @@ export default function UnifiedPatientsPage() {
     if (user?.role === 'parent') fetchCompletedSessions();
   }, [user, permissions]);
 
+  // Debounced server-side search — the backend already supports ?search= (regex
+  // on name/diagnosis via buildChildSearchQuery), it just wasn't being called;
+  // the client-side filter below only ever saw the first page (limit=100) it had
+  // already fetched, so clinics with more active children than that got no results
+  // for anyone past the most-recently-created ones.
+  useEffect(() => {
+    if (!user) return;
+    const handle = setTimeout(() => {
+      fetchPatients(searchTerm);
+    }, 400);
+    return () => clearTimeout(handle);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [searchTerm]);
+
   const fetchCompletedSessions = async () => {
     try {
       const token = localStorage.getItem('token');
@@ -126,13 +140,16 @@ export default function UnifiedPatientsPage() {
     }
   };
 
-  const fetchPatients = async () => {
+  const fetchPatients = async (search?: string) => {
     try {
       setLoading(true);
       setLoadError(null);
       const token = localStorage.getItem('token');
 
-      const response = await fetchWithTimeout('/api/children', {
+      const params = new URLSearchParams({ limit: '100' });
+      if (search?.trim()) params.set('search', search.trim());
+
+      const response = await fetchWithTimeout(`/api/children?${params}`, {
         headers: {
           'Authorization': `Bearer ${token}`,
           'Content-Type': 'application/json'
@@ -332,7 +349,7 @@ export default function UnifiedPatientsPage() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center space-y-3">
           <p className="text-red-600">{loadError}</p>
-          <Button variant="outline" onClick={fetchPatients}>
+          <Button variant="outline" onClick={() => fetchPatients(searchTerm)}>
             Coba Lagi
           </Button>
         </div>
@@ -344,16 +361,11 @@ export default function UnifiedPatientsPage() {
   const getFilteredPatients = () => {
     let filtered = patients;
 
-    // Role-based filtering is handled server-side by /api/children
-    // Admin and therapist see all patients (therapist is view-only)
-
-    // Search filtering
-    if (searchTerm.trim()) {
-      filtered = filtered.filter(patient =>
-        patient.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        patient.diagnosis.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-    }
+    // Role-based filtering is handled server-side by /api/children.
+    // Admin and therapist see all patients (therapist is view-only).
+    // Search is also server-side now (see the debounced fetchPatients(searchTerm)
+    // effect above) — it needs the full dataset, not just whatever page/limit
+    // happens to already be loaded client-side.
 
     // Status filtering
     if (statusFilter !== "all") {
