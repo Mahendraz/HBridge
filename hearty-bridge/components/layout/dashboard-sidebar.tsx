@@ -29,6 +29,7 @@ import { useAuth } from "@/lib/contexts/auth-context";
 import { UserRole } from "@/lib/types/auth";
 import { Button } from "@/components/ui/button";
 import { usePermissions } from "@/lib/utils/permissions";
+import { NotificationBell } from "@/components/layout/notification-bell";
 
 const iconMap = {
   HomeIcon,
@@ -85,11 +86,12 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
   const SidebarContent = () => (
     <div className="flex flex-col h-full">
       {/* Header */}
-      <div className="flex items-center h-16 px-4 border-b border-gray-200">
+      <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
         <div className="flex items-center space-x-2">
           <HeartIcon className="h-8 w-8 text-teal-600" />
           <span className="text-xl font-bold text-gray-900">Hearty Bridge</span>
         </div>
+        <NotificationBell />
       </div>
 
       {/* User info */}

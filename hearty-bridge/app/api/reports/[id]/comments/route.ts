@@ -2,10 +2,11 @@ import { NextRequest } from 'next/server';
 import { withAnyAuth } from '@/lib/middleware/auth';
 import { withErrorHandling, SuccessResponse, ErrorResponse } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
-import { Report } from '@/models';
+import { Report, Child } from '@/models';
 import ReportComment from '@/models/ReportComment';
 import mongoose from 'mongoose';
 import { canAccessReport as canAccess } from '@/lib/utils/report-access';
+import { notify } from '@/lib/utils/notify';
 
 function getReportId(req: NextRequest): string {
   const parts = new URL(req.url).pathname.split('/');
@@ -73,6 +74,34 @@ export const POST = withAnyAuth(
       isResolved: false,
       isActive: true,
     });
+
+    // Notify the other party — therapist if a parent/admin commented, parent if the therapist/admin commented.
+    const reportTitle = (report as any).title || 'laporan';
+    const link = `/dashboard/reports?reportId=${id}`;
+    if (user.role === 'parent') {
+      const therapistId = (report as any).therapistId;
+      if (therapistId && therapistId.toString() !== user.userId) {
+        await notify({
+          recipientId: therapistId,
+          type: 'new_comment',
+          title: `Komentar baru di "${reportTitle}"`,
+          body: `${user.name} mengomentari laporan.`,
+          link,
+        });
+      }
+    } else {
+      const child = await Child.findById((report as any).childId).select('parentId').lean();
+      const parentId = (child as any)?.parentId;
+      if (parentId && parentId.toString() !== user.userId) {
+        await notify({
+          recipientId: parentId,
+          type: 'new_comment',
+          title: `Komentar baru di "${reportTitle}"`,
+          body: `${user.name} mengomentari laporan.`,
+          link,
+        });
+      }
+    }
 
     return SuccessResponse.ok({ comment });
   })

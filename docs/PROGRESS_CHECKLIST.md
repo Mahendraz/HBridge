@@ -4,7 +4,7 @@ Checklist eksekusi untuk `docs/TASK_BREAKDOWN.md` (detail teknis per item ada di
 
 ## 1. POV Orang Tua (Parent)
 - [x] 1.1 Notifikasi invoice tidak muncul di dashboard — diperbaiki & diverifikasi manual
-- [ ] 1.2 Lonceng notifikasi umum tidak tersedia
+- [x] 1.2 Lonceng notifikasi umum tidak tersedia — dibuat (model + endpoint + bell + trigger invoice/komentar/laporan), diverifikasi manual via trigger invoice
 - [ ] 1.3 "Halo Citra..." → "Halo Parent" + perbesar font
 - [ ] 1.4 Tanggal janji temu hilang di dashboard
 - [ ] 1.5 Widget "Sisa Sesi Anda" font besar

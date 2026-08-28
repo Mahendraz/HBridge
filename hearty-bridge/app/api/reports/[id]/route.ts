@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAnyAuth } from '@/lib/middleware/auth';
 import { withErrorHandling } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
-import { Report } from '@/models';
+import { Report, Child } from '@/models';
 import mongoose from 'mongoose';
 import { getR2SignedUrl, deleteFromR2 } from '@/lib/services/r2-storage';
 import { canAccessReport } from '@/lib/utils/report-access';
+import { notify } from '@/lib/utils/notify';
 
 function getReportId(req: NextRequest): string {
   return new URL(req.url).pathname.split('/').at(-1) ?? '';
@@ -72,6 +73,7 @@ export const PUT = withAnyAuth(
 
     const body = await req.json();
     const allowed = ['title', 'description', 'content', 'type', 'status', 'dueDate', 'tags', 'childName', 'therapistName'];
+    const wasCompleted = report.status === 'completed';
 
     for (const key of allowed) {
       if (body[key] !== undefined) {
@@ -88,6 +90,20 @@ export const PUT = withAnyAuth(
     }
 
     await report.save();
+
+    if (!wasCompleted && report.status === 'completed') {
+      const child = await Child.findById(report.childId).select('parentId').lean();
+      const parentId = (child as any)?.parentId;
+      if (parentId) {
+        await notify({
+          recipientId: parentId,
+          type: 'new_report',
+          title: `Laporan baru: ${report.title}`,
+          body: `Laporan terapi ${report.childName} sudah tersedia.`,
+          link: '/dashboard/reports',
+        });
+      }
+    }
 
     return NextResponse.json({ success: true, data: report });
   })

@@ -4,6 +4,7 @@ import { withErrorHandling, SuccessResponse, ErrorResponse } from '@/lib/utils/e
 import connectToDatabase from '@/lib/db/mongodb';
 import Invoice from '@/models/Invoice';
 import mongoose from 'mongoose';
+import { notify } from '@/lib/utils/notify';
 
 function getInvoiceId(req: NextRequest): string {
   const parts = new URL(req.url).pathname.split('/');
@@ -101,6 +102,17 @@ export const PATCH = withAdminAuth(
     console.log('[PATCH invoice] writeResult:', JSON.stringify(writeResult));
 
     if (!writeResult) return ErrorResponse.notFound('Invoice');
+
+    // Notify the parent when an invoice newly becomes visible to them.
+    if (isVisibleToParent === true && writeResult.parentId) {
+      await notify({
+        recipientId: writeResult.parentId,
+        type: 'new_invoice',
+        title: `Invoice baru: ${writeResult.invoiceNumber}`,
+        body: `Invoice untuk ${writeResult.childName} sudah tersedia.`,
+        link: '/dashboard/invoices',
+      });
+    }
 
     return SuccessResponse.ok({ invoice: writeResult });
   })

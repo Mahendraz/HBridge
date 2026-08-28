@@ -2,10 +2,11 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAnyAuth } from '@/lib/middleware/auth';
 import { withErrorHandling } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
-import { Report } from '@/models';
+import { Report, Child } from '@/models';
 import ReportComment from '@/models/ReportComment';
 import mongoose from 'mongoose';
 import { getR2SignedUrl } from '@/lib/services/r2-storage';
+import { notify } from '@/lib/utils/notify';
 
 async function injectSignedUrls(reports: any[]): Promise<any[]> {
   return Promise.all(
@@ -178,6 +179,20 @@ export const POST = withAnyAuth(
     });
 
     await report.save();
+
+    if (report.status === 'completed') {
+      const child = await Child.findById(report.childId).select('parentId').lean();
+      const parentId = (child as any)?.parentId;
+      if (parentId) {
+        await notify({
+          recipientId: parentId,
+          type: 'new_report',
+          title: `Laporan baru: ${report.title}`,
+          body: `Laporan terapi ${report.childName} sudah tersedia.`,
+          link: '/dashboard/reports',
+        });
+      }
+    }
 
     return NextResponse.json(
       { success: true, data: report },

@@ -15,3 +15,4 @@ export { default as ReportComment, type IReportComment, type IReportCommentModel
 export { default as Package, type IPackage, type IPackageModel } from './Package';
 export { default as TherapistLeave, type ITherapistLeave, type ITherapistLeaveModel } from './TherapistLeave';
 export { default as Announcement, type IAnnouncement, type IAnnouncementAttachment } from './Announcement';
+export { default as Notification, type INotification, type INotificationModel } from './Notification';
