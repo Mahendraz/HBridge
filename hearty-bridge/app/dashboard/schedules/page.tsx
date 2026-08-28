@@ -23,6 +23,7 @@ import {
   ChevronRightIcon,
   CalendarIcon,
   ClipboardListIcon,
+  SearchIcon,
 } from "lucide-react";
 
 // ---------------------------------------------------------------------------
@@ -1391,6 +1392,11 @@ export default function SchedulesPage() {
   // Leave set: "therapistId_dateStr" → true (therapist on leave that date)
   const [leaveSet, setLeaveSet] = useState<Set<string>>(new Set());
 
+  // Grid search/filter — allTherapists is already fetched for the slot-creation
+  // modal's dropdown; this reuses it as the filter's option list too.
+  const [searchTerm, setSearchTerm] = useState("");
+  const [therapistFilter, setTherapistFilter] = useState("");
+
   // Mobile agenda view: which day's slots are shown (defaults to today if within Mon-Sat)
   const [selectedMobileDay, setSelectedMobileDay] = useState<Day>(DAYS[0]);
 
@@ -1759,7 +1765,12 @@ export default function SchedulesPage() {
   // ---- Grid helpers ----
 
   const getSlotsForCell = (day: string, hour: number) =>
-    slots.filter((s) => s.day === day && s.hour === hour);
+    slots.filter((s) =>
+      s.day === day &&
+      s.hour === hour &&
+      (!therapistFilter || s.therapistId === therapistFilter) &&
+      (!searchTerm.trim() || s.patientName.toLowerCase().includes(searchTerm.trim().toLowerCase()))
+    );
 
   const getAssessmentsForCell = (day: string, hour: number) => {
     const dayIndex = DAYS.indexOf(day as Day);
@@ -1915,8 +1926,42 @@ export default function SchedulesPage() {
         )}
       </div>
 
+      {/* Search anak + filter terapis */}
+      {permissions.hasAnyPermission(["schedules:view_own", "schedules:manage_all"]) && (
+        <div className="flex flex-wrap items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
+          <div className="relative flex-1 min-w-[180px]">
+            <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-3.5 w-3.5 text-gray-400" />
+            <input
+              type="text"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              placeholder="Cari nama anak di jadwal..."
+              className="w-full pl-8 pr-3 py-1.5 text-sm border border-gray-200 rounded-md focus:outline-none focus:ring-2 focus:ring-teal-500"
+            />
+          </div>
+          <select
+            value={therapistFilter}
+            onChange={(e) => setTherapistFilter(e.target.value)}
+            className="border border-gray-200 rounded-md px-2.5 py-1.5 text-sm text-gray-700"
+          >
+            <option value="">Semua Terapis</option>
+            {allTherapists.map((t) => (
+              <option key={t._id} value={t._id}>{t.name}</option>
+            ))}
+          </select>
+          {(searchTerm || therapistFilter) && (
+            <button
+              onClick={() => { setSearchTerm(""); setTherapistFilter(""); }}
+              className="text-xs text-gray-400 hover:text-gray-600 px-2"
+            >
+              Reset
+            </button>
+          )}
+        </div>
+      )}
+
       {/* Therapist legend */}
-      {permissions.hasPermission("schedules:view_own") && (
+      {permissions.hasAnyPermission(["schedules:view_own", "schedules:manage_all"]) && (
         <div className="flex items-center gap-4 text-xs text-gray-500 bg-white border border-gray-200 rounded-lg px-4 py-2.5">
           <span className="font-medium text-gray-700">Keterangan:</span>
           <span className="flex items-center gap-1.5">

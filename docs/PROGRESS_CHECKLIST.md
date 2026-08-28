@@ -34,8 +34,8 @@ Checklist eksekusi untuk `docs/TASK_BREAKDOWN.md` (detail teknis per item ada di
 - [x] 4.1 Frekuensi terapi mingguan per anak — diverifikasi manual (nilai bervariasi sesuai jadwal asli)
 - [x] 4.2 Pencarian anak tidak jalan — diverifikasi manual (server-side search, network + UI)
 - [ ] 4.3 Tambah jadwal susulan di tengah paket berjalan
-- [ ] 4.4 Cari anak di halaman jadwal
-- [ ] 4.5 Filter jadwal per terapis
+- [x] 4.4 Cari anak di halaman jadwal — diverifikasi manual
+- [x] 4.5 Filter jadwal per terapis — diverifikasi manual (juga fix gate permission admin tidak lihat toolbar)
 - [ ] 4.6 Detail Profil Anak — field yang hilang
 - [ ] 4.7 Hapus field "keterangan" dari biodata anak
 - [ ] 4.8 Admin bisa edit & hapus invoice yang sudah diterbitkan
