@@ -1,6 +1,6 @@
 # Panduan Manual Testing — Hearty Bridge
 
-**URL Aplikasi:** https://hertybridge.inwebsite.id
+**URL Aplikasi:** https://heartybridge.id
 **Terakhir diperbarui:** Juni 2026
 
 ---
