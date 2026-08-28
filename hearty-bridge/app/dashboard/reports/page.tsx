@@ -895,6 +895,14 @@ export default function ReportsPage() {
   const [showPatientPicker, setShowPatientPicker] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
+  // List view hides Pasien/Terapis/Tgl Sesi columns below md — grid view already
+  // shows all of this stacked in a card, so default to it on small screens.
+  useEffect(() => {
+    if (typeof window !== 'undefined' && window.innerWidth < 640) {
+      setViewMode('grid');
+    }
+  }, []);
+
   const token =
     typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
 
@@ -1023,7 +1031,7 @@ export default function ReportsPage() {
   // ── ReportListItem ──────────────────────────────────────────────────────────
   const ReportListItem = ({ report }: { report: Report }) => {
     return (
-      <div className="flex items-center gap-4 py-2.5 px-4 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0 group">
+      <div className="flex flex-wrap sm:flex-nowrap items-center gap-x-4 gap-y-1 py-2.5 px-4 hover:bg-gray-50 transition-colors border-b border-gray-100 last:border-0 group">
 
         {/* Jenis */}
         <div className={COL.type}>
@@ -1046,6 +1054,21 @@ export default function ReportsPage() {
               {report.unresolvedCommentCount}
             </span>
           )}
+        </div>
+
+        {/* Pasien · Terapis · Tgl Sesi — mobile-only inline line, so nothing is
+            lost below sm even if the user manually switches to list view. The
+            sm:/md:/lg: hidden columns below cover the same data at wider widths. */}
+        <div className="basis-full sm:hidden flex flex-wrap gap-x-3 gap-y-0.5 text-[11px] text-gray-500">
+          <span>{report.childName}</span>
+          <span>·</span>
+          <span>{report.therapistName}</span>
+          <span>·</span>
+          <span>
+            {report.sessionDate
+              ? new Date(report.sessionDate).toLocaleDateString("id-ID", { day: "2-digit", month: "short" })
+              : "—"}
+          </span>
         </div>
 
         {/* Pasien */}
