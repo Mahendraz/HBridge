@@ -1040,7 +1040,7 @@ export default function ReportsPage() {
           >
             {report.title}
           </p>
-          {(report.unresolvedCommentCount ?? 0) > 0 && (
+          {permissions.hasPermission('reports:resolve_comment') && (report.unresolvedCommentCount ?? 0) > 0 && (
             <span className="shrink-0 flex items-center gap-0.5 text-[10px] text-amber-600 bg-amber-50 px-1.5 py-0.5 rounded-full">
               <MessageCircleIcon className="h-2.5 w-2.5" />
               {report.unresolvedCommentCount}
@@ -1187,7 +1187,7 @@ export default function ReportsPage() {
                     {report.mediaFiles!.length} media
                   </Badge>
                 )}
-                {(report.unresolvedCommentCount ?? 0) > 0 && (
+                {permissions.hasPermission('reports:resolve_comment') && (report.unresolvedCommentCount ?? 0) > 0 && (
                   <Badge variant="outline" className="text-xs bg-amber-50 text-amber-700 border-amber-200">
                     <MessageCircleIcon className="h-3 w-3 mr-1 inline" />
                     {report.unresolvedCommentCount} komentar

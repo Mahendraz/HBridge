@@ -73,25 +73,29 @@ export const GET = withAnyAuth(
 
     const reportsWithUrls = await injectSignedUrls(reports);
 
-    // Inject unresolved comment count per report
-    const reportIds = (reports as any[]).map((r) => r._id);
-    const commentCounts = await ReportComment.aggregate([
-      {
-        $match: {
-          reportId: { $in: reportIds },
-          isResolved: false,
-          isActive: true,
-          parentCommentId: null,
+    // Inject unresolved comment count per report — parents never see this badge
+    // (they lack reports:resolve_comment), so skip the aggregation for them entirely.
+    const countMap = new Map<string, number>();
+    if (user.role !== 'parent') {
+      const reportIds = (reports as any[]).map((r) => r._id);
+      const commentCounts = await ReportComment.aggregate([
+        {
+          $match: {
+            reportId: { $in: reportIds },
+            isResolved: false,
+            isActive: true,
+            parentCommentId: null,
+          },
         },
-      },
-      { $group: { _id: '$reportId', count: { $sum: 1 } } },
-    ]);
-    const countMap = new Map<string, number>(
-      commentCounts.map((c: any) => [c._id.toString(), c.count])
-    );
+        { $group: { _id: '$reportId', count: { $sum: 1 } } },
+      ]);
+      for (const c of commentCounts as any[]) countMap.set(c._id.toString(), c.count);
+    }
+    // Parents don't have the resolve_comment permission — omit the field entirely
+    // rather than relying on the frontend alone to hide the badge.
     const enriched = reportsWithUrls.map((r: any) => ({
       ...r,
-      unresolvedCommentCount: countMap.get(r._id?.toString() ?? '') ?? 0,
+      ...(user.role === 'parent' ? {} : { unresolvedCommentCount: countMap.get(r._id?.toString() ?? '') ?? 0 }),
     }));
 
     return NextResponse.json({
