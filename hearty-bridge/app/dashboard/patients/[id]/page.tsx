@@ -700,14 +700,6 @@ export default function PatientDetailPage() {
                   <p className="text-sm text-gray-400 italic">Tidak ada</p>
                 )}
               </div>
-              {child.medicalInfo?.notes && (
-                <div>
-                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-2">Catatan Medis</p>
-                  <p className="text-sm text-gray-900 bg-gray-50 rounded-lg p-3 whitespace-pre-wrap">
-                    {child.medicalInfo.notes}
-                  </p>
-                </div>
-              )}
             </CardContent>
           </Card>
 
@@ -1413,15 +1405,6 @@ export default function PatientDetailPage() {
                   value={editForm.allergies}
                   onChange={(e) => setEditForm((f) => f && { ...f, allergies: e.target.value })}
                   placeholder="cth: Penisilin"
-                />
-              </div>
-              <div>
-                <label className="text-xs font-medium text-gray-700 mb-1 block">Catatan Medis</label>
-                <textarea
-                  value={editForm.notes}
-                  onChange={(e) => setEditForm((f) => f && { ...f, notes: e.target.value })}
-                  className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm resize-none h-20 focus:outline-none focus:ring-2 focus:ring-teal-500"
-                  placeholder="Catatan tambahan..."
                 />
               </div>
               {saveError && (
