@@ -408,7 +408,7 @@ async function parentStats(user: JWTPayload): Promise<NextResponse> {
     .lean();
 
   if (children.length === 0) {
-    return SuccessResponse.ok({ data: { role: 'parent', children: [], weeklyReports: [], upcomingSchedule: [], unseenInvoiceCount: 0 } });
+    return SuccessResponse.ok({ data: { role: 'parent', children: [], weeklyReports: [], upcomingSchedule: [], unseenInvoiceCount: 0, sessionBalances: [] } });
   }
 
   const childIds       = children.map(c => c._id as mongoose.Types.ObjectId);
@@ -431,6 +431,24 @@ async function parentStats(user: JWTPayload): Promise<NextResponse> {
   ]);
 
   const completedMap = await buildCompletedCountByPackage(allSlots as any[]);
+
+  // Sisa Sesi Anda: remaining = totalSessions - completed, summed per child across
+  // its distinct active packages (a package can back more than one weekly slot,
+  // e.g. 2x/week, so dedupe by packageId before summing totalSessions).
+  const seenPackageIds = new Set<string>();
+  const remainingByChild = new Map<string, number>();
+  for (const slot of allSlots as any[]) {
+    if (!slot.packageId || seenPackageIds.has(slot.packageId)) continue;
+    seenPackageIds.add(slot.packageId);
+    const completed = completedMap.get(slot.packageId) ?? 0;
+    const remaining = Math.max(0, (slot.totalSessions ?? 0) - completed);
+    remainingByChild.set(slot.patientId, (remainingByChild.get(slot.patientId) ?? 0) + remaining);
+  }
+  const sessionBalances = children.map(c => ({
+    childId:   c._id.toString(),
+    childName: c.name,
+    remaining: remainingByChild.get(c._id.toString()) ?? 0,
+  }));
 
   const childNameMap = new Map(children.map(c => [c._id.toString(), c.name]));
   const today        = new Date();
@@ -476,6 +494,7 @@ async function parentStats(user: JWTPayload): Promise<NextResponse> {
       weeklyReports,
       upcomingSchedule,
       unseenInvoiceCount,
+      sessionBalances,
     },
   });
 }

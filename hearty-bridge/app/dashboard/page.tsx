@@ -119,6 +119,7 @@ interface DashboardData {
   weeklyReports?: WeeklyReport[];
   upcomingSchedule?: UpcomingScheduleItem[];
   unseenInvoiceCount?: number;
+  sessionBalances?: Array<{ childId: string; childName: string; remaining: number }>;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -721,6 +722,7 @@ function ParentMainContent({ data }: { data: DashboardData }) {
   const weeklyReports      = data.weeklyReports    ?? [];
   const upcomingSchedule   = data.upcomingSchedule ?? [];
   const unseenInvoiceCount = data.unseenInvoiceCount ?? 0;
+  const sessionBalances    = data.sessionBalances  ?? [];
 
   return (
     <div className="space-y-6">
@@ -740,6 +742,26 @@ function ParentMainContent({ data }: { data: DashboardData }) {
             <Badge className="bg-amber-500 text-white flex-shrink-0">{unseenInvoiceCount}</Badge>
           </div>
         </Link>
+      )}
+
+      {/* Sisa Sesi Anda */}
+      {sessionBalances.length > 0 && (
+        <div className="relative rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+          <BorderBeam size={120} duration={10} colorFrom="#22c55e" colorTo="#14b8a6" />
+          <div className="p-6 border-b border-gray-100">
+            <h2 className="text-base font-semibold text-gray-900">Sisa Sesi Anda</h2>
+            <p className="text-sm text-gray-500 mt-0.5">Jumlah sesi terapi yang tersisa dari paket aktif</p>
+          </div>
+          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+            {sessionBalances.map((b) => (
+              <div key={b.childId} className="rounded-xl border border-gray-100 bg-gray-50 px-5 py-4 text-center">
+                <p className="text-4xl font-bold text-teal-600">{b.remaining}</p>
+                <p className="text-xs text-gray-500 mt-1">sesi tersisa</p>
+                <p className="text-sm font-medium text-gray-900 mt-2 truncate">{b.childName}</p>
+              </div>
+            ))}
+          </div>
+        </div>
       )}
 
       {/* Laporan minggu ini */}
