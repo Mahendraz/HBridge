@@ -10,7 +10,7 @@ Checklist eksekusi untuk `docs/TASK_BREAKDOWN.md` (detail teknis per item ada di
 - [x] 1.5 Widget "Sisa Sesi Anda" font besar — diverifikasi manual
 - [x] 1.6 Dual tanggal laporan (tgl sesi vs tgl upload) — diverifikasi manual (list & grid view)
 - [x] 1.7 Template download Laporan Harian — diverifikasi manual (termasuk fix WebP tidak ter-embed di PDF)
-- [ ] 1.8 Download invoice tidak berfungsi
+- [x] 1.8 Download invoice tidak berfungsi — dibuat & diverifikasi manual (klik tombol asli, file ter-download)
 - [ ] 1.9 Styling komentar — background abu-abu
 - [ ] 1.10 Icon notifikasi komentar tampil ke parent (harusnya cuma terapis/admin)
 

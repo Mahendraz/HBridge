@@ -6,7 +6,7 @@ import { usePermissions } from "@/lib/utils/permissions";
 import {
   ReceiptIcon, CalendarIcon, CheckCircleIcon,
   XCircleIcon, ClockIcon, EyeIcon, EyeOffIcon, FilterIcon,
-  UploadCloudIcon, MessageSquareIcon, X, FileImageIcon,
+  UploadCloudIcon, MessageSquareIcon, X, FileImageIcon, DownloadIcon,
 } from "lucide-react";
 
 interface Invoice {
@@ -110,6 +110,30 @@ export default function InvoicesPage() {
   useEffect(() => {
     if (user) fetchInvoices();
   }, [user, fetchInvoices]);
+
+  const handleDownloadInvoicePdf = async (invoiceId: string, invoiceNumber: string) => {
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/invoices/${invoiceId}/pdf`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) {
+        alert('Gagal membuat PDF invoice.');
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `Invoice-${invoiceNumber}.pdf`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      alert('Gagal membuat PDF invoice.');
+    }
+  };
 
   const patch = async (id: string, body: object): Promise<any> => {
     const token = localStorage.getItem('token');
@@ -289,6 +313,14 @@ export default function InvoicesPage() {
                   </span>
                   <span>Dibuat {formatDate(inv.createdAt)}</span>
                 </div>
+
+                <button
+                  onClick={() => handleDownloadInvoicePdf(inv._id, inv.invoiceNumber)}
+                  className="w-full mt-3 py-2 border border-gray-200 rounded-lg text-xs font-semibold text-gray-600 hover:bg-gray-50 transition-colors flex items-center justify-center gap-1.5"
+                >
+                  <DownloadIcon className="h-3.5 w-3.5" />
+                  Unduh Invoice
+                </button>
 
                 {inv.status === 'paid' && inv.paidAt && (
                   <p className="text-xs text-green-600 mt-2 flex items-center gap-1">
