@@ -24,7 +24,7 @@ Checklist eksekusi untuk `docs/TASK_BREAKDOWN.md` (detail teknis per item ada di
 - [x] 2.7 Chart tren jumlah pasien — diverifikasi manual (chart render, nav, akses)
 
 ## 3. POV Terapis
-- [ ] 3.1 Jadwal terpotong di mobile portrait
+- [x] 3.1 Jadwal terpotong di mobile portrait — diverifikasi manual (viewport 390px, desktop tidak regresi)
 - [x] 3.2 Pelaporan & Analitik terpotong di mobile — diverifikasi manual (viewport 390px)
 - [ ] 3.3 Rekomendasi CSS/layout responsif (prinsip umum, tercakup di 3.1/3.2)
 - [ ] 3.4 Upload video lambat

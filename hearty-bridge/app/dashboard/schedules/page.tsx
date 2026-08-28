@@ -33,8 +33,13 @@ function dateUTCStr(date: Date): string {
   return date.toISOString().split("T")[0];
 }
 
+/** Current instant shifted so its UTC getters read as WIB (UTC+7) wall-clock time. */
+function nowWIB(): Date {
+  return new Date(Date.now() + 7 * 60 * 60 * 1000);
+}
+
 function getCurrentMondayStr(): string {
-  const now = new Date();
+  const now = nowWIB();
   const dow = now.getUTCDay(); // 0=Sun
   const toMon = dow === 0 ? -6 : 1 - dow;
   const mon = new Date(now);
@@ -91,7 +96,7 @@ function mondayOfDateStr(dateStr: string): string {
 }
 
 function getTodayStr(): string {
-  return dateUTCStr(new Date());
+  return dateUTCStr(nowWIB());
 }
 
 function formatShortDate(dateStr: string): string {
@@ -1386,9 +1391,19 @@ export default function SchedulesPage() {
   // Leave set: "therapistId_dateStr" → true (therapist on leave that date)
   const [leaveSet, setLeaveSet] = useState<Set<string>>(new Set());
 
+  // Mobile agenda view: which day's slots are shown (defaults to today if within Mon-Sat)
+  const [selectedMobileDay, setSelectedMobileDay] = useState<Day>(DAYS[0]);
 
   const weekDates = getWeekDates(weekStart);
   const todayStr = getTodayStr();
+
+  // Keep the mobile agenda day-picker pointed at today when the visible week changes
+  // (e.g. navigating weeks or on first load), falling back to Monday if today is a Sunday.
+  useEffect(() => {
+    const todayIdx = weekDates.indexOf(todayStr);
+    setSelectedMobileDay(todayIdx >= 0 ? DAYS[todayIdx] : DAYS[0]);
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [weekStart]);
 
   // ---- Fetch schedule slots + report map ----
 
@@ -1757,6 +1772,70 @@ export default function SchedulesPage() {
     });
   };
 
+  // Shared cell body (assessments + slots + add-slot button) for a given day/hour —
+  // used by both the desktop grid <td> and the mobile day-agenda view, so the two
+  // layouts can never drift out of sync on what they render for the same slot.
+  const CellContent = ({ day, hour }: { day: string; hour: number }) => {
+    const dayIndex = DAYS.indexOf(day as Day);
+    const dateStr = dayIndex >= 0 ? weekDates[dayIndex] : '';
+    return (
+      <>
+        {getAssessmentsForCell(day, hour).map((a) => (
+          <AssessmentCard
+            key={a._id}
+            assessment={a}
+            onClick={() => {
+              if (permissions.hasPermission('assessments:manage')) {
+                setAssessmentDetail(a);
+                const aid = a.assessorId;
+                setEditAssessorId(aid ? (typeof aid === 'object' ? aid._id : aid) : '');
+              }
+            }}
+          />
+        ))}
+        {getSlotsForCell(day, hour).map((slot) => (
+          <SlotCard
+            key={slot._id}
+            slot={slot}
+            isOwn={user?.role === "therapist" && slot.therapistId === user?._id}
+            isParentView={!permissions.hasAnyPermission(['schedules:edit', 'schedules:manage_all'])}
+            weekStart={weekStart}
+            reportMap={reportMap}
+            patientPhotoUrl={patientPhotoMap[slot.patientId] ?? null}
+            isTherapistOnLeave={leaveSet.has(`${slot.therapistId}_${dateStr}`)}
+            onClick={() => {
+              if (permissions.hasPermission("schedules:manage_all")) openEditSlot(slot);
+            }}
+            onOpenReportModal={(s, sd) => {
+              const existingReportId = reportMap[`${s.patientId}_${sd}`];
+              if (existingReportId) {
+                router.push(`/dashboard/reports/${existingReportId}/edit`);
+              } else {
+                const params = new URLSearchParams({
+                  childId: s.patientId,
+                  childName: s.patientName,
+                  sessionDate: sd,
+                  sessionHour: String(s.hour),
+                  therapyType: s.therapyType,
+                });
+                router.push(`/dashboard/reports/new?${params.toString()}`);
+              }
+            }}
+          />
+        ))}
+        {permissions.hasPermission("schedules:manage_all") && (
+          <button
+            className="w-full h-7 flex items-center justify-center text-gray-300 hover:text-teal-500 hover:bg-teal-50 rounded border border-dashed border-gray-200 hover:border-teal-300 transition-colors"
+            onClick={() => openNewSlot(day, hour)}
+            title={`Tambah slot ${DAY_LABELS[day as Day]} ${String(hour).padStart(2, "0")}:00`}
+          >
+            <PlusIcon className="h-3 w-3" />
+          </button>
+        )}
+      </>
+    );
+  };
+
   // ---- Loading state ----
 
   if (loading) {
@@ -1861,8 +1940,11 @@ export default function SchedulesPage() {
         </div>
       )}
 
-      {/* Calendar grid */}
-      <Card>
+      {/* Calendar grid — desktop/tablet: full 7-column table.
+          Below md, a 720px-wide table required horizontal scroll with no visual
+          hint that it was scrollable, so users thought data was simply missing.
+          Replaced below md with a single-day agenda view instead (see below). */}
+      <Card className="hidden md:block">
         <CardContent className="p-0 overflow-x-auto">
           <table className="w-full border-collapse min-w-[720px]">
             <thead>
@@ -1917,7 +1999,6 @@ export default function SchedulesPage() {
 
                   {/* Day cells */}
                   {DAYS.map((day, i) => {
-                    const cellSlots = getSlotsForCell(day, hour);
                     const dateStr = weekDates[i];
                     const isToday = dateStr === todayStr;
                     return (
@@ -1928,61 +2009,7 @@ export default function SchedulesPage() {
                         }`}
                       >
                         <div className="space-y-1 min-h-[64px]">
-                          {getAssessmentsForCell(day, hour).map((a) => (
-                            <AssessmentCard
-                              key={a._id}
-                              assessment={a}
-                              onClick={() => {
-                                if (permissions.hasPermission('assessments:manage')) {
-                                  setAssessmentDetail(a);
-                                  const aid = a.assessorId;
-                                  setEditAssessorId(aid ? (typeof aid === 'object' ? aid._id : aid) : '');
-                                }
-                              }}
-                            />
-                          ))}
-                          {cellSlots.map((slot) => (
-                            <SlotCard
-                              key={slot._id}
-                              slot={slot}
-                              isOwn={
-                                user?.role === "therapist" &&
-                                slot.therapistId === user?._id
-                              }
-                              isParentView={!permissions.hasAnyPermission(['schedules:edit', 'schedules:manage_all'])}
-                              weekStart={weekStart}
-                              reportMap={reportMap}
-                              patientPhotoUrl={patientPhotoMap[slot.patientId] ?? null}
-                              isTherapistOnLeave={leaveSet.has(`${slot.therapistId}_${dateStr}`)}
-                              onClick={() => {
-                                if (permissions.hasPermission("schedules:manage_all")) openEditSlot(slot);
-                              }}
-                              onOpenReportModal={(s, sd) => {
-                                const existingReportId = reportMap[`${s.patientId}_${sd}`];
-                                if (existingReportId) {
-                                  router.push(`/dashboard/reports/${existingReportId}/edit`);
-                                } else {
-                                  const params = new URLSearchParams({
-                                    childId: s.patientId,
-                                    childName: s.patientName,
-                                    sessionDate: sd,
-                                    sessionHour: String(s.hour),
-                                    therapyType: s.therapyType,
-                                  });
-                                  router.push(`/dashboard/reports/new?${params.toString()}`);
-                                }
-                              }}
-                            />
-                          ))}
-                          {permissions.hasPermission("schedules:manage_all") && (
-                            <button
-                              className="w-full h-7 flex items-center justify-center text-gray-300 hover:text-teal-500 hover:bg-teal-50 rounded border border-dashed border-gray-200 hover:border-teal-300 transition-colors"
-                              onClick={() => openNewSlot(day, hour)}
-                              title={`Tambah slot ${DAY_LABELS[day]} ${String(hour).padStart(2, "0")}:00`}
-                            >
-                              <PlusIcon className="h-3 w-3" />
-                            </button>
-                          )}
+                          <CellContent day={day} hour={hour} />
                         </div>
                       </td>
                     );
@@ -1993,6 +2020,51 @@ export default function SchedulesPage() {
           </table>
         </CardContent>
       </Card>
+
+      {/* Calendar grid — mobile: one day at a time, stacked vertically (no
+          horizontal scroll, nothing hidden). */}
+      <div className="md:hidden space-y-3">
+        <div className="flex gap-1.5 overflow-x-auto pb-1">
+          {DAYS.map((day, i) => {
+            const dateStr = weekDates[i];
+            const isToday = dateStr === todayStr;
+            const isSelected = day === selectedMobileDay;
+            return (
+              <button
+                key={day}
+                onClick={() => setSelectedMobileDay(day)}
+                className={`shrink-0 px-3 py-2 rounded-lg text-xs font-semibold border transition-colors ${
+                  isSelected
+                    ? "bg-teal-600 text-white border-teal-600"
+                    : isToday
+                      ? "bg-teal-50 text-teal-700 border-teal-200"
+                      : "bg-white text-gray-600 border-gray-200"
+                }`}
+              >
+                <div>{DAY_LABELS[day]}</div>
+                <div className={`text-[10px] font-normal mt-0.5 ${isSelected ? "text-teal-100" : "text-gray-400"}`}>
+                  {formatShortDate(dateStr)}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+
+        <Card>
+          <CardContent className="p-3 space-y-2">
+            {HOURS.map((hour) => (
+              <div key={hour} className="flex gap-3 border-b border-gray-100 last:border-0 pb-2 last:pb-0">
+                <div className="w-14 shrink-0 pt-1 text-xs font-medium text-gray-500">
+                  {String(hour).padStart(2, "0")}:00
+                </div>
+                <div className="flex-1 min-w-0 space-y-1">
+                  <CellContent day={selectedMobileDay} hour={hour} />
+                </div>
+              </div>
+            ))}
+          </CardContent>
+        </Card>
+      </div>
 
       {/* Summary stats */}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
