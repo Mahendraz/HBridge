@@ -992,7 +992,7 @@ export default function ReportsPage() {
     type:      'w-20 shrink-0',
     patient:   'hidden sm:block w-32 shrink-0',
     therapist: 'hidden md:block w-36 shrink-0',
-    date:      'hidden lg:block w-28 shrink-0',
+    date:      'hidden lg:block w-32 shrink-0',
     status:    'w-20 shrink-0',
     actions:   'w-24 shrink-0',
   } as const;
@@ -1036,13 +1036,18 @@ export default function ReportsPage() {
           <span className="text-xs text-gray-600 truncate block">{report.therapistName}</span>
         </div>
 
-        {/* Tgl Sesi */}
+        {/* Tgl Sesi + Tgl Upload */}
         <div className={COL.date}>
-          <span className="text-xs text-gray-600">
+          <p className="text-xs text-gray-600 leading-tight">
+            <span className="text-gray-400">Sesi:</span>{" "}
             {report.sessionDate
               ? new Date(report.sessionDate).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })
               : "—"}
-          </span>
+          </p>
+          <p className="text-xs text-gray-600 leading-tight">
+            <span className="text-gray-400">Upload:</span>{" "}
+            {new Date(report.createdAt).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric" })}
+          </p>
         </div>
 
         {/* Status */}
@@ -1142,9 +1147,13 @@ export default function ReportsPage() {
               {(report.sessionDate || report.dueDate) && (
                 <div className="flex items-center gap-1.5 text-gray-600">
                   <CalendarIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
-                  <span>{new Date(report.sessionDate ?? report.dueDate!).toLocaleDateString("id-ID")}</span>
+                  <span>Tgl Sesi: {new Date(report.sessionDate ?? report.dueDate!).toLocaleDateString("id-ID")}</span>
                 </div>
               )}
+              <div className="flex items-center gap-1.5 text-gray-600">
+                <CalendarIcon className="h-3.5 w-3.5 text-gray-400 shrink-0" />
+                <span>Tgl Upload: {new Date(report.createdAt).toLocaleDateString("id-ID")}</span>
+              </div>
             </div>
 
             {/* Badges + footer */}
