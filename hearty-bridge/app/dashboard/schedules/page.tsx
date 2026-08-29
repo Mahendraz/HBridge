@@ -2328,7 +2328,14 @@ export default function SchedulesPage() {
             </DialogHeader>
             <div className="mt-4 space-y-4">
               <div className="rounded-lg bg-teal-50 border border-teal-100 p-3 text-sm">
-                <p className="font-semibold text-teal-800">{rescheduleSlot.patientName}</p>
+                <div className="flex items-center justify-between gap-2">
+                  <p className="font-semibold text-teal-800">{rescheduleSlot.patientName}</p>
+                  {rescheduleSlot.therapyType && (
+                    <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-teal-600 text-white leading-none">
+                      {rescheduleSlot.therapyType}
+                    </span>
+                  )}
+                </div>
                 <p className="text-teal-600 text-xs mt-0.5">{rescheduleSlot.therapistName}</p>
                 {rescheduleSlot.sessionProgress && rescheduleSlot.sessionProgress.sessionNumber && (
                   <p className="text-teal-700 text-xs mt-1 font-medium">
