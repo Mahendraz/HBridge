@@ -8,6 +8,10 @@ export interface IReportMediaFile {
   mimeType: string;
   size: number;
   uploadedAt: Date;
+  // Videos upload the raw file first and respond immediately — compression
+  // then runs in the background and swaps gcsPath/url/mimeType/size in place
+  // when done. 'ready' for every other file type from the start.
+  processingStatus: 'ready' | 'processing';
 }
 
 export interface IReportSeenBy {
@@ -57,6 +61,7 @@ const ReportMediaFileSchema = new Schema<IReportMediaFile>(
     mimeType:   { type: String, required: true },
     size:       { type: Number, required: true },
     uploadedAt: { type: Date, default: Date.now },
+    processingStatus: { type: String, enum: ['ready', 'processing'], default: 'ready' },
   },
   { _id: false }
 );

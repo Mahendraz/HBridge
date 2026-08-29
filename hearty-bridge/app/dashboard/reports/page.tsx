@@ -50,6 +50,7 @@ import {
   SendIcon,
   LayoutGridIcon,
   ListIcon,
+  Loader2Icon,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -71,6 +72,7 @@ interface ReportMediaFile {
   mimeType: string;
   size: number;
   uploadedAt: string;
+  processingStatus?: "ready" | "processing";
 }
 
 interface ReportSeenBy {
@@ -656,17 +658,30 @@ function ReportViewDialog({
                             </div>
                           </button>
                         ) : (
-                          // Video → open in new tab
+                          // Video → open in new tab. Still playable (points at the
+                          // raw upload) while processingStatus is 'processing' —
+                          // compression just hasn't swapped it for the smaller
+                          // version yet.
                           <a
                             href={m.url}
                             target="_blank"
                             rel="noreferrer"
                             className="border rounded-lg overflow-hidden bg-gray-50
-                                       hover:bg-gray-100 hover:border-gray-300 block transition-colors"
+                                       hover:bg-gray-100 hover:border-gray-300 block transition-colors relative"
                           >
                             <div className="flex items-center justify-center h-24 bg-gray-100">
                               <VideoIcon className="h-8 w-8 text-gray-400" />
                             </div>
+                            {m.processingStatus === "processing" && (
+                              <div
+                                className="absolute top-1 right-1 flex items-center gap-1 bg-black/60 text-white
+                                           text-[9px] px-1.5 py-0.5 rounded-full"
+                                title="Video sedang diproses untuk mengurangi ukuran file — video asli sudah bisa dibuka"
+                              >
+                                <Loader2Icon className="h-2.5 w-2.5 animate-spin" />
+                                Memproses
+                              </div>
+                            )}
                             <div className="px-2 py-1.5">
                               <p className="text-[10px] text-gray-600 truncate">{m.fileName}</p>
                             </div>

@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest, NextResponse, after } from 'next/server';
 import { withAnyAuth } from '@/lib/middleware/auth';
 import { withErrorHandling } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
@@ -34,6 +34,76 @@ function detectFileType(mimeType: string): 'image' | 'video' | 'document' {
 
 function sanitizeFileName(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, '_').substring(0, 100);
+}
+
+/**
+ * Runs after the upload response has already been sent (see after() in
+ * POST below). Compresses the raw video, uploads the result under a new
+ * key, and swaps the report's media entry over to it — identified by the
+ * raw file's gcsPath, the same identity DELETE already uses. If ffmpeg is
+ * unavailable or compression fails, compressVideo falls back to returning
+ * the original buffer untouched (same reference), which is detected here
+ * so nothing gets re-uploaded — the entry just flips to 'ready' in place.
+ */
+async function compressVideoInBackground(
+  reportId: string,
+  rawDestination: string,
+  rawBuffer: Buffer,
+  mimeType: string,
+  baseName: string
+): Promise<void> {
+  try {
+    const compressed = await compressVideo(rawBuffer, mimeType);
+
+    if (compressed.buffer === rawBuffer) {
+      await connectToDatabase();
+      await Report.updateOne(
+        { _id: reportId, 'mediaFiles.gcsPath': rawDestination },
+        { $set: { 'mediaFiles.$.processingStatus': 'ready' } }
+      );
+      return;
+    }
+
+    const compressedDestination = `reports/${reportId}/${Date.now()}-${baseName}-c.${compressed.ext}`;
+    const compressedKey = await uploadToR2(compressed.buffer, compressedDestination, compressed.mimeType);
+
+    await connectToDatabase();
+
+    if (!compressedKey) {
+      console.error('[media/POST] background compression upload failed, keeping raw video:', rawDestination);
+      await Report.updateOne(
+        { _id: reportId, 'mediaFiles.gcsPath': rawDestination },
+        { $set: { 'mediaFiles.$.processingStatus': 'ready' } }
+      );
+      return;
+    }
+
+    await Report.updateOne(
+      { _id: reportId, 'mediaFiles.gcsPath': rawDestination },
+      {
+        $set: {
+          'mediaFiles.$.gcsPath': compressedDestination,
+          'mediaFiles.$.url': compressedDestination,
+          'mediaFiles.$.mimeType': compressed.mimeType,
+          'mediaFiles.$.size': compressed.buffer.length,
+          'mediaFiles.$.processingStatus': 'ready',
+        },
+      }
+    );
+
+    await deleteFromR2(rawDestination).catch(() => {});
+  } catch (err) {
+    console.error('[media/POST] background video processing failed:', err);
+    try {
+      await connectToDatabase();
+      await Report.updateOne(
+        { _id: reportId, 'mediaFiles.gcsPath': rawDestination },
+        { $set: { 'mediaFiles.$.processingStatus': 'ready' } }
+      );
+    } catch {
+      // best-effort — the entry stays 'processing' if even this fails
+    }
+  }
 }
 
 /**
@@ -86,19 +156,57 @@ export const POST = withAnyAuth(
 
     const rawBuffer = Buffer.from(await file.arrayBuffer());
     const fileType  = detectFileType(file.type);
+    const baseName  = sanitizeFileName(file.name).replace(/\.[^.]+$/, '');
 
-    // Compress — each function falls back to the original if sharp/ffmpeg unavailable
+    // Video: upload the raw file and respond right away — ffmpeg transcoding
+    // (the actual slow part, previously awaited here and blocking the whole
+    // request for as long as it took) runs in the background afterward and
+    // swaps the media entry over to the compressed version in place. The raw
+    // file is immediately watchable in the meantime.
+    if (fileType === 'video') {
+      const rawExt = file.name.split('.').pop() ?? 'mp4';
+      const rawDestination = `reports/${reportId}/${Date.now()}-${baseName}.${rawExt}`;
+
+      const rawKey = await uploadToR2(rawBuffer, rawDestination, file.type);
+      if (!rawKey) {
+        console.error('[media/POST] R2 upload returned null for key:', rawDestination);
+        return NextResponse.json(
+          { success: false, error: 'Upload to storage failed. Check R2 credentials and bucket name.' },
+          { status: 500 }
+        );
+      }
+
+      report.mediaFiles.push({
+        fileName: file.name,
+        fileType: 'video',
+        gcsPath: rawDestination,
+        url: rawDestination,
+        mimeType: file.type,
+        size: rawBuffer.length,
+        uploadedAt: new Date(),
+        processingStatus: 'processing',
+      });
+      await report.save();
+
+      const responseData = report.mediaFiles;
+
+      // Scheduled via next/server's after() rather than a bare un-awaited
+      // promise so it's guaranteed to run to completion even on a serverless
+      // deploy target, not just this app's current long-running Node process.
+      after(() => compressVideoInBackground(reportId, rawDestination, rawBuffer, file.type, baseName));
+
+      return NextResponse.json({ success: true, data: responseData }, { status: 201 });
+    }
+
+    // Image/document — small and fast enough to compress synchronously.
     let compressed: { buffer: Buffer; mimeType: string; ext: string };
     if (file.type.startsWith('image/')) {
       compressed = await compressImage(rawBuffer, file.type);
-    } else if (file.type.startsWith('video/')) {
-      compressed = await compressVideo(rawBuffer, file.type);
     } else {
       const ext = file.name.split('.').pop() ?? 'bin';
       compressed = { buffer: rawBuffer, mimeType: file.type, ext };
     }
 
-    const baseName    = sanitizeFileName(file.name).replace(/\.[^.]+$/, '');
     const destination = `reports/${reportId}/${Date.now()}-${baseName}.${compressed.ext}`;
 
     const key = await uploadToR2(compressed.buffer, destination, compressed.mimeType);
@@ -119,6 +227,7 @@ export const POST = withAnyAuth(
       mimeType: compressed.mimeType,
       size: compressed.buffer.length,
       uploadedAt: new Date(),
+      processingStatus: 'ready',
     });
 
     await report.save();

@@ -2,6 +2,7 @@ import { writeFile, readFile, unlink } from 'fs/promises';
 import { tmpdir } from 'os';
 import { randomUUID } from 'crypto';
 import path from 'path';
+import { spawn } from 'child_process';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Types
@@ -25,6 +26,26 @@ async function loadSharp() {
   }
 }
 
+/**
+ * A present-but-broken ffmpeg binary (seen in the wild on some Windows
+ * setups: a valid-looking PE file that still fails with `spawn EFTYPE`) is
+ * worse than a missing one — fluent-ffmpeg doesn't reliably turn a
+ * spawn-level failure into its own catchable 'error' event, so it can
+ * surface as a raw uncaughtException from deep inside child_process instead
+ * of rejecting the promise compressVideo() awaits. Probing with a cheap
+ * `-version` spawn here means a broken binary is caught in this function's
+ * own try/catch (a controlled, local failure) — before compressVideo ever
+ * reaches the real transcode, where the same failure would otherwise be
+ * far more likely to crash the process instead of just falling back.
+ */
+function verifyFfmpegRuns(ffmpegPath: string): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(ffmpegPath, ['-version']);
+    child.on('error', reject);
+    child.on('exit', (code) => (code === 0 ? resolve() : reject(new Error(`ffmpeg -version exited with code ${code}`))));
+  });
+}
+
 async function loadFfmpeg() {
   try {
     const [ffmpegMod, staticMod] = await Promise.all([
@@ -33,9 +54,12 @@ async function loadFfmpeg() {
     ]);
     const ffmpeg = ffmpegMod.default;
     const ffmpegPath = staticMod.default;
-    if (ffmpegPath) ffmpeg.setFfmpegPath(ffmpegPath);
+    if (!ffmpegPath) return null;
+    await verifyFfmpegRuns(ffmpegPath);
+    ffmpeg.setFfmpegPath(ffmpegPath);
     return ffmpeg;
-  } catch {
+  } catch (err) {
+    console.warn('[compress] ffmpeg binary present but failed to run, falling back to original:', err instanceof Error ? err.message : err);
     return null;
   }
 }
