@@ -28,6 +28,7 @@ import {
   PlusIcon,
   AlertCircleIcon,
 } from "lucide-react";
+import { THERAPIST_COLOR_PRESETS } from "@/lib/utils/therapist-colors";
 
 interface Therapist {
   _id: string;
@@ -41,19 +42,6 @@ interface Therapist {
   maxPatients: number;
   color?: string | null;
 }
-
-const THERAPIST_COLOR_PRESETS = [
-  '#14b8a6', // teal
-  '#3b82f6', // blue
-  '#a855f7', // purple
-  '#f97316', // orange
-  '#ec4899', // pink
-  '#84cc16', // lime
-  '#eab308', // yellow
-  '#ef4444', // red
-  '#06b6d4', // cyan
-  '#6366f1', // indigo
-];
 
 interface LeaveRecord {
   _id: string;

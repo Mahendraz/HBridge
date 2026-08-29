@@ -9,6 +9,7 @@ import {
   ErrorCodes,
 } from '@/lib/utils/error-handler';
 import { z } from 'zod';
+import { assignTherapistColor } from '@/lib/utils/therapist-colors';
 
 const createUserSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -49,10 +50,14 @@ export const POST = withAdminAuth(async (request: NextRequest) => {
   };
 
   if (role === 'therapist') {
+    const existingTherapists = await User.find({ role: 'therapist' }).select('profile.color').lean();
+    const usedColors = existingTherapists.map((t: any) => t.profile?.color);
+
     userData.profile = {
       specialization: specialization ? [specialization] : [],
       clinic: clinic?.trim(),
       experience,
+      color: assignTherapistColor(usedColors),
     };
   }
 
