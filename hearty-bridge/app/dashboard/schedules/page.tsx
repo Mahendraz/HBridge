@@ -1809,7 +1809,7 @@ export default function SchedulesPage() {
   const fetchPhotoMap = useCallback(async () => {
     try {
       const token = localStorage.getItem("token");
-      const res = await fetch("/api/children?limit=200", { headers: { Authorization: `Bearer ${token}` } });
+      const res = await fetch("/api/children?limit=100", { headers: { Authorization: `Bearer ${token}` } });
       if (res.ok) {
         const pr = await res.json();
         const rawChildren: any[] = pr.children || [];
