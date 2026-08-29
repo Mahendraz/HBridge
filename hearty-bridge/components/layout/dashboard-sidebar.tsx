@@ -173,17 +173,21 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
 
   return (
     <>
-      {/* Mobile menu button */}
-      <div className="lg:hidden fixed top-4 left-4 z-50">
-        <Button
-          variant="outline"
-          size="sm"
-          onClick={() => setIsMobileMenuOpen(true)}
-          className="bg-white shadow-md"
-        >
-          <MenuIcon className="h-5 w-5" />
-        </Button>
-      </div>
+      {/* Mobile menu button — hidden while the drawer is open so it doesn't
+          sit on top of (and overlap) the drawer's own logo header, which
+          renders at that same top-left position. */}
+      {!isMobileMenuOpen && (
+        <div className="lg:hidden fixed top-4 left-4 z-50">
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsMobileMenuOpen(true)}
+            className="bg-white shadow-md"
+          >
+            <MenuIcon className="h-5 w-5" />
+          </Button>
+        </div>
+      )}
 
       {/* Mobile menu overlay */}
       {isMobileMenuOpen && (
