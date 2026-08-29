@@ -7,6 +7,7 @@ import {
   ReceiptIcon, CalendarIcon, CheckCircleIcon,
   XCircleIcon, ClockIcon, EyeIcon, EyeOffIcon, FilterIcon,
   UploadCloudIcon, MessageSquareIcon, X, FileImageIcon, DownloadIcon,
+  PencilIcon, Trash2Icon,
 } from "lucide-react";
 
 interface Invoice {
@@ -90,6 +91,15 @@ export default function InvoicesPage() {
   const [uploadingId, setUploadingId] = useState<string | null>(null);
   const [proofModal, setProofModal] = useState<{ url: string; message: string; invoiceNumber: string } | null>(null);
 
+  const [editModal, setEditModal] = useState<Invoice | null>(null);
+  const [editAmount, setEditAmount] = useState<number | string>('');
+  const [editSessions, setEditSessions] = useState<number | string>('');
+  const [editPackageType, setEditPackageType] = useState('');
+  const [editNotes, setEditNotes] = useState('');
+  const [editSaving, setEditSaving] = useState(false);
+  const [editError, setEditError] = useState<string | null>(null);
+  const [deletingId, setDeletingId] = useState<string | null>(null);
+
   const fetchInvoices = useCallback(async () => {
     setLoading(true);
     try {
@@ -151,6 +161,59 @@ export default function InvoicesPage() {
       throw new Error(data?.error || `HTTP ${res.status}`);
     }
     return data;
+  };
+
+  const openEditModal = (inv: Invoice) => {
+    setEditModal(inv);
+    setEditAmount(inv.amount);
+    setEditSessions(inv.sessions);
+    setEditPackageType(inv.packageType);
+    setEditNotes(inv.notes || '');
+    setEditError(null);
+  };
+
+  const handleSaveEdit = async () => {
+    if (!editModal) return;
+    setEditSaving(true);
+    setEditError(null);
+    try {
+      const body: Record<string, unknown> = { notes: editNotes };
+      if (editModal.status !== 'paid') {
+        body.amount = Number(editAmount) || 0;
+        body.sessions = Number(editSessions) || 1;
+        body.packageType = editPackageType;
+      }
+      const result = await patch(editModal._id, body);
+      const updated = result?.invoice;
+      if (updated) {
+        setInvoices(prev => prev.map(i => i._id === editModal._id ? { ...i, ...updated, _id: i._id } : i));
+      }
+      setEditModal(null);
+    } catch (e) {
+      setEditError(e instanceof Error ? e.message : 'Gagal menyimpan perubahan');
+    } finally {
+      setEditSaving(false);
+    }
+  };
+
+  const handleDeleteInvoice = async (inv: Invoice) => {
+    if (!confirm(`Hapus invoice ${inv.invoiceNumber}? Tindakan ini tidak bisa dibatalkan.`)) return;
+    setDeletingId(inv._id);
+    setError(null);
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch(`/api/invoices/${inv._id}`, {
+        method: 'DELETE',
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error || `HTTP ${res.status}`);
+      setInvoices(prev => prev.filter(i => i._id !== inv._id));
+    } catch (e) {
+      setError(e instanceof Error ? e.message : 'Gagal menghapus invoice');
+    } finally {
+      setDeletingId(null);
+    }
   };
 
   const handleToggleVisibility = async (inv: Invoice) => {
@@ -495,6 +558,7 @@ export default function InvoicesPage() {
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Bukti Bayar</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Kirim ke Orang Tua</th>
                   <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Unduh</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -653,10 +717,134 @@ export default function InvoicesPage() {
                         <DownloadIcon className="h-3 w-3" /> Unduh
                       </button>
                     </td>
+
+                    {/* Aksi */}
+                    <td className="px-4 py-3">
+                      <div className="flex items-center gap-1.5">
+                        <button
+                          onClick={() => openEditModal(inv)}
+                          className="p-1.5 rounded text-gray-500 hover:text-teal-700 hover:bg-teal-50 transition-colors"
+                          title="Edit invoice"
+                        >
+                          <PencilIcon className="h-3.5 w-3.5" />
+                        </button>
+                        <button
+                          onClick={() => handleDeleteInvoice(inv)}
+                          disabled={deletingId === inv._id}
+                          className="p-1.5 rounded text-gray-500 hover:text-red-600 hover:bg-red-50 transition-colors disabled:opacity-40"
+                          title="Hapus invoice"
+                        >
+                          {deletingId === inv._id ? (
+                            <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          ) : (
+                            <Trash2Icon className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                      </div>
+                    </td>
                   </tr>
                 ))}
               </tbody>
             </table>
+          </div>
+        </div>
+      )}
+
+      {/* Edit invoice modal */}
+      {editModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4"
+          onClick={() => !editSaving && setEditModal(null)}
+        >
+          <div
+            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+            onClick={(e) => e.stopPropagation()}
+          >
+            <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
+              <div>
+                <p className="text-xs text-gray-400 font-mono">{editModal.invoiceNumber}</p>
+                <p className="font-semibold text-gray-900 text-sm mt-0.5">Edit Invoice</p>
+              </div>
+              <button
+                onClick={() => setEditModal(null)}
+                className="p-1.5 rounded-lg hover:bg-gray-100 transition-colors text-gray-500"
+              >
+                <X className="h-4 w-4" />
+              </button>
+            </div>
+
+            <div className="px-5 py-4 space-y-3">
+              {editModal.status === 'paid' && (
+                <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700">
+                  Invoice ini sudah lunas — nominal tidak bisa diubah. Batalkan status lunas dulu di halaman utama kalau perlu revisi nominal.
+                </div>
+              )}
+              {editError && (
+                <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">
+                  {editError}
+                </div>
+              )}
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Nama Paket</label>
+                <input
+                  type="text"
+                  value={editPackageType}
+                  onChange={(e) => setEditPackageType(e.target.value)}
+                  disabled={editModal.status === 'paid'}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-gray-50 disabled:text-gray-400"
+                />
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Jumlah Sesi</label>
+                  <input
+                    type="number"
+                    min={1}
+                    value={editSessions}
+                    onChange={(e) => setEditSessions(e.target.value === '' ? '' : parseInt(e.target.value) || '')}
+                    disabled={editModal.status === 'paid'}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-gray-50 disabled:text-gray-400"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-gray-700 mb-1">Jumlah Tagihan (Rp)</label>
+                  <input
+                    type="number"
+                    min={0}
+                    value={editAmount}
+                    onChange={(e) => setEditAmount(e.target.value === '' ? '' : parseInt(e.target.value) || '')}
+                    disabled={editModal.status === 'paid'}
+                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-gray-50 disabled:text-gray-400"
+                  />
+                </div>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-700 mb-1">Catatan</label>
+                <textarea
+                  value={editNotes}
+                  onChange={(e) => setEditNotes(e.target.value)}
+                  rows={2}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 resize-none"
+                />
+              </div>
+            </div>
+
+            <div className="px-5 py-3 border-t border-gray-100 flex justify-end gap-2">
+              <button
+                onClick={() => setEditModal(null)}
+                disabled={editSaving}
+                className="px-3 py-2 text-sm rounded-lg bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors disabled:opacity-40"
+              >
+                Batal
+              </button>
+              <button
+                onClick={handleSaveEdit}
+                disabled={editSaving}
+                className="px-4 py-2 text-sm rounded-lg bg-teal-600 text-white hover:bg-teal-700 transition-colors disabled:opacity-40"
+              >
+                {editSaving ? 'Menyimpan...' : 'Simpan Perubahan'}
+              </button>
+            </div>
           </div>
         </div>
       )}

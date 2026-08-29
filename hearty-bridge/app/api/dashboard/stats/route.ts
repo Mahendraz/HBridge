@@ -174,8 +174,8 @@ async function superAdminStats(_user: JWTPayload): Promise<NextResponse> {
     WeeklySchedule.countDocuments(),
     Session.countDocuments({ date: { $gte: startOfWeek, $lte: endOfWeek }, status: 'completed' }),
     WeeklySchedule.find({ day: todayName } as any).lean(),
-    Invoice.aggregate([{ $match: { status: 'paid' } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
-    Invoice.countDocuments({ status: 'unpaid' }),
+    Invoice.aggregate([{ $match: { status: 'paid', isActive: { $ne: false } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
+    Invoice.countDocuments({ status: 'unpaid', isActive: { $ne: false } }),
     Session.find({ status: 'completed' })
       .sort({ updatedAt: -1 }).limit(10)
       .populate('childId', 'name')
@@ -190,7 +190,7 @@ async function superAdminStats(_user: JWTPayload): Promise<NextResponse> {
       .sort({ createdAt: -1 }).limit(10)
       .select('name role createdAt')
       .lean(),
-    Invoice.find({ status: 'paid' })
+    Invoice.find({ status: 'paid', isActive: { $ne: false } })
       .sort({ paidAt: -1 }).limit(10)
       .select('childName amount paidAt packageType')
       .lean(),
@@ -427,6 +427,7 @@ async function parentStats(user: JWTPayload): Promise<NextResponse> {
       childId: { $in: childIds },
       isVisibleToParent: true,
       seenByParentAt: null,
+      isActive: { $ne: false },
     }),
   ]);
 

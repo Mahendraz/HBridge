@@ -23,7 +23,7 @@ export const GET = withSuperAdminAuth(
     const skip    = (page - 1) * limit;
 
     const now = new Date();
-    const query: any = {};
+    const query: any = { isActive: { $ne: false } };
 
     if (status === 'paid') {
       query.status = 'paid';
@@ -52,6 +52,7 @@ export const GET = withSuperAdminAuth(
         .lean(),
       Invoice.countDocuments(query),
       Invoice.aggregate([
+        { $match: { isActive: { $ne: false } } },
         {
           $group: {
             _id: null,

@@ -26,7 +26,7 @@ export const GET = withAnyAuth(
 
     await connectToDatabase();
 
-    const invoice = await Invoice.findById(id).lean();
+    const invoice = await Invoice.findOne({ _id: id, isActive: { $ne: false } }).lean();
     if (!invoice) return ErrorResponse.notFound('Invoice');
 
     if (user.role === 'parent') {

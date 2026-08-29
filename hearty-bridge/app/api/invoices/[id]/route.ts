@@ -24,7 +24,7 @@ export const GET = withAnyAuth(
 
     await connectToDatabase();
 
-    const invoice = await Invoice.findById(id).lean();
+    const invoice = await Invoice.findOne({ _id: id, isActive: { $ne: false } }).lean();
     if (!invoice) return ErrorResponse.notFound('Invoice');
 
     if (user.role === 'parent') {
@@ -42,7 +42,11 @@ export const GET = withAnyAuth(
 /**
  * PATCH /api/invoices/[id]
  * Admin only.
- * Body: { dueDate?, status?, notes?, isVisibleToParent? }
+ * Body: { dueDate?, status?, notes?, isVisibleToParent?, amount?, sessions?, packageType?, discountAmount? }
+ *
+ * Financial fields (amount/sessions/packageType/discountAmount) are blocked once
+ * the invoice's *current* status is 'paid' — editing the amount on a receipt that's
+ * already been paid would silently desync it from what was actually charged.
  *
  * Uses $set via findByIdAndUpdate to avoid full-document Mongoose validation,
  * which would fail on older documents that predate required-field additions.
@@ -56,13 +60,32 @@ export const PATCH = withAdminAuth(
 
     await connectToDatabase();
 
+    const objectId = new mongoose.Types.ObjectId(id);
+    const db = mongoose.connection.db;
+    if (!db) return ErrorResponse.internalServerError('Database not connected');
+
+    const existing = await db.collection('invoices').findOne({ _id: objectId, isActive: { $ne: false } });
+    if (!existing) return ErrorResponse.notFound('Invoice');
+
     const body = await req.json();
-    const { dueDate: dueDateStr, status, notes, isVisibleToParent } = body as {
+    const {
+      dueDate: dueDateStr, status, notes, isVisibleToParent,
+      amount, sessions, packageType, discountAmount,
+    } = body as {
       dueDate?: string;
       status?: 'unpaid' | 'paid' | 'overdue';
       notes?: string;
       isVisibleToParent?: boolean;
+      amount?: number;
+      sessions?: number;
+      packageType?: string;
+      discountAmount?: number;
     };
+
+    const editingFinancials = [amount, sessions, packageType, discountAmount].some((v) => v !== undefined);
+    if (editingFinancials && existing.status === 'paid') {
+      return ErrorResponse.badRequest('Invoice yang sudah lunas tidak bisa diubah nominalnya. Batalkan status lunas terlebih dahulu.');
+    }
 
     const update: Record<string, unknown> = {};
 
@@ -86,13 +109,26 @@ export const PATCH = withAdminAuth(
     if (notes !== undefined) update.notes = notes.trim();
     if (isVisibleToParent !== undefined) update.isVisibleToParent = isVisibleToParent;
 
+    if (amount !== undefined) {
+      if (typeof amount !== 'number' || amount < 0) return ErrorResponse.badRequest('Invalid amount');
+      update.amount = amount;
+    }
+    if (sessions !== undefined) {
+      if (typeof sessions !== 'number' || sessions < 1) return ErrorResponse.badRequest('Invalid sessions');
+      update.sessions = sessions;
+    }
+    if (packageType !== undefined) {
+      if (typeof packageType !== 'string' || !packageType.trim()) return ErrorResponse.badRequest('Invalid packageType');
+      update.packageType = packageType.trim();
+    }
+    if (discountAmount !== undefined) {
+      if (typeof discountAmount !== 'number' || discountAmount < 0) return ErrorResponse.badRequest('Invalid discountAmount');
+      update.discountAmount = discountAmount;
+    }
+
     console.log('[PATCH invoice]', id, 'update:', JSON.stringify(update));
 
     // Write directly via native driver to bypass any Mongoose model-cache issue
-    const objectId = new mongoose.Types.ObjectId(id);
-    const db = mongoose.connection.db;
-    if (!db) return ErrorResponse.internalServerError('Database not connected');
-
     const writeResult = await db.collection('invoices').findOneAndUpdate(
       { _id: objectId },
       { $set: update },
@@ -115,5 +151,37 @@ export const PATCH = withAdminAuth(
     }
 
     return SuccessResponse.ok({ invoice: writeResult });
+  })
+);
+
+/**
+ * DELETE /api/invoices/[id]
+ * Admin only. Soft-delete (isActive = false). Refuses to delete an invoice that's
+ * already marked paid — cancel/unmark it first, so a paid invoice never just
+ * silently vanishes from someone's records.
+ */
+export const DELETE = withAdminAuth(
+  withErrorHandling(async (req: NextRequest) => {
+    const id = getInvoiceId(req);
+    if (!mongoose.isValidObjectId(id)) {
+      return ErrorResponse.badRequest('Invalid invoice ID');
+    }
+
+    await connectToDatabase();
+
+    const objectId = new mongoose.Types.ObjectId(id);
+    const db = mongoose.connection.db;
+    if (!db) return ErrorResponse.internalServerError('Database not connected');
+
+    const existing = await db.collection('invoices').findOne({ _id: objectId, isActive: { $ne: false } });
+    if (!existing) return ErrorResponse.notFound('Invoice');
+
+    if (existing.status === 'paid') {
+      return ErrorResponse.badRequest('Invoice yang sudah lunas tidak bisa dihapus. Batalkan status lunas terlebih dahulu.');
+    }
+
+    await db.collection('invoices').updateOne({ _id: objectId }, { $set: { isActive: false } });
+
+    return SuccessResponse.ok({});
   })
 );

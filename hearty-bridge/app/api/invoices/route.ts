@@ -25,7 +25,7 @@ export const GET = withAnyAuth(
     const limit   = Math.min(100, Math.max(1, parseInt(params.get('limit') || '20', 10)));
     const skip    = (page - 1) * limit;
 
-    const query: any = {};
+    const query: any = { isActive: { $ne: false } };
 
     if (user.role === 'parent') {
       query.parentId = new mongoose.Types.ObjectId(user.userId);

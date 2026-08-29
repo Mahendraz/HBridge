@@ -38,7 +38,7 @@ Checklist eksekusi untuk `docs/TASK_BREAKDOWN.md` (detail teknis per item ada di
 - [x] 4.5 Filter jadwal per terapis — diverifikasi manual (juga fix gate permission admin tidak lihat toolbar)
 - [ ] 4.6 Detail Profil Anak — field yang hilang
 - [x] 4.7 Hapus field "keterangan" dari biodata anak — diverifikasi manual (lihat & edit)
-- [ ] 4.8 Admin bisa edit & hapus invoice yang sudah diterbitkan
+- [x] 4.8 Admin bisa edit & hapus invoice yang sudah diterbitkan — diverifikasi manual (edit, soft-delete, guard invoice lunas)
 - [ ] 4.9 Notifikasi auto-hilang real-time
 - [ ] 4.10 Color-coding terapis untuk jadwal
 - [ ] 4.11 Absensi Anak

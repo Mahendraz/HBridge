@@ -24,6 +24,7 @@ export interface IInvoice extends Document {
   paymentMessage?: string;
   paymentSubmittedAt?: Date | null;
   seenByParentAt: Date | null;
+  isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -64,6 +65,7 @@ const InvoiceSchema = new Schema<IInvoice>(
     paymentMessage:     { type: String, default: '' },
     paymentSubmittedAt: { type: Date, default: null },
     seenByParentAt:     { type: Date, default: null },
+    isActive:           { type: Boolean, default: true, index: true },
   },
   {
     timestamps: true,
