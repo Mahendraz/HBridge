@@ -19,14 +19,14 @@ export function PageHero({ badge, title, highlight, subtitle, children }: PageHe
       <Ripple mainCircleSize={180} numCircles={6} color="#c41e34" mainCircleOpacity={0.14} />
 
       <div className="relative mx-auto max-w-4xl px-6 text-center">
-        <BlurFade delay={0} inView>
+        <BlurFade delay={0}>
           <div className="inline-flex items-center gap-2 rounded-full border border-brand-coral-light bg-brand-coral-tint px-4 py-1.5 text-sm font-medium text-brand-coral mb-6">
             <span className="h-1.5 w-1.5 rounded-full bg-brand-coral animate-pulse" />
             {badge}
           </div>
         </BlurFade>
 
-        <BlurFade delay={0.1} inView>
+        <BlurFade delay={0.1}>
           <h1 className="text-4xl font-bold tracking-tight text-gray-900 sm:text-5xl leading-tight">
             {title}
             {highlight && (
@@ -45,14 +45,14 @@ export function PageHero({ badge, title, highlight, subtitle, children }: PageHe
           </h1>
         </BlurFade>
 
-        <BlurFade delay={0.2} inView>
+        <BlurFade delay={0.2}>
           <p className="mt-6 text-lg leading-8 text-gray-600 max-w-2xl mx-auto">
             {subtitle}
           </p>
         </BlurFade>
 
         {children && (
-          <BlurFade delay={0.3} inView>
+          <BlurFade delay={0.3}>
             <div className="mt-8 flex flex-col sm:flex-row items-center justify-center gap-4">
               {children}
             </div>

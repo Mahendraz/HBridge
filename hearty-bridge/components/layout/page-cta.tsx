@@ -16,7 +16,7 @@ export function PageCta({ title, subtitle, children }: PageCtaProps) {
         <div className="h-[300px] w-[500px] rounded-full bg-brand-coral-light/20 blur-3xl" />
       </div>
       <div className="relative max-w-3xl mx-auto px-6 text-center">
-        <BlurFade delay={0} inView>
+        <BlurFade delay={0}>
           <h2 className="text-3xl font-bold text-gray-900 mb-4">{title}</h2>
           <p className="text-lg text-gray-600 mb-8 max-w-2xl mx-auto">{subtitle}</p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">{children}</div>

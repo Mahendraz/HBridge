@@ -15,7 +15,6 @@ import { useAuth } from "@/lib/contexts/auth-context";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { ShimmerButton } from "@/components/magicui/shimmer-button";
-import { DotPattern } from "@/components/magicui/dot-pattern";
 import { AnimatedGradientText } from "@/components/magicui/animated-gradient-text";
 
 export default function LoginPage() {
@@ -84,13 +83,10 @@ export default function LoginPage() {
 
   return (
     <AuthGuard requireAuth={false}>
-      <div className="relative min-h-screen flex items-center justify-center bg-gray-950 p-4 overflow-hidden">
-        {/* Dot pattern background */}
-        <DotPattern className="text-teal-400/20" />
-
+      <div className="relative min-h-screen flex items-center justify-center bg-linear-to-b from-rose-50 via-white to-white p-4 overflow-hidden">
         {/* Radial glow */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-[600px] h-[600px] rounded-full bg-teal-500/10 blur-3xl" />
+          <div className="w-[600px] h-[600px] rounded-full bg-[rgba(244,163,172,0.25)] blur-3xl" />
         </div>
 
         <div className="relative z-10 w-full max-w-md space-y-6">
@@ -104,24 +100,28 @@ export default function LoginPage() {
                 height={44}
                 className="h-11 w-11 object-contain"
               />
-              <span className="text-2xl font-bold text-white">
-                Hearty<span className="text-teal-400">Bridge</span>
+              <span className="text-2xl font-bold text-gray-900">
+                Hearty<span className="text-teal-600">Bridge</span>
               </span>
             </div>
-            <AnimatedGradientText className="text-sm font-medium">
+            <AnimatedGradientText
+              colorFrom="#c41e34"
+              colorTo="#f0475a"
+              className="text-sm font-medium"
+            >
               {t("brandSubtitle")}
             </AnimatedGradientText>
           </div>
 
           {/* Login card */}
-          <div className="relative rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl overflow-hidden">
-            <BorderBeam size={200} duration={8} colorFrom="#14b8a6" colorTo="#22c55e" />
+          <div className="relative rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden">
+            <BorderBeam size={200} duration={8} colorFrom="#c41e34" colorTo="#f0475a" />
 
             <div className="p-8 space-y-6">
               {/* Card header */}
               <div className="text-center space-y-1">
-                <h2 className="text-2xl font-bold text-white">{t("title")}</h2>
-                <p className="text-sm text-gray-400">{t("subtitle")}</p>
+                <h2 className="text-2xl font-bold text-gray-900">{t("title")}</h2>
+                <p className="text-sm text-gray-600">{t("subtitle")}</p>
               </div>
 
               <form onSubmit={handleSubmit(onSubmit)} className="space-y-4">
@@ -135,20 +135,20 @@ export default function LoginPage() {
 
                 {/* Email field */}
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-300">{t("email")}</label>
+                  <label className="text-sm font-medium text-gray-700">{t("email")}</label>
                   <Input
                     {...register("email")}
                     type="email"
                     placeholder={t("emailPlaceholder")}
                     error={errors.email?.message}
                     autoComplete="email"
-                    className="bg-white/10 border-white/20 text-white placeholder:text-gray-500 focus:border-teal-400 focus:ring-teal-400/20"
+                    className="focus-visible:ring-brand-coral"
                   />
                 </div>
 
                 {/* Password field */}
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-300">{t("password")}</label>
+                  <label className="text-sm font-medium text-gray-700">{t("password")}</label>
                   <div className="relative">
                     <Input
                       {...register("password")}
@@ -156,11 +156,11 @@ export default function LoginPage() {
                       placeholder={t("passwordPlaceholder")}
                       error={errors.password?.message}
                       autoComplete="current-password"
-                      className="bg-white/10 border-white/20 text-white placeholder:text-gray-500 focus:border-teal-400 focus:ring-teal-400/20"
+                      className="focus-visible:ring-brand-coral"
                     />
                     <button
                       type="button"
-                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-200 transition-colors"
+                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors"
                       onClick={() => setShowPassword(!showPassword)}
                     >
                       {showPassword ? (
@@ -178,13 +178,13 @@ export default function LoginPage() {
                     <input
                       {...register("rememberMe")}
                       type="checkbox"
-                      className="h-4 w-4 rounded border-white/20 bg-white/10 text-teal-500 focus:ring-teal-500"
+                      className="h-4 w-4 rounded border-gray-300 text-brand-coral focus:ring-brand-coral"
                     />
-                    <label className="text-sm text-gray-400">{t("rememberMe")}</label>
+                    <label className="text-sm text-gray-600">{t("rememberMe")}</label>
                   </div>
                   <Link
                     href="/auth/forgot-password"
-                    className="text-sm text-teal-400 hover:text-teal-300 transition-colors"
+                    className="text-sm text-brand-coral hover:opacity-80 transition-opacity"
                   >
                     {t("forgotPassword")}
                   </Link>
@@ -206,14 +206,14 @@ export default function LoginPage() {
           </div>
 
           {/* Footer */}
-          <div className="text-center text-xs text-gray-600">
+          <div className="text-center text-xs text-gray-500">
             <p>
               {t("termsPrefix")}{" "}
-              <Link href="/terms" className="text-teal-400 hover:text-teal-300 transition-colors">
+              <Link href="/terms" className="text-brand-coral hover:opacity-80 transition-opacity">
                 {tCommon("termsOfService")}
               </Link>{" "}
               {t("and")}{" "}
-              <Link href="/privacy" className="text-teal-400 hover:text-teal-300 transition-colors">
+              <Link href="/privacy" className="text-brand-coral hover:opacity-80 transition-opacity">
                 {tCommon("privacyPolicy")}
               </Link>
             </p>

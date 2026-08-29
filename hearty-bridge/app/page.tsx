@@ -100,14 +100,14 @@ export default function Home() {
           <Ripple mainCircleSize={260} numCircles={7} color="#c41e34" mainCircleOpacity={0.14} />
 
           <div className="relative mx-auto max-w-7xl px-6 text-center">
-            <BlurFade delay={0} inView>
+            <BlurFade delay={0}>
               <div className="inline-flex items-center gap-2 rounded-full border border-brand-coral-light bg-brand-coral-tint px-4 py-1.5 text-sm font-medium text-brand-coral mb-8">
                 <span className="h-1.5 w-1.5 rounded-full bg-brand-coral animate-pulse" />
                 Pusat Terapi Anak & Tumbuh Kembang • Batam
               </div>
             </BlurFade>
 
-            <BlurFade delay={0.1} inView>
+            <BlurFade delay={0.1}>
               <h1 className="text-5xl font-bold tracking-tight text-gray-900 sm:text-7xl leading-tight">
                 {t("hero.title")}
                 <br />
@@ -124,13 +124,13 @@ export default function Home() {
               </h1>
             </BlurFade>
 
-            <BlurFade delay={0.2} inView>
+            <BlurFade delay={0.2}>
               <p className="mt-6 text-lg leading-8 text-gray-600 max-w-2xl mx-auto">
                 {t("hero.subtitle")}
               </p>
             </BlurFade>
 
-            <BlurFade delay={0.3} inView>
+            <BlurFade delay={0.3}>
               <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link href="/auth/login">
                   <ShimmerButton
@@ -166,7 +166,7 @@ export default function Home() {
         <section className="relative py-24 bg-gray-50 overflow-hidden">
           <DotPattern className="opacity-60" />
           <div className="relative mx-auto max-w-7xl px-6">
-            <BlurFade inView>
+            <BlurFade>
               <div className="text-center mb-16">
                 <span className="inline-flex items-center rounded-full bg-teal-50 border border-teal-200 px-4 py-1.5 text-sm font-semibold text-teal-700 mb-4">
                   Layanan Kami
@@ -182,7 +182,7 @@ export default function Home() {
 
             <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
               {features.map((feature, i) => (
-                <BlurFade key={feature.title} delay={i * 0.08} inView>
+                <BlurFade key={feature.title} delay={i * 0.08}>
                   <MagicCard
                     className="rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow"
                     gradientColor="#f0fdfa"
@@ -199,7 +199,7 @@ export default function Home() {
               ))}
             </div>
 
-            <BlurFade delay={0.5} inView>
+            <BlurFade delay={0.5}>
               <div className="mt-14 text-center">
                 <Link href="/auth/login">
                   <ShimmerButton

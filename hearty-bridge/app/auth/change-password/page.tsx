@@ -14,7 +14,6 @@ import { useAuth } from "@/lib/contexts/auth-context";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { ShimmerButton } from "@/components/magicui/shimmer-button";
-import { DotPattern } from "@/components/magicui/dot-pattern";
 
 const changePasswordSchema = z.object({
   newPassword: z.string().min(8, "Password harus minimal 8 karakter"),
@@ -78,13 +77,10 @@ export default function ChangePasswordPage() {
 
   return (
     <AuthGuard requireAuth={true}>
-      <div className="relative min-h-screen flex items-center justify-center bg-gray-950 p-4 overflow-hidden">
-        {/* Dot pattern background */}
-        <DotPattern className="text-teal-400/20" />
-
+      <div className="relative min-h-screen flex items-center justify-center bg-linear-to-b from-rose-50 via-white to-white p-4 overflow-hidden">
         {/* Radial glow */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <div className="w-[600px] h-[600px] rounded-full bg-teal-500/10 blur-3xl" />
+          <div className="w-[600px] h-[600px] rounded-full bg-[rgba(244,163,172,0.25)] blur-3xl" />
         </div>
 
         <div className="relative z-10 w-full max-w-md space-y-6">
@@ -98,25 +94,25 @@ export default function ChangePasswordPage() {
                 height={44}
                 className="h-11 w-11 object-contain"
               />
-              <span className="text-2xl font-bold text-white">
-                Hearty<span className="text-teal-400">Bridge</span>
+              <span className="text-2xl font-bold text-gray-900">
+                Hearty<span className="text-teal-600">Bridge</span>
               </span>
             </div>
-            <div className="inline-flex items-center space-x-2 rounded-full bg-teal-500/10 border border-teal-500/20 px-4 py-1.5">
-              <LockIcon className="h-3.5 w-3.5 text-teal-400" />
-              <span className="text-sm text-teal-300 font-medium">Keamanan Akun</span>
+            <div className="inline-flex items-center space-x-2 rounded-full bg-brand-coral-tint border border-brand-coral-light px-4 py-1.5">
+              <LockIcon className="h-3.5 w-3.5 text-brand-coral" />
+              <span className="text-sm text-brand-coral font-medium">Keamanan Akun</span>
             </div>
           </div>
 
           {/* Card */}
-          <div className="relative rounded-2xl border border-white/10 bg-white/5 backdrop-blur-xl shadow-2xl overflow-hidden">
-            <BorderBeam size={200} duration={8} colorFrom="#14b8a6" colorTo="#22c55e" />
+          <div className="relative rounded-2xl border border-gray-200 bg-white shadow-xl overflow-hidden">
+            <BorderBeam size={200} duration={8} colorFrom="#c41e34" colorTo="#f0475a" />
 
             <div className="p-8 space-y-6">
               {/* Card header */}
               <div className="text-center space-y-1">
-                <h2 className="text-2xl font-bold text-white">Buat Password Baru</h2>
-                <p className="text-sm text-gray-400">
+                <h2 className="text-2xl font-bold text-gray-900">Buat Password Baru</h2>
+                <p className="text-sm text-gray-600">
                   {user?.name ? `Halo ${user.name}, ` : ""}
                   Untuk keamanan akun, silakan buat password baru sebelum melanjutkan.
                 </p>
@@ -132,7 +128,7 @@ export default function ChangePasswordPage() {
 
                 {/* New Password */}
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-300">Password Baru</label>
+                  <label className="text-sm font-medium text-gray-700">Password Baru</label>
                   <div className="relative">
                     <Input
                       {...register("newPassword")}
@@ -140,11 +136,11 @@ export default function ChangePasswordPage() {
                       placeholder="Minimal 8 karakter"
                       error={errors.newPassword?.message}
                       autoComplete="new-password"
-                      className="bg-white/10 border-white/20 text-white placeholder:text-gray-500 focus:border-teal-400 focus:ring-teal-400/20"
+                      className="focus-visible:ring-brand-coral"
                     />
                     <button
                       type="button"
-                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-200 transition-colors"
+                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors"
                       onClick={() => setShowNewPassword(!showNewPassword)}
                     >
                       {showNewPassword ? (
@@ -158,7 +154,7 @@ export default function ChangePasswordPage() {
 
                 {/* Confirm Password */}
                 <div className="space-y-1">
-                  <label className="text-sm font-medium text-gray-300">Konfirmasi Password</label>
+                  <label className="text-sm font-medium text-gray-700">Konfirmasi Password</label>
                   <div className="relative">
                     <Input
                       {...register("confirmPassword")}
@@ -166,11 +162,11 @@ export default function ChangePasswordPage() {
                       placeholder="Ulangi password baru"
                       error={errors.confirmPassword?.message}
                       autoComplete="new-password"
-                      className="bg-white/10 border-white/20 text-white placeholder:text-gray-500 focus:border-teal-400 focus:ring-teal-400/20"
+                      className="focus-visible:ring-brand-coral"
                     />
                     <button
                       type="button"
-                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-200 transition-colors"
+                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors"
                       onClick={() => setShowConfirmPassword(!showConfirmPassword)}
                     >
                       {showConfirmPassword ? (
