@@ -1,9 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { useState } from "react";
 import { usePathname } from "next/navigation";
-import { MenuIcon, XIcon, HeartIcon, UserIcon, LogOutIcon } from "lucide-react";
+import { MenuIcon, XIcon, UserIcon, LogOutIcon } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { ShimmerButton } from "@/components/magicui/shimmer-button";
@@ -30,11 +31,21 @@ export function Header() {
           {/* Logo */}
           <div className="flex items-center">
             <Link href="/" className="flex items-center space-x-2 group">
-              <div className="h-8 w-8 rounded-lg bg-teal-500 flex items-center justify-center shadow-sm group-hover:bg-teal-600 transition-colors">
-                <HeartIcon className="h-5 w-5 text-white" />
-              </div>
-              <span className="text-xl font-bold text-gray-900">
-                Hearty<span className="text-teal-600">Bridge</span>
+              <Image
+                src="/images/logo-heartybridge.png"
+                alt="Hearty Bridge"
+                width={36}
+                height={36}
+                className="h-9 w-9 object-contain"
+                priority
+              />
+              <span className="leading-tight">
+                <span className="block text-xl font-bold text-gray-900">
+                  Hearty<span className="text-teal-600">Bridge</span>
+                </span>
+                <span className="block text-[11px] font-semibold tracking-wide text-brand-coral">
+                  Grow Up with Hug
+                </span>
               </span>
             </Link>
           </div>
@@ -77,7 +88,7 @@ export function Header() {
             ) : (
               <Link href="/auth/login">
                 <ShimmerButton
-                  background="rgba(20, 184, 166, 1)"
+                  background="rgba(15, 118, 110, 1)"
                   borderRadius="8px"
                   className="text-sm font-semibold px-4 py-2"
                 >
@@ -135,7 +146,7 @@ export function Header() {
               ) : (
                 <Link href="/auth/login" onClick={() => setIsMenuOpen(false)}>
                   <ShimmerButton
-                    background="rgba(20, 184, 166, 1)"
+                    background="rgba(15, 118, 110, 1)"
                     borderRadius="8px"
                     className="w-full justify-center text-sm font-semibold py-2.5"
                   >

@@ -1,8 +1,10 @@
 "use client";
 
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
-import { HeartIcon, MailIcon, PhoneIcon, MapPinIcon } from "lucide-react";
+import { MapPinIcon } from "lucide-react";
+import { InstagramIcon } from "@/components/icons/instagram-icon";
 
 export function Footer() {
   const pathname = usePathname();
@@ -32,27 +34,34 @@ export function Footer() {
           {/* Logo and Description */}
           <div className="col-span-1 md:col-span-2">
             <div className="flex items-center space-x-2 mb-4">
-              <HeartIcon className="h-8 w-8 text-teal-600" />
+              <Image
+                src="/images/logo-heartybridge.png"
+                alt="Hearty Bridge"
+                width={40}
+                height={40}
+                className="h-10 w-10 object-contain"
+              />
               <span className="text-xl font-bold text-gray-900">Hearty Bridge</span>
             </div>
             <p className="text-gray-600 text-sm max-w-md">
-              Menghubungkan anak dan terapis dengan penuh kasih. Kami menyediakan platform terpercaya
-              bagi orang tua untuk menemukan terapis berkualitas dan bagi terapis untuk menjangkau
-              keluarga yang membutuhkan keahlian mereka.
+              Pusat Terapi Anak &amp; Tumbuh Kembang di Batam. Mendukung tumbuh kembang anak
+              mencapai potensi terbaiknya lewat asesmen, terapi okupasi, terapi wicara, terapi
+              akuatik, dan konsultasi keluarga.
             </p>
             <div className="mt-6 space-y-2">
-              <div className="flex items-center text-sm text-gray-600">
-                <MailIcon className="h-4 w-4 mr-2" />
-                <span>hello@heartybridge.com</span>
+              <div className="flex items-start text-sm text-gray-600">
+                <MapPinIcon className="h-4 w-4 mr-2 mt-0.5 shrink-0" />
+                <span>Puri Casablanca No. A-18, Sukajadi, Kec. Batam Kota, Kota Batam, Kepulauan Riau 29432</span>
               </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <PhoneIcon className="h-4 w-4 mr-2" />
-                <span>1-800-HEARTY-1</span>
-              </div>
-              <div className="flex items-center text-sm text-gray-600">
-                <MapPinIcon className="h-4 w-4 mr-2" />
-                <span>Tersedia secara nasional</span>
-              </div>
+              <a
+                href="https://www.instagram.com/heartybridge_/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="flex items-center text-sm text-gray-600 hover:text-brand-coral transition-colors w-fit"
+              >
+                <InstagramIcon className="h-4 w-4 mr-2" />
+                <span>@heartybridge_</span>
+              </a>
             </div>
           </div>
 
@@ -103,7 +112,7 @@ export function Footer() {
             </p>
             <div className="mt-4 md:mt-0">
               <p className="text-xs text-gray-500">
-                Platform teknologi kesehatan • Sesuai HIPAA • Aman & terpercaya
+                Pusat Terapi Anak & Tumbuh Kembang • Batam • Grow Up with Hug
               </p>
             </div>
           </div>

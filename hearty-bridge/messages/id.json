@@ -79,10 +79,10 @@
   },
   "home": {
     "hero": {
-      "title": "Menghubungkan Anak dan",
-      "titleHighlight": "Terapis",
-      "titleEnd": "dengan Penuh Kasih",
-      "subtitle": "Platform terpercaya tempat orang tua menemukan terapis berkualitas untuk kebutuhan layanan kesehatan anak mereka, dan terapis terhubung dengan keluarga yang menghargai keahlian mereka.",
+      "title": "Pusat Terapi Anak &",
+      "titleHighlight": "Tumbuh Kembang",
+      "titleEnd": "di Batam",
+      "subtitle": "Hearty Bridge Early Intervention Center mendampingi tumbuh kembang anak mencapai potensi terbaiknya lewat asesmen, terapi okupasi, terapi wicara, terapi akuatik, dan konsultasi keluarga. Grow Up with Hug.",
       "cta": "Mulai Sekarang",
       "learnMore": "Pelajari Lebih Lanjut"
     },
@@ -133,19 +133,19 @@
   "about": {
     "hero": {
       "title": "Tentang Hearty Bridge",
-      "subtitle": "Kami berdedikasi untuk menghubungkan anak-anak dengan terapis berkualitas, membuat layanan kesehatan berkualitas dapat diakses dan terjangkau oleh setiap keluarga."
+      "subtitle": "Hearty Bridge Early Intervention Center adalah pusat terapi anak & tumbuh kembang di Batam yang mendampingi anak-anak mencapai potensi terbaiknya. Grow Up with Hug."
     },
     "mission": {
       "title": "Misi Kami",
-      "p1": "Setiap anak berhak mendapatkan akses ke perawatan terapeutik berkualitas. Hearty Bridge menjembatani kesenjangan antara keluarga yang mencari bantuan dan terapis berkualitas yang siap memberikan perawatan luar biasa.",
-      "p2": "Kami percaya bahwa dengan menciptakan platform yang terpercaya dan aman, kami dapat memudahkan orang tua untuk menemukan dukungan terapeutik yang tepat untuk kebutuhan unik anak mereka.",
+      "p1": "Setiap anak berhak mendapatkan dukungan tumbuh kembang yang tepat. Hearty Bridge hadir di Batam untuk mendampingi orang tua dan anak melalui asesmen, terapi okupasi, terapi wicara, terapi akuatik, layanan homecare, dan konsultasi keluarga.",
+      "p2": "Kami percaya bahwa dengan pendekatan yang hangat dan profesional, setiap langkah kecil anak — dari kata pertama hingga kontak mata yang mulai terbentuk — adalah kemenangan yang layak dirayakan bersama keluarga.",
       "cta": "Mulai Sekarang"
     },
     "stats": {
-      "families": "Keluarga Terbantu",
-      "therapists": "Terapis Berkualifikasi",
-      "successRate": "Tingkat Keberhasilan",
-      "avgRating": "Penilaian Rata-rata"
+      "families": "Layanan Terapi Tersedia",
+      "therapists": "Lokasi Klinik",
+      "successRate": "Konten Edukasi Dibagikan",
+      "avgRating": "Pengikut Instagram"
     },
     "values": {
       "title": "Nilai-Nilai Kami",
@@ -164,27 +164,12 @@
       }
     },
     "team": {
-      "title": "Tim Kepemimpinan Kami",
-      "subtitle": "Para profesional berpengalaman yang berdedikasi untuk meningkatkan layanan kesehatan anak",
-      "sarah": {
-        "name": "Dr. Sarah Johnson",
-        "title": "Kepala Eksekutif",
-        "description": "Terapis anak dengan pengalaman 15+ tahun dalam perkembangan anak"
-      },
-      "michael": {
-        "name": "Dr. Michael Chen",
-        "title": "Kepala Medis",
-        "description": "Psikolog klinis berlisensi yang mengkhususkan diri dalam gangguan spektrum autisme"
-      },
-      "emily": {
-        "name": "Emily Rodriguez",
-        "title": "Kepala Operasional",
-        "description": "Ahli teknologi kesehatan dengan semangat untuk meningkatkan akses ke layanan kesehatan"
-      }
+      "title": "Tim Terapis Kami",
+      "subtitle": "Tenaga profesional yang mendampingi setiap langkah tumbuh kembang si kecil di Batam"
     },
     "cta": {
       "title": "Siap Untuk Mulai?",
-      "subtitle": "Bergabunglah dengan ribuan keluarga yang telah menemukan dukungan terapeutik yang tepat untuk anak-anak mereka melalui Hearty Bridge.",
+      "subtitle": "Bergabunglah dengan keluarga-keluarga di Batam yang telah menemukan dukungan tumbuh kembang yang tepat untuk anak mereka bersama Hearty Bridge.",
       "getStarted": "Mulai Sekarang",
       "services": "Pelajari Layanan Kami"
     }
@@ -316,25 +301,25 @@
     },
     "info": {
       "title": "Mari Terhubung",
-      "subtitle": "Tim dukungan kami siap membantu Anda menggunakan platform, menjawab pertanyaan tentang layanan terapi, atau memberikan bantuan dengan akun Anda.",
+      "subtitle": "Hubungi kami melalui Instagram atau jadwalkan konsultasi online untuk membicarakan kebutuhan tumbuh kembang si kecil.",
       "email": {
-        "label": "Dukungan Email",
-        "address": "hello@heartybridge.com",
-        "note": "Kami biasanya merespon dalam 2-4 jam selama jam kerja"
+        "label": "Instagram",
+        "address": "@heartybridge_",
+        "note": "Kirim DM untuk pertanyaan seputar layanan dan jadwal konsultasi"
       },
       "phone": {
-        "label": "Dukungan Telepon",
-        "number": "1-800-HEARTY-1 (1-800-432-7891)",
-        "hours": "Senin - Jumat: 8:00 - 18:00 WIB"
+        "label": "Jadwalkan Konsultasi",
+        "number": "lynk.id/heartybridge",
+        "hours": "Booking online tersedia kapan saja"
       },
       "emergency": {
-        "label": "Dukungan Darurat",
-        "availability": "Hotline Krisis 24/7 Tersedia",
-        "note": "Untuk kekhawatiran terapi mendesak atau situasi krisis"
+        "label": "Kunjungi Klinik",
+        "availability": "Datang langsung ke Hearty Bridge",
+        "note": "Hubungi kami terlebih dahulu via Instagram untuk memastikan jadwal"
       },
       "office": {
-        "label": "Kantor Pusat",
-        "address": "Jl. Kesehatan No. 123, Jakarta Selatan, 12560, Indonesia"
+        "label": "Lokasi Klinik",
+        "address": "Puri Casablanca No. A-18, Sukajadi, Kec. Batam Kota, Kota Batam, Kepulauan Riau 29432"
       }
     },
     "form": {

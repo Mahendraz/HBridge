@@ -58,7 +58,7 @@ export default function ContactPage() {
     <div className="min-h-screen bg-gray-50">
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-teal-600 to-green-800 text-white py-16">
+      <section className="bg-linear-to-r from-teal-700 to-green-800 text-white py-16">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center">
             <MessageSquareIcon className="h-16 w-16 text-green-200 mx-auto mb-6" />
@@ -89,7 +89,14 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">{t('info.email.label')}</h3>
-                    <p className="text-gray-600">{t('info.email.address')}</p>
+                    <a
+                      href="https://www.instagram.com/heartybridge_/"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-600 hover:text-brand-coral transition-colors"
+                    >
+                      {t('info.email.address')}
+                    </a>
                     <p className="text-sm text-gray-500 mt-1">
                       {t('info.email.note')}
                     </p>
@@ -102,7 +109,14 @@ export default function ContactPage() {
                   </div>
                   <div>
                     <h3 className="font-semibold text-gray-900">{t('info.phone.label')}</h3>
-                    <p className="text-gray-600">{t('info.phone.number')}</p>
+                    <a
+                      href="https://lynk.id/heartybridge"
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-gray-600 hover:text-brand-coral transition-colors"
+                    >
+                      {t('info.phone.number')}
+                    </a>
                     <p className="text-sm text-gray-500 mt-1">
                       {t('info.phone.hours')}
                     </p>
@@ -228,7 +242,7 @@ export default function ContactPage() {
 
                   <Button
                     type="submit"
-                    className="w-full bg-green-600 hover:bg-green-700"
+                    className="w-full bg-green-700 hover:bg-green-800"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? (

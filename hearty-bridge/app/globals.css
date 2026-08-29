@@ -19,6 +19,16 @@
   --input: #e5e7eb;
   --ring: #0d9488;
   --radius: 0.5rem;
+
+  /* Hearty Bridge brand colors — synced with @heartybridge_ Instagram logo.
+     --brand-coral is deepened from the logo's bright pink (#f0475a) so white
+     text/icons on it, and the coral text itself on white, both clear WCAG AA
+     (4.5:1). --brand-coral-light keeps the bright logo pink for large
+     decorative backgrounds only — never for text. */
+  --brand-coral: #c41e34;
+  --brand-coral-light: #f4a3ac;
+  --brand-coral-tint: #fbe7ea;
+  --brand-teal: #2fa8a0;
 }
 
 /* Force light mode — app uses explicit Tailwind classes, OS dark mode must not override CSS variables */
@@ -50,6 +60,10 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+  --color-brand-coral: var(--brand-coral);
+  --color-brand-coral-light: var(--brand-coral-light);
+  --color-brand-coral-tint: var(--brand-coral-tint);
+  --color-brand-teal: var(--brand-teal);
   --font-sans: var(--font-geist-sans), ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, "Noto Sans", sans-serif;
   --font-mono: var(--font-geist-mono), ui-monospace, SFMono-Regular, "SF Mono", Consolas, "Liberation Mono", Menlo, monospace;
   --border-radius: var(--radius);
@@ -125,11 +139,21 @@ html {
   scroll-behavior: smooth;
 }
 
-/* Better typography */
-h1, h2, h3, h4, h5, h6 {
-  font-weight: 600;
-  line-height: 1.2;
-  color: var(--foreground);
+/* Better typography
+   No `color` here on purpose: many headings sit on colored/dark sections and
+   rely on inheriting `color: white` from an ancestor (e.g. a hero section with
+   text-white). A directly-targeting `h1{color:...}` rule always wins over an
+   inherited value regardless of CSS layers/specificity, so setting one here
+   would silently force every heading back to --foreground and make colored
+   headings on dark backgrounds unreadable. Headings fall back to the
+   --foreground color set on body when no ancestor overrides it. Kept inside
+   @layer base anyway so any future property added here still loses cleanly to
+   Tailwind utilities. */
+@layer base {
+  h1, h2, h3, h4, h5, h6 {
+    font-weight: 600;
+    line-height: 1.2;
+  }
 }
 
 /* Enhanced form elements */

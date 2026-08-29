@@ -25,7 +25,7 @@ export default function ServicesPage() {
     <div className="min-h-screen bg-gray-50">
 
       {/* Hero Section */}
-      <section className="bg-gradient-to-r from-teal-600 to-green-800 text-white py-16">
+      <section className="bg-linear-to-r from-teal-700 to-green-800 text-white py-16">
         <div className="max-w-7xl mx-auto px-6">
           <div className="text-center">
             <h1 className="text-4xl md:text-5xl font-bold mb-6">{t('hero.title')}</h1>
@@ -334,7 +334,7 @@ export default function ServicesPage() {
 
             <Card className="border-2 border-green-500 relative">
               <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-green-500 text-white">{t('pricing.monthly.popular')}</Badge>
+                <Badge className="bg-green-700 text-white">{t('pricing.monthly.popular')}</Badge>
               </div>
               <CardHeader className="text-center">
                 <CardTitle className="text-2xl">{t('pricing.monthly.title')}</CardTitle>
@@ -361,7 +361,7 @@ export default function ServicesPage() {
                   </li>
                   <li className="flex items-center">
                     <CheckIcon className="h-4 w-4 text-green-500 mr-2" />
-                    <span className="text-green-600 font-medium">{t('pricing.monthly.save')}</span>
+                    <span className="text-green-700 font-medium">{t('pricing.monthly.save')}</span>
                   </li>
                 </ul>
               </CardContent>
@@ -399,7 +399,7 @@ export default function ServicesPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-green-600 text-white py-16">
+      <section className="bg-green-700 text-white py-16">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <h2 className="text-3xl font-bold mb-6">{t('cta.title')}</h2>
           <p className="text-xl text-teal-100 mb-8 max-w-2xl mx-auto">
@@ -407,12 +407,12 @@ export default function ServicesPage() {
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link href="/auth/register">
-              <Button size="lg" variant="secondary" className="bg-white text-teal-600 hover:bg-gray-100">
+              <Button size="lg" variant="secondary" className="bg-white text-teal-700 hover:bg-gray-100">
                 {t('cta.findTherapist')}
               </Button>
             </Link>
             <Link href="/contact">
-              <Button size="lg" variant="outline" className="border-white text-white hover:bg-green-700">
+              <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-green-800">
                 {t('cta.contactUs')}
               </Button>
             </Link>

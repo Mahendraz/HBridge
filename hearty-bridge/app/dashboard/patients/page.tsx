@@ -585,7 +585,7 @@ export default function UnifiedPatientsPage() {
           // Parent view: Children cards with detailed progress
           filteredPatients.map((child) => (
             <Card key={child.id} className="overflow-hidden">
-              <CardHeader className="bg-gradient-to-r from-green-50 to-teal-50">
+              <CardHeader className="bg-linear-to-r from-green-50 to-teal-50">
                 <div className="flex justify-between items-start">
                   <div
                     className="flex items-center space-x-4 cursor-pointer group"

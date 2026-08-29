@@ -179,7 +179,7 @@ export default function ChangePasswordPage() {
 
                 <ShimmerButton
                   type="submit"
-                  background="rgba(20, 184, 166, 1)"
+                  background="rgba(15, 118, 110, 1)"
                   borderRadius="10px"
                   className="w-full justify-center text-sm font-semibold py-2.5 disabled:opacity-50"
                   disabled={isSubmitting}

@@ -18,21 +18,24 @@ import { MagicCard } from "@/components/magicui/magic-card";
 import { Meteors } from "@/components/magicui/meteors";
 import { ShimmerButton } from "@/components/magicui/shimmer-button";
 import { DotPattern } from "@/components/magicui/dot-pattern";
+import { InstagramFeedSection } from "@/components/instagram/instagram-feed-section";
+import { MapPinIcon } from "lucide-react";
+import { InstagramIcon } from "@/components/icons/instagram-icon";
 
 const features = [
   {
     icon: ShieldIcon,
-    title: "Terpercaya & Aman",
+    title: "Terpercaya & Hangat",
     description:
-      "Platform kami memverifikasi semua terapis dengan ketat. Data kesehatan anak Anda dilindungi enkripsi tingkat lanjut.",
+      "Tim kami mendampingi setiap anak dengan pendekatan yang hangat dan profesional. Data tumbuh kembang anak Anda tersimpan aman.",
     color: "text-teal-600",
     bg: "bg-teal-50",
   },
   {
     icon: UsersIcon,
-    title: "Jaringan Luas",
+    title: "Tim Terapis Berpengalaman",
     description:
-      "Terhubung dengan ratusan terapis bersertifikat di seluruh Indonesia — fisioterapi, terapi wicara, dan terapi okupasi.",
+      "Asesmen, terapi okupasi, terapi wicara, terapi akuatik, hingga konsultasi keluarga — semua dalam satu tim di Batam.",
     color: "text-emerald-600",
     bg: "bg-emerald-50",
   },
@@ -40,7 +43,7 @@ const features = [
     icon: HeartHandshakeIcon,
     title: "Perawatan Personal",
     description:
-      "Setiap anak unik. Kami membantu menemukan terapis yang paling sesuai dengan kebutuhan spesifik putra-putri Anda.",
+      "Setiap anak unik. Kami menyesuaikan program terapi dengan kebutuhan spesifik putra-putri Anda.",
     color: "text-green-600",
     bg: "bg-green-50",
   },
@@ -88,7 +91,7 @@ export default function Home() {
             <BlurFade delay={0} inView>
               <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1.5 text-sm text-teal-300 mb-8">
                 <span className="h-1.5 w-1.5 rounded-full bg-teal-400 animate-pulse" />
-                Platform Terapi Anak #1 di Indonesia
+                Pusat Terapi Anak & Tumbuh Kembang • Batam
               </div>
             </BlurFade>
 
@@ -119,7 +122,7 @@ export default function Home() {
               <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link href="/auth/login">
                   <ShimmerButton
-                    background="rgba(20, 184, 166, 1)"
+                    background="rgba(15, 118, 110, 1)"
                     className="text-base px-8 py-3.5 font-semibold"
                   >
                     Masuk ke Platform
@@ -172,7 +175,7 @@ export default function Home() {
               <div className="mt-14 text-center">
                 <Link href="/auth/login">
                   <ShimmerButton
-                    background="rgba(20, 184, 166, 1)"
+                    background="rgba(15, 118, 110, 1)"
                     className="text-base px-8 py-3.5 font-semibold"
                     borderRadius="12px"
                   >
@@ -182,6 +185,33 @@ export default function Home() {
                 </Link>
               </div>
             </BlurFade>
+          </div>
+        </section>
+
+        {/* ── INSTAGRAM ────────────────────────────────────────── */}
+        <InstagramFeedSection />
+
+        {/* ── LOKASI & KONTAK ──────────────────────────────────── */}
+        <section className="py-16 bg-gray-950 text-white">
+          <div className="mx-auto max-w-5xl px-6 flex flex-col md:flex-row items-center justify-between gap-8">
+            <div className="flex items-start gap-3">
+              <MapPinIcon className="h-6 w-6 text-teal-400 shrink-0 mt-1" />
+              <div>
+                <p className="font-semibold text-white">Hearty Bridge Early Intervention Center</p>
+                <p className="text-gray-400 text-sm mt-1 max-w-md">
+                  Puri Casablanca No. A-18, Sukajadi, Kec. Batam Kota, Kota Batam, Kepulauan Riau 29432
+                </p>
+              </div>
+            </div>
+            <a
+              href="https://www.instagram.com/heartybridge_/"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center gap-2 rounded-xl border border-teal-500/30 bg-teal-500/10 px-5 py-3 text-sm font-semibold text-teal-300 hover:bg-teal-500/20 transition-colors shrink-0"
+            >
+              <InstagramIcon className="h-5 w-5" />
+              @heartybridge_
+            </a>
           </div>
         </section>
 
