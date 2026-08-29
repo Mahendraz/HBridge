@@ -546,55 +546,55 @@ export default function InvoicesPage() {
       ) : (
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[1300px] text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">No. Invoice</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Pasien</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Paket</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Harga</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Jatuh Tempo</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Bukti Bayar</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Kirim ke Orang Tua</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Unduh</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Aksi</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">No. Invoice</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Pasien</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Paket</th>
+                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Harga</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Jatuh Tempo</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Status</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Bukti Bayar</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Kirim ke Orang Tua</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Unduh</th>
+                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {displayed.map((inv) => (
                   <tr key={inv._id} className={`hover:bg-gray-50 transition-colors ${inv.isVisibleToParent ? '' : 'opacity-75'}`}>
                     {/* No. Invoice */}
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <p className="font-mono text-xs text-gray-600">{inv.invoiceNumber}</p>
                       <p className="text-xs text-gray-400 mt-0.5">{formatDate(inv.createdAt)}</p>
                     </td>
 
                     {/* Pasien */}
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <p className="font-medium text-gray-900">{inv.childName}</p>
                     </td>
 
                     {/* Paket */}
-                    <td className="px-4 py-3">
-                      <div className="flex items-center gap-1.5 flex-wrap">
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${PACKAGE_COLOR[inv.packageType]}`}>
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex items-center gap-1.5">
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${PACKAGE_COLOR[inv.packageType]}`}>
                           {PACKAGE_LABEL[inv.packageType]}
                         </span>
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${THERAPY_COLOR[inv.therapyType]}`}>
+                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${THERAPY_COLOR[inv.therapyType]}`}>
                           {THERAPY_LABEL[inv.therapyType] ?? inv.therapyType}
                         </span>
-                        <span className="text-xs text-gray-400">{inv.sessions} sesi</span>
+                        <span className="text-xs text-gray-400 whitespace-nowrap">{inv.sessions} sesi</span>
                       </div>
                     </td>
 
                     {/* Harga */}
-                    <td className="px-4 py-3 text-right">
+                    <td className="px-4 py-3 text-right whitespace-nowrap">
                       <p className="font-semibold text-gray-900">{formatRupiah(inv.amount)}</p>
                     </td>
 
                     {/* Jatuh Tempo */}
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       {editingId === inv._id ? (
                         <div className="flex items-center gap-1.5">
                           <input
@@ -634,8 +634,8 @@ export default function InvoicesPage() {
                     </td>
 
                     {/* Status + mark paid */}
-                    <td className="px-4 py-3">
-                      <div className="flex flex-col gap-1.5">
+                    <td className="px-4 py-3 whitespace-nowrap">
+                      <div className="flex flex-col items-start gap-1.5">
                         <StatusBadge status={inv.status} />
                         {inv.status !== 'paid' ? (
                           <button
@@ -666,7 +666,7 @@ export default function InvoicesPage() {
                     </td>
 
                     {/* Bukti Bayar */}
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       {inv.paymentSubmittedAt ? (
                         <div className="space-y-1">
                           <button
@@ -688,7 +688,7 @@ export default function InvoicesPage() {
                     </td>
 
                     {/* Kirim ke Orang Tua toggle */}
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <button
                         onClick={() => handleToggleVisibility(inv)}
                         disabled={savingId === inv._id}
@@ -709,7 +709,7 @@ export default function InvoicesPage() {
                     </td>
 
                     {/* Unduh */}
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <button
                         onClick={() => handleDownloadInvoicePdf(inv._id, inv.invoiceNumber)}
                         className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 transition-colors"
@@ -719,7 +719,7 @@ export default function InvoicesPage() {
                     </td>
 
                     {/* Aksi */}
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3 whitespace-nowrap">
                       <div className="flex items-center gap-1.5">
                         <button
                           onClick={() => openEditModal(inv)}
