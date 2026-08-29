@@ -21,6 +21,8 @@ import {
   RefreshCwIcon,
   ClipboardCheckIcon,
   UserIcon,
+  UsersIcon,
+  BabyIcon,
 } from "lucide-react";
 
 /* ─── Types ──────────────────────────────────────────────────── */
@@ -173,12 +175,145 @@ function WeeklyStatusCell({ status, isFuture }: { status: "on-time" | "late" | "
   );
 }
 
+/* ─── Absensi Anak — separate domain from staff clock-in/out (Session-based) ─ */
+
+interface ChildAttendanceRecord {
+  id: string;
+  childName: string;
+  therapistName: string;
+  therapyType: string | null;
+  time: string;
+  status: "completed" | "scheduled" | "cancelled" | "no-show";
+}
+
+function SessionStatusBadge({ status }: { status: ChildAttendanceRecord["status"] }) {
+  const map: Record<ChildAttendanceRecord["status"], string> = {
+    completed: "bg-green-100 text-green-700",
+    "no-show": "bg-red-100 text-red-700",
+    cancelled: "bg-gray-100 text-gray-500",
+    scheduled: "bg-sky-100 text-sky-700",
+  };
+  const label: Record<ChildAttendanceRecord["status"], string> = {
+    completed: "Terlaksana",
+    "no-show": "Tidak Hadir",
+    cancelled: "Dibatalkan",
+    scheduled: "Terjadwal",
+  };
+  return (
+    <span className={`inline-flex items-center text-xs font-semibold px-2 py-0.5 rounded-full ${map[status]}`}>
+      {label[status]}
+    </span>
+  );
+}
+
+function ChildAttendanceSection() {
+  const [date, setDate] = useState<string>(todayWIB());
+  const [records, setRecords] = useState<ChildAttendanceRecord[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  const fetchRecords = useCallback(async () => {
+    setLoading(true);
+    setError(null);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetchWithTimeout(`/api/attendance/children?date=${date}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const r = await res.json();
+      if (res.ok && r.success) {
+        setRecords(r.records ?? []);
+      } else {
+        setError(r.error || "Gagal memuat absensi anak.");
+      }
+    } catch {
+      setError("Terjadi kesalahan saat memuat absensi anak.");
+    } finally {
+      setLoading(false);
+    }
+  }, [date]);
+
+  useEffect(() => {
+    fetchRecords();
+  }, [fetchRecords]);
+
+  return (
+    <div className="space-y-4">
+      <Card>
+        <CardHeader className="pb-3">
+          <div className="flex items-center justify-between gap-3 flex-wrap">
+            <CardTitle className="text-base flex items-center gap-2">
+              <BabyIcon className="h-4 w-4 text-teal-600" />
+              Absensi Anak — {formatDate(date)}
+            </CardTitle>
+            <div className="flex items-center gap-2">
+              <input
+                type="date"
+                value={date}
+                max={todayWIB()}
+                onChange={(e) => setDate(e.target.value)}
+                className="border border-gray-300 rounded-md px-3 py-1.5 text-sm text-gray-900 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              />
+              <Button size="sm" variant="outline" onClick={fetchRecords} disabled={loading}>
+                <RefreshCwIcon className={`h-4 w-4 ${loading ? "animate-spin" : ""}`} />
+              </Button>
+            </div>
+          </div>
+        </CardHeader>
+        <CardContent>
+          {error && (
+            <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 mb-4">
+              {error}
+            </div>
+          )}
+          {loading ? (
+            <div className="py-10 text-center text-gray-400 text-sm">Memuat...</div>
+          ) : records.length === 0 ? (
+            <div className="py-10 text-center text-gray-500">
+              <ClipboardCheckIcon className="h-10 w-10 mx-auto mb-3 text-gray-300" />
+              <p className="font-medium text-gray-700">Tidak ada sesi pada tanggal ini</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="text-left text-xs text-gray-500 uppercase border-b border-gray-100">
+                    <th className="px-4 py-2 font-medium">Nama Anak</th>
+                    <th className="px-4 py-2 font-medium">Jenis Terapi</th>
+                    <th className="px-4 py-2 font-medium">Terapis</th>
+                    <th className="px-4 py-2 font-medium">Jam</th>
+                    <th className="px-4 py-2 font-medium">Status</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {records.map((rec) => (
+                    <tr key={rec.id}>
+                      <td className="px-4 py-3 font-medium text-gray-900">{rec.childName}</td>
+                      <td className="px-4 py-3 text-gray-600">{rec.therapyType ?? "—"}</td>
+                      <td className="px-4 py-3 text-gray-600">{rec.therapistName}</td>
+                      <td className="px-4 py-3 text-gray-600">{rec.time}</td>
+                      <td className="px-4 py-3">
+                        <SessionStatusBadge status={rec.status} />
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
+
 /* ─── Main page ───────────────────────────────────────────────── */
 
 export default function AttendancePage() {
   const { user } = useAuth();
   const permissions = usePermissions(user?.role ?? "parent");
 
+  const [activeTab, setActiveTab] = useState<"staff" | "children">("staff");
   const [selectedDate, setSelectedDate] = useState<string>(todayWIB());
   const [adminData, setAdminData] = useState<AdminData | null>(null);
   const [weeklyRecords, setWeeklyRecords] = useState<Record<string, AttendanceRecord[]>>({});
@@ -433,6 +568,36 @@ export default function AttendancePage() {
         </div>
       </div>
 
+      {/* Tabs — staff clock-in/out vs. per-session child attendance (distinct domains) */}
+      <div className="flex items-center gap-1 border-b border-gray-200">
+        <button
+          onClick={() => setActiveTab("staff")}
+          className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            activeTab === "staff"
+              ? "border-teal-600 text-teal-700"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          <UsersIcon className="h-4 w-4" />
+          Absensi Staf
+        </button>
+        <button
+          onClick={() => setActiveTab("children")}
+          className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+            activeTab === "children"
+              ? "border-teal-600 text-teal-700"
+              : "border-transparent text-gray-500 hover:text-gray-700"
+          }`}
+        >
+          <BabyIcon className="h-4 w-4" />
+          Absensi Anak
+        </button>
+      </div>
+
+      {activeTab === "children" ? (
+        <ChildAttendanceSection />
+      ) : (
+      <>
       {loadError && (
         <div className="rounded-lg bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700 flex items-center justify-between gap-3">
           <span>{loadError}</span>
@@ -928,6 +1093,8 @@ export default function AttendancePage() {
             </p>
           </CardContent>
         </Card>
+      )}
+      </>
       )}
     </div>
   );
