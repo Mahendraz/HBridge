@@ -15,6 +15,10 @@ interface NotificationItem {
 }
 
 const POLL_INTERVAL_MS = 20000;
+const PANEL_WIDTH = 256; // px, matches w-64 — deliberately no wider than the
+// desktop sidebar (lg:w-64) so the panel never has to spill past it into the
+// main content area (it can still cover the sidebar's own nav links while open,
+// same as any dropdown covering its own menu — that's fine).
 
 function timeAgo(iso: string): string {
   const diffMs = Date.now() - new Date(iso).getTime();
@@ -33,6 +37,30 @@ export function NotificationBell() {
   const [notifications, setNotifications] = useState<NotificationItem[]>([]);
   const [unreadCount, setUnreadCount] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  const [panelPos, setPanelPos] = useState<{ top: number; left: number } | null>(null);
+
+  // The panel is `fixed` and positioned from the button's actual screen
+  // coordinates rather than `absolute` inside whatever narrow column happens
+  // to contain it — the bell renders both in the desktop sidebar and the
+  // mobile off-canvas drawer, and a dropdown anchored the old way overflowed
+  // both: covering the page's own heading/content on desktop, and colliding
+  // with the drawer's close button on mobile. Clamped to the *host column's*
+  // right edge (sidebar or drawer), not just the viewport edge, so it never
+  // reaches past that boundary into real page content — worst case it covers
+  // the sidebar/drawer's own nav links while open, which is fine.
+  const updatePanelPosition = useCallback(() => {
+    const rect = buttonRef.current?.getBoundingClientRect();
+    if (!rect) return;
+    const margin = 8;
+    const isDesktopSidebar = window.innerWidth >= 1024; // matches the `lg` breakpoint dashboard-sidebar.tsx uses to switch from the mobile drawer to the fixed lg:w-64 sidebar
+    const hostRight = isDesktopSidebar ? 256 : Math.min(window.innerWidth, 320); // lg:w-64 sidebar, or the mobile drawer's max-w-xs
+    const left = Math.max(
+      margin,
+      Math.min(rect.left, hostRight - PANEL_WIDTH - margin, window.innerWidth - PANEL_WIDTH - margin)
+    );
+    setPanelPos({ top: rect.bottom + margin, left });
+  }, []);
 
   const fetchNotifications = useCallback(async () => {
     if (!user) return;
@@ -67,6 +95,17 @@ export function NotificationBell() {
     document.addEventListener("mousedown", handleClickOutside);
     return () => document.removeEventListener("mousedown", handleClickOutside);
   }, []);
+
+  useEffect(() => {
+    if (!isOpen) return;
+    updatePanelPosition();
+    window.addEventListener("resize", updatePanelPosition);
+    window.addEventListener("scroll", updatePanelPosition, true);
+    return () => {
+      window.removeEventListener("resize", updatePanelPosition);
+      window.removeEventListener("scroll", updatePanelPosition, true);
+    };
+  }, [isOpen, updatePanelPosition]);
 
   const markAllRead = async () => {
     const token = localStorage.getItem("token");
@@ -105,6 +144,7 @@ export function NotificationBell() {
   return (
     <div className="relative" ref={containerRef}>
       <button
+        ref={buttonRef}
         type="button"
         onClick={() => setIsOpen((v) => !v)}
         className="relative flex items-center justify-center h-9 w-9 rounded-full hover:bg-gray-100 transition-colors"
@@ -118,8 +158,11 @@ export function NotificationBell() {
         )}
       </button>
 
-      {isOpen && (
-        <div className="absolute left-0 top-11 z-50 w-80 max-h-96 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg">
+      {isOpen && panelPos && (
+        <div
+          className="fixed z-[60] w-64 max-h-96 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg"
+          style={{ top: panelPos.top, left: panelPos.left }}
+        >
           <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
             <p className="text-sm font-semibold text-gray-900">Notifikasi</p>
             {unreadCount > 0 && (
