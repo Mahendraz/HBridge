@@ -160,6 +160,7 @@ interface WeeklySlot {
   sessionProgress?: { completed: number; total: number; sessionNumber: number | null } | null;
   sessionId?: string | null;
   sessionStatus?: string | null;
+  sessionCategory?: 'regular' | 'extra';
   _type?: 'session' | 'weekly';
 }
 
@@ -238,8 +239,9 @@ function SlotCard({
 }) {
   const sessionDate = slotSessionDate(weekStart, slot.day);
   const hasReport = !!reportMap[`${slot.patientId}_${sessionDate}`];
+  const isExtra = slot.sessionCategory === 'extra';
   const sp = slot.sessionProgress;
-  const currentNum = sp?.sessionNumber ?? (sp ? sp.completed + 1 : null);
+  const currentNum = isExtra ? null : (sp?.sessionNumber ?? (sp ? sp.completed + 1 : null));
 
   const tc = slot.therapyType === 'OT' ? {
     card: isTherapistOnLeave ? 'bg-red-50 border-red-300 hover:bg-red-100' : 'bg-blue-50 border-blue-200 hover:bg-blue-100',
@@ -291,7 +293,12 @@ function SlotCard({
             <p className="font-semibold text-gray-900 truncate leading-snug">
               {slot.patientName}{slot.therapyType ? ` (${slot.therapyType})` : ''}
             </p>
-            {sp && currentNum !== null && (
+            {isExtra && (
+              <span className="flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold bg-amber-500 text-white leading-none">
+                Susulan
+              </span>
+            )}
+            {!isExtra && sp && currentNum !== null && (
               <span className={`flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold ${tc.badge} text-white leading-none`}>
                 {currentNum}/{sp.total}
               </span>
@@ -1340,6 +1347,168 @@ function PackageSessionModal({
 }
 
 // ---------------------------------------------------------------------------
+// ExtraSessionModal — add a one-off "susulan" (make-up) session mid-package,
+// without touching the patient's recurring WeeklySchedule slot(s).
+// ---------------------------------------------------------------------------
+
+function ExtraSessionModal({
+  patients,
+  therapists,
+  weekStart,
+  onClose,
+  onSave,
+}: {
+  patients: PatientOption[];
+  therapists: TherapistOption[];
+  weekStart: string;
+  onClose: () => void;
+  onSave: (childId: string, date: string, hour: number, therapistId: string) => Promise<void>;
+}) {
+  const [selectedPatientId, setSelectedPatientId] = useState("");
+  const [selectedTherapistId, setSelectedTherapistId] = useState("");
+  const [date, setDate] = useState(weekStart);
+  const [hour, setHour] = useState<number>(9);
+  const [saving, setSaving] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  const eligiblePatients = patients.filter((p) => (p.tokenBalance ?? 0) > 0);
+  const selectedPatient = eligiblePatients.find((p) => p._id === selectedPatientId);
+
+  useEffect(() => {
+    if (selectedPatient?.assignedTherapistId) {
+      setSelectedTherapistId(selectedPatient.assignedTherapistId);
+    }
+  }, [selectedPatient]);
+
+  const handleSave = async () => {
+    if (!selectedPatientId || !date || !selectedTherapistId) return;
+    setSaving(true);
+    setError(null);
+    try {
+      await onSave(selectedPatientId, date, hour, selectedTherapistId);
+    } catch (e) {
+      setError(e instanceof Error ? e.message : "Gagal menambah sesi susulan");
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <Dialog open onOpenChange={(o) => !o && onClose()}>
+      <DialogContent size="md">
+        <DialogHeader>
+          <div className="flex items-center justify-between">
+            <DialogTitle>Tambah Sesi Susulan</DialogTitle>
+            <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
+              <XIcon className="h-5 w-5" />
+            </button>
+          </div>
+        </DialogHeader>
+
+        <div className="space-y-4 mt-4">
+          {error && (
+            <div className="rounded-md bg-red-50 border border-red-200 px-4 py-3 text-sm text-red-700">
+              {error}
+            </div>
+          )}
+
+          <div className="rounded-lg bg-amber-50 border border-amber-200 px-4 py-3 text-sm text-amber-700">
+            Menambah satu sesi tambahan (mis. mengganti sesi yang bolong) di tengah paket yang sedang berjalan — <strong>tidak mengubah</strong> jadwal rutin mingguan pasien.
+          </div>
+
+          {/* Patient */}
+          <div>
+            <label className="text-xs font-medium text-gray-700 mb-1 block">
+              <UserIcon className="inline h-3 w-3 mr-1" />
+              Pasien (paket aktif)
+            </label>
+            <select
+              value={selectedPatientId}
+              onChange={(e) => setSelectedPatientId(e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            >
+              <option value="">Pilih pasien...</option>
+              {eligiblePatients.map((p) => (
+                <option key={p._id} value={p._id}>
+                  {p.name} ({formatTherapyLabel(p)})
+                </option>
+              ))}
+            </select>
+            {eligiblePatients.length === 0 && (
+              <p className="text-xs text-amber-600 mt-1">
+                Tidak ada pasien dengan paket aktif.
+              </p>
+            )}
+          </div>
+
+          {/* Therapist */}
+          {selectedPatientId && (
+            <div>
+              <label className="text-xs font-medium text-gray-700 mb-1 block">
+                <StethoscopeIcon className="inline h-3 w-3 mr-1" />
+                Terapis
+              </label>
+              <select
+                value={selectedTherapistId}
+                onChange={(e) => setSelectedTherapistId(e.target.value)}
+                className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+              >
+                <option value="">Pilih terapis...</option>
+                {therapists.map((t) => (
+                  <option key={t._id} value={t._id}>{t.name}</option>
+                ))}
+              </select>
+            </div>
+          )}
+
+          {/* Date */}
+          <div>
+            <label className="text-xs font-medium text-gray-700 mb-1 block">Tanggal Sesi</label>
+            <input
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            />
+          </div>
+
+          {/* Hour */}
+          <div>
+            <label className="text-xs font-medium text-gray-700 mb-1 block">
+              <ClockIcon className="inline h-3 w-3 mr-1" />
+              Jam
+            </label>
+            <select
+              value={hour}
+              onChange={(e) => setHour(Number(e.target.value))}
+              className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
+            >
+              {HOURS.map((h) => (
+                <option key={h} value={h}>
+                  {String(h).padStart(2, "0")}:00 – {String(h + 1).padStart(2, "0")}:00
+                </option>
+              ))}
+            </select>
+          </div>
+        </div>
+
+        <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-gray-100">
+          <Button variant="outline" onClick={onClose} disabled={saving}>
+            Batal
+          </Button>
+          <Button
+            onClick={handleSave}
+            disabled={!selectedPatientId || !date || !selectedTherapistId || saving}
+          >
+            {saving ? "Menyimpan..." : "Tambah Sesi Susulan"}
+          </Button>
+        </div>
+      </DialogContent>
+    </Dialog>
+  );
+}
+
+// ---------------------------------------------------------------------------
 // Main page component
 // ---------------------------------------------------------------------------
 
@@ -1389,6 +1558,9 @@ export default function SchedulesPage() {
 
   // Package session modal state
   const [showPackageModal, setShowPackageModal] = useState(false);
+
+  // Extra/susulan session modal state
+  const [showExtraSessionModal, setShowExtraSessionModal] = useState(false);
 
   // Assessment state
   const [assessments, setAssessments] = useState<AssessmentSlot[]>([]);
@@ -1691,6 +1863,23 @@ export default function SchedulesPage() {
     await fetchSlots();
   };
 
+  // ---- Extra/susulan session creation ----
+
+  const handleCreateExtraSession = async (childId: string, date: string, hour: number, therapistId: string) => {
+    const token = localStorage.getItem("token");
+    const res = await fetch(`/api/children/${childId}/sessions`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+      body: JSON.stringify({ isExtra: true, date, time: `${String(hour).padStart(2, "0")}:00`, therapistId }),
+    });
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      throw new Error(err.error || `Gagal menambah sesi susulan (${res.status})`);
+    }
+    setShowExtraSessionModal(false);
+    await fetchSlots();
+  };
+
   // ---- Modal helpers ----
 
   const openNewSlot = (day?: string, hour?: number) => {
@@ -1898,10 +2087,18 @@ export default function SchedulesPage() {
           </p>
         </div>
         {permissions.hasPermission("schedules:manage_all") && (
-          <Button onClick={() => openNewSlot()}>
-            <PlusIcon className="h-4 w-4 mr-2" />
-            Tambah Slot
-          </Button>
+          <div className="flex items-center gap-2">
+            {(user?.role === "admin" || user?.role === "super_admin") && (
+              <Button variant="outline" onClick={() => setShowExtraSessionModal(true)}>
+                <PlusIcon className="h-4 w-4 mr-2" />
+                Sesi Susulan
+              </Button>
+            )}
+            <Button onClick={() => openNewSlot()}>
+              <PlusIcon className="h-4 w-4 mr-2" />
+              Tambah Slot
+            </Button>
+          </div>
         )}
       </div>
 
@@ -2298,6 +2495,17 @@ export default function SchedulesPage() {
           weekStart={weekStart}
           onClose={() => setShowPackageModal(false)}
           onSave={handleCreatePackageSessions}
+        />
+      )}
+
+      {/* Extra/susulan session modal (admin only) */}
+      {showExtraSessionModal && (
+        <ExtraSessionModal
+          patients={allPatients}
+          therapists={allTherapists}
+          weekStart={weekStart}
+          onClose={() => setShowExtraSessionModal(false)}
+          onSave={handleCreateExtraSession}
         />
       )}
 

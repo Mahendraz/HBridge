@@ -264,6 +264,59 @@ export const POST = withAnyAuth(
       );
     }
 
+    // ── Extra/susulan session: an ad hoc make-up session added mid-package.
+    // Tagged sessionCategory: 'extra' so it never perturbs the regular weekly
+    // slot's N/M progress counter (see GET /api/weekly-schedule) — it's purely
+    // additive and shows up on the grid as its own standalone card.
+    if (body.isExtra) {
+      if (user.role !== 'admin' && user.role !== 'super_admin') {
+        return ErrorResponse.forbidden('Hanya admin yang bisa menambah sesi susulan', 'INSUFFICIENT_PERMISSIONS');
+      }
+      if (!body.date || !body.time) {
+        return NextResponse.json(
+          ErrorResponse.badRequest('Tanggal dan jam diperlukan', 'VALIDATION_ERROR'),
+          { status: 400 }
+        );
+      }
+
+      const activeTx = await TokenTransaction.findOne({
+        childId: new mongoose.Types.ObjectId(childId),
+        type: 'topup',
+        packageType: { $ne: null },
+      }).sort({ createdAt: -1 });
+
+      if (!activeTx) {
+        return NextResponse.json(
+          ErrorResponse.badRequest(
+            'Pasien tidak memiliki paket aktif untuk ditambahkan sesi susulan.',
+            'NO_PACKAGE'
+          ),
+          { status: 400 }
+        );
+      }
+
+      const therapistId = (body.therapistId && mongoose.isValidObjectId(body.therapistId))
+        ? new mongoose.Types.ObjectId(body.therapistId)
+        : (child.therapistId || new mongoose.Types.ObjectId(user.userId));
+
+      const extraSession = await Session.create({
+        childId: new mongoose.Types.ObjectId(childId),
+        therapistId,
+        date: new Date(body.date + 'T00:00:00Z'),
+        time: body.time,
+        duration: body.duration || 60,
+        type: 'in-person',
+        status: 'scheduled',
+        packageId: activeTx._id,
+        totalSessions: activeTx.amount,
+        sessionCategory: 'extra',
+        notes: body.notes,
+        isActive: true,
+      });
+
+      return SuccessResponse.created({ session: extraSession }, 'Sesi susulan berhasil ditambahkan');
+    }
+
     // ── Normal single session creation (therapist or admin) ──
     const sessionData = {
       childId: new mongoose.Types.ObjectId(childId),

@@ -18,6 +18,7 @@ export interface ISession extends Document {
   packageId?: mongoose.Types.ObjectId;
   sessionNumber?: number;
   totalSessions?: number;
+  sessionCategory: 'regular' | 'extra';
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -121,6 +122,11 @@ const SessionSchema = new Schema<ISession>({
     type: Number,
     default: null,
     min: 1
+  },
+  sessionCategory: {
+    type: String,
+    enum: { values: ['regular', 'extra'], message: 'sessionCategory must be regular or extra' },
+    default: 'regular'
   },
   isActive: {
     type: Boolean,

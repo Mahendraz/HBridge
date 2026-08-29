@@ -33,7 +33,7 @@ Checklist eksekusi untuk `docs/TASK_BREAKDOWN.md` (detail teknis per item ada di
 ## 4. Rangkuman Fitur & Kebutuhan Admin
 - [x] 4.1 Frekuensi terapi mingguan per anak — diverifikasi manual (nilai bervariasi sesuai jadwal asli)
 - [x] 4.2 Pencarian anak tidak jalan — diverifikasi manual (server-side search, network + UI)
-- [ ] 4.3 Tambah jadwal susulan di tengah paket berjalan
+- [x] 4.3 Tambah jadwal susulan di tengah paket berjalan — perbaiki bug nyata `weekSessionMap` (key cuma `packageId`, sekarang `packageId_day_hour`) supaya dua slot berbagi paket tidak lagi bertabrakan nomor/status sesi; `Session.sessionCategory: 'regular'|'extra'` baru; aksi UI "+ Sesi Susulan" di halaman Jadwal memanggil ulang `POST /api/children/[id]/sessions` (jalur aman, sebelumnya dead code) — sesi susulan tidak mengganggu counter N/M paket reguler; guard baru di generator massal `POST /api/weekly-schedule` supaya tidak regenerasi ganda kalau pasien sudah punya slot aktif untuk paket tsb — diverifikasi manual (tambah sesi susulan via UI, kartu "Susulan" tampil benar di grid tanpa mengubah counter slot reguler)
 - [x] 4.4 Cari anak di halaman jadwal — diverifikasi manual
 - [x] 4.5 Filter jadwal per terapis — diverifikasi manual (juga fix gate permission admin tidak lihat toolbar)
 - [x] 4.6 Detail Profil Anak — field yang hilang — tanggal mulai terapi (proxy dari `WeeklySchedule.effectiveFrom` terawal) & hari jadwal (union hari slot aktif) ditambahkan ke card Informasi Dasar; alamat reuse `User.profile.address` milik orang tua (keputusan klien: reuse, bukan field baru) — expose via API + edit-inline di card Orang Tua — diverifikasi manual (data tampil benar, edit alamat tersimpan & bertahan setelah reload)

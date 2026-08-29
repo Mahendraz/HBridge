@@ -117,8 +117,13 @@ export const GET = withAnyAuth(
     if (packageSlots.length > 0) {
       const packageIds = packageSlots.map(s => new mongoose.Types.ObjectId(s.packageId));
 
+      // Extra/susulan sessions (sessionCategory: 'extra') are additional make-up
+      // sessions added mid-package — they must never perturb the regular
+      // recurring slot's N/M counter, so every aggregation below excludes them.
+      const regularOnly = { sessionCategory: { $ne: 'extra' as const } };
+
       const completedAgg = await Session.aggregate([
-        { $match: { packageId: { $in: packageIds }, status: 'completed', isActive: true } },
+        { $match: { packageId: { $in: packageIds }, status: 'completed', isActive: true, ...regularOnly } },
         { $group: { _id: '$packageId', count: { $sum: 1 } } },
       ]);
       const completedMap = new Map<string, number>(
@@ -129,20 +134,28 @@ export const GET = withAnyAuth(
         packageId: { $in: packageIds },
         date: { $gte: weekStart, $lte: weekEnd },
         isActive: true,
+        ...regularOnly,
       })
-        .select('packageId sessionNumber totalSessions date status _id')
+        .select('packageId sessionNumber totalSessions date time status _id')
         .lean();
 
+      // Keyed by packageId+day+hour (not packageId alone) — two WeeklySchedule
+      // slots can legitimately share a package (e.g. a patient scheduled twice a
+      // week, or a susulan slot added mid-package), and each needs its own
+      // matching Session document, not whichever one was inserted into the map last.
       const weekSessionMap = new Map<string, any>();
       for (const ws of weekSessions) {
-        weekSessionMap.set((ws as any).packageId.toString(), ws);
+        const dayName = dateToDayName(new Date((ws as any).date));
+        const hour = timeToHour((ws as any).time ?? '09:00');
+        const key = `${(ws as any).packageId.toString()}_${dayName}_${hour}`;
+        weekSessionMap.set(key, ws);
       }
 
       // For slots without a session for this specific week, estimate the session number.
       // Past/current week: count sessions before weekStart + 1.
       // Future weeks: project from completed count + weeksAhead offset.
       const slotsNeedingEstimate = packageSlots.filter(
-        s => !weekSessionMap.has(s.packageId.toString())
+        s => !weekSessionMap.has(`${s.packageId.toString()}_${s.day}_${s.hour}`)
       );
 
       const countBeforeMap = new Map<string, number>();
@@ -151,7 +164,7 @@ export const GET = withAnyAuth(
           s => new mongoose.Types.ObjectId(s.packageId)
         );
         const countBeforeAgg = await Session.aggregate([
-          { $match: { packageId: { $in: estimatePkgIds }, date: { $lt: weekStart }, isActive: true } },
+          { $match: { packageId: { $in: estimatePkgIds }, date: { $lt: weekStart }, isActive: true, ...regularOnly } },
           { $group: { _id: '$packageId', count: { $sum: 1 } } },
         ]);
         for (const row of countBeforeAgg) {
@@ -166,7 +179,7 @@ export const GET = withAnyAuth(
         const pkgIdStr  = slot.packageId.toString();
         const completed = completedMap.get(pkgIdStr) ?? 0;
         const total     = slot.totalSessions ?? 0;
-        const weekSession = weekSessionMap.get(pkgIdStr);
+        const weekSession = weekSessionMap.get(`${pkgIdStr}_${slot.day}_${slot.hour}`);
 
         let sessionNumber: number | null = weekSession?.sessionNumber ?? null;
 
@@ -292,6 +305,7 @@ export const GET = withAnyAuth(
         },
         sessionId: session._id.toString(),
         sessionStatus: session.status,
+        sessionCategory: session.sessionCategory ?? 'regular',
       });
     }
 
@@ -404,10 +418,14 @@ export const POST = withAnyAuth(
       // Pick the newest package that still has remaining sessions (count < amount).
       // This means: if a package already has some sessions in the calendar (but not all),
       // we generate only the REMAINING sessions, not all over again.
+      // Extra/susulan sessions never count against a package's regular remaining
+      // count — only they're generated through this path.
+      const regularSessionFilter = { sessionCategory: { $ne: 'extra' as const } };
+
       let activePkg: typeof allPkgs[number] | null = null;
       let existingSessionCount = 0;
       for (const pkg of allPkgs) {
-        const count = await Session.countDocuments({ packageId: pkg._id, isActive: true });
+        const count = await Session.countDocuments({ packageId: pkg._id, isActive: true, ...regularSessionFilter });
         if (count < (pkg.amount as number)) {
           activePkg = pkg;
           existingSessionCount = count;
@@ -417,12 +435,26 @@ export const POST = withAnyAuth(
       // Fall back to most recent package if all are fully used
       if (!activePkg && allPkgs.length > 0) {
         activePkg = allPkgs[0];
-        existingSessionCount = await Session.countDocuments({ packageId: allPkgs[0]._id, isActive: true });
+        existingSessionCount = await Session.countDocuments({ packageId: allPkgs[0]._id, isActive: true, ...regularSessionFilter });
       }
 
       if (activePkg) {
         const totalSessions: number = activePkg.amount;
-        const remainingCount = Math.max(0, totalSessions - existingSessionCount);
+
+        // Guard: if another active recurring slot for this patient is already
+        // linked to this same package, don't regenerate/duplicate its sessions —
+        // only that slot should own generation for the package. This is what
+        // stops "tambah jadwal susulan" (adding a second weekly slot for a
+        // package already in progress) from doubling up on session dates; use
+        // the dedicated "+ Sesi Tambahan" action for susulan sessions instead.
+        const otherActiveSlot = await WeeklySchedule.findOne({
+          patientId: data.patientId,
+          packageId: (activePkg._id as mongoose.Types.ObjectId).toString(),
+          _id: { $ne: (slot as any)._id },
+          $or: [{ effectiveUntil: null }, { effectiveUntil: { $gte: new Date() } }],
+        }).lean();
+
+        const remainingCount = otherActiveSlot ? 0 : Math.max(0, totalSessions - existingSessionCount);
 
         if (remainingCount > 0 && mongoose.isValidObjectId(data.therapistId)) {
           // Generate only the remaining sessions, starting from effectiveFrom on the target day.
