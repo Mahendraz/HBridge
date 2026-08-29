@@ -4,27 +4,27 @@ Welcome to Hearty Bridge project documentation. This folder contains all project
 
 ## **Documentation Structure**
 
-### **📋 [PROJECT_PLAN.md](./PROJECT_PLAN.md)**
+### **📋 [PROJECT_PLAN.md](./planning/PROJECT_PLAN.md)**
 - Complete project overview
 - Technology stack details
 - Database schema design
 - 4-phase development plan
 - Risk assessment dan mitigation strategies
 
-### **🎯 [PHASE_1_DETAILED.md](./PHASE_1_DETAILED.md)**
+### **🎯 [PHASE_1_DETAILED.md](./planning/PHASE_1_DETAILED.md)**
 - Detailed breakdown of Phase 1 tasks
 - Task estimates dan priorities
 - Acceptance criteria untuk setiap task
 - Phase 1 specific testing guide
 
-### **📊 [PROGRESS_TRACKER.md](./PROGRESS_TRACKER.md)**
+### **📊 [PROGRESS_TRACKER.md](./progress/PROGRESS_TRACKER.md)**
 - Real-time progress monitoring
 - Daily progress logs
 - Milestone tracking
 - Risk tracking dan mitigation
 - Key metrics dan success indicators
 
-### **🧪 [TESTING_GUIDE.md](./TESTING_GUIDE.md)**
+### **🧪 [TESTING_GUIDE.md](./testing/TESTING_GUIDE.md)**
 - Comprehensive manual testing procedures
 - Test cases untuk all phases
 - Cross-browser testing guidelines

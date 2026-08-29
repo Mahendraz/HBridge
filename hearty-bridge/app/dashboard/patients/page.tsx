@@ -253,6 +253,7 @@ export default function UnifiedPatientsPage() {
       if (response.ok && result.success) {
         setShowCreateParentModal(false);
         setCreateParentForm({ name: '', email: '', password: '', phone: '' });
+        await fetchAllParents();
       } else {
         setCreateParentError(result.error || result.message || 'Gagal membuat akun orang tua.');
       }

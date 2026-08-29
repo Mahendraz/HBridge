@@ -313,7 +313,7 @@ With the foundation complete, you can now proceed to:
 ## 📞 Support
 
 For questions or issues related to this implementation:
-- Review the Phase 1 documentation at `/docs/PHASE_1_DETAILED.md`
+- Review the Phase 1 documentation at `/docs/planning/PHASE_1_DETAILED.md`
 - Check the testing guide for validation steps
 - Ensure environment variables are properly configured
 - Verify MongoDB connection before testing
