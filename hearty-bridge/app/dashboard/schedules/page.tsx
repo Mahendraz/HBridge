@@ -438,6 +438,11 @@ interface SlotModalProps {
   onAssignPackage?: (slot: Partial<WeeklySlot>) => void;
   showTabs?: boolean;
   onSaveAssessment?: (data: { childId: string; assessorId: string | null; date: string; time: string; notes: string; packageId?: string | null }) => Promise<void>;
+  // Patients who already have an OT/TW slot somewhere this week — their
+  // per-type `therapyBalance` reads 0 once a package is linked to a slot
+  // (the whole budget gets front-loaded), but they're still a valid pick for
+  // adding a 2nd/3rd day to that same package (see multi-day scheduling).
+  patientsWithActiveSlot?: Set<string>;
 }
 
 function SlotModal({
@@ -451,9 +456,23 @@ function SlotModal({
   onAssignPackage,
   showTabs,
   onSaveAssessment,
+  patientsWithActiveSlot,
 }: SlotModalProps) {
   const canShowTabs = showTabs && !slot._id;
   const [activeTab, setActiveTab] = useState<'slot' | 'assessment'>('slot');
+
+  // A patient is pickable for a new regular (OT/TW) slot if they have spare
+  // per-type balance, OR they already have an active OT/TW slot this week —
+  // the latter covers adding a 2nd/3rd day to a package whose whole budget
+  // is already front-loaded onto its first slot (therapyBalance reads 0 for
+  // that type even though the package itself isn't finished).
+  const hasSchedulableBalance = (p: PatientOption) => {
+    if (patientsWithActiveSlot?.has(p._id)) return true;
+    if ((p.tokenBalance ?? 0) <= 0) return false;
+    const b = p.therapyBalance ?? {};
+    if (Object.keys(b).length === 0) return true; // 'both' packages have no breakdown
+    return Object.entries(b).some(([type, v]) => type !== 'assessment' && (v as number) > 0);
+  };
 
   // Assessment form state
   const defaultAssessDate = (() => {
@@ -492,6 +511,16 @@ function SlotModal({
   const [patientTherapyTypes, setPatientTherapyTypes] = useState<string[]>(
     slot.therapyType ? [slot.therapyType] : []
   );
+  // Broader than patientTherapyTypes (which only counts *unscheduled* balance,
+  // always 0 once a package has any slot — by design, its budget is
+  // front-loaded onto that slot). This is every non-assessment type the
+  // patient has ever had a package for, used to decide whether OT vs TW needs
+  // to be asked explicitly instead of guessed — with multi-day scheduling a
+  // patient commonly has an active slot for both, and guessing "most
+  // recently created package" silently picks the wrong one.
+  const [typeCandidates, setTypeCandidates] = useState<string[]>(
+    slot.therapyType ? [slot.therapyType] : []
+  );
   const [assessmentPackageId, setAssessmentPackageId] = useState<string | null>(null);
   const [assessmentPackageLoading, setAssessmentPackageLoading] = useState(false);
 
@@ -500,6 +529,7 @@ function SlotModal({
     // dropdown falls back to the full unfiltered list below.
     if (!form.patientId || isHeroBridge) {
       setPatientTherapyTypes([]);
+      setTypeCandidates([]);
       return;
     }
     const token = localStorage.getItem('token');
@@ -523,9 +553,31 @@ function SlotModal({
           )
         );
         setPatientTherapyTypes(specificTypes);
+        const allTypes: string[] = Array.from(
+          new Set<string>(
+            topups
+              .filter((t: any) => t.therapyType && t.therapyType !== 'assessment')
+              .map((t: any) => t.therapyType as string)
+          )
+        );
+        setTypeCandidates(allTypes);
       })
-      .catch(() => setPatientTherapyTypes([]));
+      .catch(() => { setPatientTherapyTypes([]); setTypeCandidates([]); });
   }, [form.patientId, isHeroBridge]);
+
+  // Once patient/candidates are known: auto-pick the one unambiguous type
+  // silently (keeps the common case simple); clear it when ambiguous (2+
+  // candidates) so the admin must choose explicitly instead of the backend
+  // guessing "most recently created package".
+  useEffect(() => {
+    if (isHeroBridge) return;
+    if (typeCandidates.length === 1) {
+      setForm((f) => (f.therapyType === typeCandidates[0] ? f : { ...f, therapyType: typeCandidates[0] as 'OT' | 'TW' }));
+    } else if (typeCandidates.length > 1 && !typeCandidates.includes(form.therapyType as string)) {
+      setForm((f) => ({ ...f, therapyType: '' }));
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [typeCandidates, isHeroBridge]);
 
   // Fetch assessment package ID when assessment child is selected
   useEffect(() => {
@@ -624,7 +676,10 @@ function SlotModal({
 
   const isValid = isHeroBridge
     ? Boolean(form.patientId && manualTherapistName.trim() && heroBridgeDate && heroBridgeDay)
-    : Boolean(form.patientId && form.therapistId && form.day);
+    : Boolean(
+        form.patientId && form.therapistId && form.day &&
+        (typeCandidates.length <= 1 || typeCandidates.includes(form.therapyType as string))
+      );
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -768,31 +823,51 @@ function SlotModal({
               className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-transparent"
             >
               <option value="">Pilih pasien...</option>
-              {(isHeroBridge
-                ? patients
-                : patients.filter((p) => {
-                    if ((p.tokenBalance ?? 0) <= 0) return false;
-                    const b = p.therapyBalance ?? {};
-                    if (Object.keys(b).length === 0) return true; // 'both' packages have no breakdown
-                    return Object.entries(b).some(([type, v]) => type !== 'assessment' && (v as number) > 0);
-                  })
-              ).map((p) => (
+              {(isHeroBridge ? patients : patients.filter(hasSchedulableBalance)).map((p) => (
                 <option key={p._id} value={p._id}>
                   {isHeroBridge ? p.name : `${p.name} (${formatTherapyLabel(p)})`}
                 </option>
               ))}
             </select>
-            {!isHeroBridge && patients.filter((p) => {
-              if ((p.tokenBalance ?? 0) <= 0) return false;
-              const b = p.therapyBalance ?? {};
-              if (Object.keys(b).length === 0) return true;
-              return Object.entries(b).some(([type, v]) => type !== 'assessment' && (v as number) > 0);
-            }).length === 0 && (
+            {!isHeroBridge && patients.filter(hasSchedulableBalance).length === 0 && (
               <p className="text-xs text-amber-600 mt-1">
                 Semua pasien aktif sudah terjadwal minggu ini.
               </p>
             )}
           </div>
+
+          {/* Jenis Terapi — only shown when the patient has more than one type
+              of package (e.g. an OT slot already running + a TW package too),
+              so admin picks explicitly instead of the backend guessing which
+              package to attach the new slot to. */}
+          {!isHeroBridge && form.patientId && typeCandidates.length > 1 && (
+            <div>
+              <label className="text-xs font-medium text-gray-700 mb-1 block">
+                Jenis Terapi <span className="text-red-500">*</span>
+              </label>
+              <div className="flex gap-2">
+                {typeCandidates.map((type) => (
+                  <button
+                    key={type}
+                    type="button"
+                    onClick={() => setForm((f) => ({ ...f, therapyType: type as 'OT' | 'TW' }))}
+                    className={`flex-1 px-3 py-2 rounded-md text-sm font-medium border transition-colors ${
+                      form.therapyType === type
+                        ? type === 'OT'
+                          ? 'bg-blue-100 border-blue-400 text-blue-800'
+                          : 'bg-purple-100 border-purple-400 text-purple-800'
+                        : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
+                    }`}
+                  >
+                    {type}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Pasien ini punya paket {typeCandidates.join(' dan ')} — pilih paket mana yang dipakai untuk slot ini.
+              </p>
+            </div>
+          )}
 
           {/* Therapist — Reguler: pilih dari terapis terdaftar, difilter sesuai jenis paket pasien.
               Hero Bridge: isi nama manual, tidak harus terapis yang terdaftar di sistem. */}
@@ -1531,21 +1606,18 @@ export default function SchedulesPage() {
     [allTherapists]
   );
   const scheduledPatientIds = useMemo(() => new Set(slots.map((s) => s.patientId)), [slots]);
-  // Count how many slots each patient currently has in the schedule
-  const scheduledSlotCountByPatient = useMemo(() => {
-    const map = new Map<string, number>();
-    for (const s of slots) {
-      map.set(s.patientId, (map.get(s.patientId) ?? 0) + 1);
-    }
-    return map;
-  }, [slots]);
-  // Patient is eligible if they have fewer slots than active packages
+  const patientsWithActiveTherapySlot = useMemo(
+    () => new Set(slots.filter((s) => s.therapyType === 'OT' || s.therapyType === 'TW').map((s) => s.patientId)),
+    [slots]
+  );
+  // Patient is eligible to pick for a new slot if they have an active package
+  // (tokens remaining). A package can now span multiple days per week (see
+  // "+ Sesi Tambahan"/multi-day scheduling), so a patient who already has a
+  // slot is still a valid pick for adding a 2nd/3rd day — no longer capped at
+  // "fewer slots than active packages".
   const unscheduledPatients = useMemo(
-    () => allPatients.filter((p) =>
-      (p.tokenBalance ?? 0) > 0 &&
-      (scheduledSlotCountByPatient.get(p._id) ?? 0) < (p.activePackageCount ?? 1)
-    ),
-    [allPatients, scheduledSlotCountByPatient]
+    () => allPatients.filter((p) => (p.tokenBalance ?? 0) > 0),
+    [allPatients]
   );
   const [patientPhotoMap, setPatientPhotoMap] = useState<Record<string, string>>({});
 
@@ -2521,6 +2593,7 @@ export default function SchedulesPage() {
           onDelete={editingSlot._id ? handleDelete : undefined}
           showTabs={permissions.hasPermission("schedules:manage_all")}
           onSaveAssessment={handleCreateAssessment}
+          patientsWithActiveSlot={patientsWithActiveTherapySlot}
         />
       )}
 
