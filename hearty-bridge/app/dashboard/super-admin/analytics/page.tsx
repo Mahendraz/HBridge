@@ -4,7 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { usePermissions } from "@/lib/utils/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { TrendingUpIcon, XCircleIcon, UsersIcon } from "lucide-react";
+import { TrendingUpIcon, XCircleIcon, UsersIcon, WalletIcon, ReceiptIcon, ClockIcon } from "lucide-react";
 import {
   ResponsiveContainer,
   ComposedChart,
@@ -23,6 +23,18 @@ interface TrendPoint {
   activePatientsCumulative: number;
 }
 
+interface FinancialTrendPoint {
+  month: string;
+  revenue: number;
+  invoiced: number;
+  cumulativeRevenue: number;
+}
+
+interface FinancialOutstanding {
+  total: number;
+  count: number;
+}
+
 const MONTH_LABEL: Record<string, string> = {
   "01": "Jan", "02": "Feb", "03": "Mar", "04": "Apr", "05": "Mei", "06": "Jun",
   "07": "Jul", "08": "Agu", "09": "Sep", "10": "Okt", "11": "Nov", "12": "Des",
@@ -33,6 +45,19 @@ function formatMonth(ym: string): string {
   return `${MONTH_LABEL[m] ?? m} ${y.slice(2)}`;
 }
 
+function formatRupiah(n: number): string {
+  return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
+}
+
+function formatRupiahCompact(n: number): string {
+  return new Intl.NumberFormat("id-ID", {
+    style: "currency",
+    currency: "IDR",
+    minimumFractionDigits: 0,
+    notation: "compact",
+  }).format(n);
+}
+
 export default function PatientAnalyticsPage() {
   const { user } = useAuth();
   const permissions = usePermissions(user?.role ?? "parent");
@@ -40,6 +65,12 @@ export default function PatientAnalyticsPage() {
   const [data, setData] = useState<TrendPoint[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  const canViewFinancial = permissions.hasPermission("financial:view_all");
+  const [financialData, setFinancialData] = useState<FinancialTrendPoint[]>([]);
+  const [outstanding, setOutstanding] = useState<FinancialOutstanding | null>(null);
+  const [financialLoading, setFinancialLoading] = useState(true);
+  const [financialError, setFinancialError] = useState<string | null>(null);
 
   const fetchTrend = useCallback(async () => {
     setLoading(true);
@@ -62,9 +93,35 @@ export default function PatientAnalyticsPage() {
     }
   }, [months]);
 
+  const fetchFinancialTrend = useCallback(async () => {
+    setFinancialLoading(true);
+    setFinancialError(null);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/super-admin/analytics/financial-trend?months=${months}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const result = await res.json();
+      if (res.ok && result.success) {
+        setFinancialData(result.data);
+        setOutstanding(result.outstanding);
+      } else {
+        setFinancialError(result.error || "Gagal memuat data keuangan.");
+      }
+    } catch {
+      setFinancialError("Terjadi kesalahan saat memuat data keuangan.");
+    } finally {
+      setFinancialLoading(false);
+    }
+  }, [months]);
+
   useEffect(() => {
     fetchTrend();
   }, [fetchTrend]);
+
+  useEffect(() => {
+    if (canViewFinancial) fetchFinancialTrend();
+  }, [canViewFinancial, fetchFinancialTrend]);
 
   if (!permissions.hasPermission("reports:system_analytics")) {
     return (
@@ -165,6 +222,114 @@ export default function PatientAnalyticsPage() {
           )}
         </CardContent>
       </Card>
+
+      {canViewFinancial && (
+        <>
+          <div className="pt-2">
+            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+              <WalletIcon className="h-5 w-5 text-teal-600" />
+              Progres Keuangan Bulanan
+            </h2>
+            <p className="text-sm text-gray-500 mt-1">
+              Pendapatan yang diterima dan ditagihkan per bulan, khusus Super Admin.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <Card>
+              <CardContent className="pt-5 flex items-center gap-4">
+                <div className="p-2 bg-green-100 rounded-lg">
+                  <WalletIcon className="h-5 w-5 text-green-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Pendapatan ({months} Bulan Terakhir)</p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {formatRupiahCompact(financialData.reduce((sum, p) => sum + p.revenue, 0))}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-5 flex items-center gap-4">
+                <div className="p-2 bg-teal-100 rounded-lg">
+                  <ReceiptIcon className="h-5 w-5 text-teal-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Ditagihkan Bulan Ini</p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {formatRupiahCompact(financialData[financialData.length - 1]?.invoiced ?? 0)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+            <Card>
+              <CardContent className="pt-5 flex items-center gap-4">
+                <div className="p-2 bg-amber-100 rounded-lg">
+                  <ClockIcon className="h-5 w-5 text-amber-600" />
+                </div>
+                <div>
+                  <p className="text-xs text-gray-500">Belum Tertagih ({outstanding?.count ?? 0} invoice)</p>
+                  <p className="text-lg font-bold text-gray-900">
+                    {formatRupiahCompact(outstanding?.total ?? 0)}
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <CardTitle className="text-base">Pendapatan per Bulan &amp; Kumulatif</CardTitle>
+            </CardHeader>
+            <CardContent>
+              {financialError ? (
+                <div className="py-10 text-center text-sm text-red-600">{financialError}</div>
+              ) : financialLoading ? (
+                <div className="py-10 text-center text-sm text-gray-400">Memuat data...</div>
+              ) : financialData.length === 0 ? (
+                <div className="py-10 text-center text-sm text-gray-400">Belum ada data keuangan.</div>
+              ) : (
+                <div style={{ width: "100%", height: 360 }}>
+                  <ResponsiveContainer>
+                    <ComposedChart
+                      data={financialData.map((p) => ({ ...p, label: formatMonth(p.month) }))}
+                      margin={{ top: 8, right: 16, left: 8, bottom: 8 }}
+                    >
+                      <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
+                      <XAxis dataKey="label" tick={{ fontSize: 12 }} />
+                      <YAxis
+                        yAxisId="left"
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(v) => formatRupiahCompact(v)}
+                        width={80}
+                      />
+                      <YAxis
+                        yAxisId="right"
+                        orientation="right"
+                        tick={{ fontSize: 12 }}
+                        tickFormatter={(v) => formatRupiahCompact(v)}
+                        width={80}
+                      />
+                      <Tooltip formatter={(value) => formatRupiah(Number(value))} />
+                      <Legend />
+                      <Bar yAxisId="left" dataKey="revenue" name="Pendapatan Diterima" fill="#5eead4" radius={[4, 4, 0, 0]} />
+                      <Line
+                        yAxisId="right"
+                        type="monotone"
+                        dataKey="cumulativeRevenue"
+                        name="Kumulatif Pendapatan"
+                        stroke="#0d9488"
+                        strokeWidth={2}
+                        dot={{ r: 3 }}
+                      />
+                    </ComposedChart>
+                  </ResponsiveContainer>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </>
+      )}
     </div>
   );
 }
