@@ -25,6 +25,7 @@ import {
   ClipboardListIcon,
   SearchIcon,
 } from "lucide-react";
+import { hexToRgba } from "@/lib/utils/therapist-colors";
 
 // ---------------------------------------------------------------------------
 // Date helpers
@@ -243,42 +244,76 @@ function SlotCard({
   const sp = slot.sessionProgress;
   const currentNum = isExtra ? null : (sp?.sessionNumber ?? (sp ? sp.completed + 1 : null));
 
-  const tc = slot.therapyType === 'OT' ? {
-    card: isTherapistOnLeave ? 'bg-red-50 border-red-300 hover:bg-red-100' : 'bg-blue-50 border-blue-200 hover:bg-blue-100',
+  // Fallback palette by therapy type — only used if a therapist somehow has
+  // no assigned schedule color yet (new therapists auto-get one on create).
+  const fallback = slot.therapyType === 'OT' ? {
+    card: 'bg-blue-50 border-blue-200 hover:bg-blue-100',
     avatar: 'bg-blue-100 border-blue-200',
     avatarText: 'text-blue-600',
     badge: 'bg-blue-600',
     text: 'text-blue-700',
   } : slot.therapyType === 'TW' ? {
-    card: isTherapistOnLeave ? 'bg-red-50 border-red-300 hover:bg-red-100' : 'bg-purple-50 border-purple-200 hover:bg-purple-100',
+    card: 'bg-purple-50 border-purple-200 hover:bg-purple-100',
     avatar: 'bg-purple-100 border-purple-200',
     avatarText: 'text-purple-600',
     badge: 'bg-purple-600',
     text: 'text-purple-700',
   } : slot.therapyType === 'HB' ? {
-    card: isTherapistOnLeave ? 'bg-red-50 border-red-300 hover:bg-red-100' : 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100',
+    card: 'bg-emerald-50 border-emerald-200 hover:bg-emerald-100',
     avatar: 'bg-emerald-100 border-emerald-200',
     avatarText: 'text-emerald-600',
     badge: 'bg-emerald-600',
     text: 'text-emerald-700',
   } : {
-    card: isTherapistOnLeave ? 'bg-red-50 border-red-300 hover:bg-red-100' : 'bg-slate-50 border-slate-200 hover:bg-slate-100',
+    card: 'bg-slate-50 border-slate-200 hover:bg-slate-100',
     avatar: 'bg-slate-100 border-slate-200',
     avatarText: 'text-slate-600',
     badge: 'bg-slate-500',
     text: 'text-slate-600',
   };
 
+  // The therapist's own color (Terapis > Edit) drives every accent on the
+  // card — background tint, avatar, badge, and name — so a given therapist
+  // reads as the same color everywhere in the schedule instead of the card
+  // showing a therapy-type color while only a border sliver matched the
+  // therapist's actual color. On leave, red always wins over it.
+  const useTherapistColor = !!therapistColor && !isTherapistOnLeave;
+
   return (
     <div
-      className={`p-2 rounded-lg border text-xs cursor-pointer transition-all hover:shadow-sm hover:-translate-y-px relative ${tc.card}`}
-      style={therapistColor ? { borderLeftWidth: 4, borderLeftColor: therapistColor } : undefined}
+      className={`p-2 rounded-lg border text-xs cursor-pointer transition-all hover:shadow-sm hover:-translate-y-px relative ${
+        isTherapistOnLeave ? 'bg-red-50 border-red-300 hover:bg-red-100' : useTherapistColor ? '' : fallback.card
+      }`}
+      style={
+        useTherapistColor
+          ? {
+              backgroundColor: hexToRgba(therapistColor as string, 0.07),
+              borderColor: hexToRgba(therapistColor as string, 0.35),
+              borderLeftWidth: 4,
+              borderLeftColor: therapistColor as string,
+            }
+          : therapistColor
+          ? { borderLeftWidth: 4, borderLeftColor: therapistColor }
+          : undefined
+      }
       onClick={onClick}
     >
       <div className="flex gap-2">
         {/* Avatar — large, left column */}
-        <div className={`w-10 h-10 rounded-full overflow-hidden ${tc.avatar} border-2 flex items-center justify-center shrink-0 relative`}>
-          <span className={`text-sm font-bold ${tc.avatarText} leading-none`}>
+        <div
+          className={`w-10 h-10 rounded-full overflow-hidden border-2 flex items-center justify-center shrink-0 relative ${
+            useTherapistColor ? '' : fallback.avatar
+          }`}
+          style={
+            useTherapistColor
+              ? { backgroundColor: hexToRgba(therapistColor as string, 0.16), borderColor: hexToRgba(therapistColor as string, 0.4) }
+              : undefined
+          }
+        >
+          <span
+            className={`text-sm font-bold leading-none ${useTherapistColor ? '' : fallback.avatarText}`}
+            style={useTherapistColor ? { color: therapistColor as string } : undefined}
+          >
             {slot.patientName.charAt(0).toUpperCase()}
           </span>
           {patientPhotoUrl && (
@@ -299,18 +334,27 @@ function SlotCard({
               </span>
             )}
             {!isExtra && sp && currentNum !== null && (
-              <span className={`flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold ${tc.badge} text-white leading-none`}>
+              <span
+                className={`flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold text-white leading-none ${useTherapistColor ? '' : fallback.badge}`}
+                style={useTherapistColor ? { backgroundColor: therapistColor as string } : undefined}
+              >
                 {currentNum}/{sp.total}
               </span>
             )}
             {slot.therapyType === 'HB' && (
-              <span className={`flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold ${tc.badge} text-white leading-none`}>
+              <span
+                className={`flex-shrink-0 inline-flex items-center px-1.5 py-0.5 rounded-full text-[10px] font-bold text-white leading-none ${useTherapistColor ? '' : fallback.badge}`}
+                style={useTherapistColor ? { backgroundColor: therapistColor as string } : undefined}
+              >
                 Sekali
               </span>
             )}
           </div>
           <div className="flex items-center gap-1.5 mt-0.5 min-w-0">
-            <p className={`truncate text-[11px] leading-snug ${tc.text}`}>
+            <p
+              className={`truncate text-[11px] leading-snug ${useTherapistColor ? '' : fallback.text}`}
+              style={useTherapistColor ? { color: therapistColor as string } : undefined}
+            >
               {slot.therapistName.replace(/,.*/, "")}
             </p>
             {isTherapistOnLeave && (
