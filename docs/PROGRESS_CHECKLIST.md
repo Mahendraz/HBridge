@@ -39,7 +39,7 @@ Checklist eksekusi untuk `docs/TASK_BREAKDOWN.md` (detail teknis per item ada di
 - [ ] 4.6 Detail Profil Anak — field yang hilang
 - [x] 4.7 Hapus field "keterangan" dari biodata anak — diverifikasi manual (lihat & edit)
 - [x] 4.8 Admin bisa edit & hapus invoice yang sudah diterbitkan — diverifikasi manual (edit, soft-delete, guard invoice lunas)
-- [ ] 4.9 Notifikasi auto-hilang real-time
+- [x] 4.9 Notifikasi auto-hilang real-time — lonceng (1.2) sudah polling 20 detik; ditambah polling 20 detik ke badge komentar sidebar (sebelumnya cuma refetch saat pindah halaman) — diverifikasi manual (network request berulang otomatis). Fitur messaging (`Conversation`) sudah dinonaktifkan (410) di codebase saat ini jadi `markAsRead`/`incrementUnreadCount` tidak relevan disambungkan.
 - [ ] 4.10 Color-coding terapis untuk jadwal
 - [ ] 4.11 Absensi Anak
 - [ ] 4.12 Detail Pertemuan & Sesi Paket

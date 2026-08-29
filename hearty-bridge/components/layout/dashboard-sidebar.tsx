@@ -66,12 +66,19 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
     if (!user || !permissions.hasPermission('reports:resolve_comment')) return;
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     if (!token) return;
-    fetch('/api/reports/comments/unresolved-count', {
-      headers: { Authorization: `Bearer ${token}` },
-    })
-      .then((r) => r.json())
-      .then((d) => setCommentBadge(d?.count ?? 0))
-      .catch(() => {});
+
+    const fetchCommentBadge = () => {
+      fetch('/api/reports/comments/unresolved-count', {
+        headers: { Authorization: `Bearer ${token}` },
+      })
+        .then((r) => r.json())
+        .then((d) => setCommentBadge(d?.count ?? 0))
+        .catch(() => {});
+    };
+
+    fetchCommentBadge();
+    const interval = setInterval(fetchCommentBadge, 20000);
+    return () => clearInterval(interval);
   }, [user, pathname, permissions]);
 
   if (!user) return null;
