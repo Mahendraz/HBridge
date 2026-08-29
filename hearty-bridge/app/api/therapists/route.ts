@@ -167,7 +167,8 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
           },
           credentials: specializations.length > 0 ? specializations : ['Licensed Therapist'],
           clinic: therapist.profile?.clinic || 'Hearty Bridge Center',
-          experience: therapist.profile?.experience || 5
+          experience: therapist.profile?.experience || 5,
+          color: therapist.profile?.color || null
         };
       });
 

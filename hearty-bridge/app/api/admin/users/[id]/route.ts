@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from 'next/server';
+import { NextRequest } from 'next/server';
 import connectToDatabase from '@/lib/db/mongodb';
 import User from '@/models/User';
 import { withAdminAuth } from '@/lib/middleware/auth';
@@ -11,9 +11,10 @@ const updateUserSchema = z.object({
   phone: z.string().optional(),
   specialization: z.string().optional(),
   isActive: z.boolean().optional(),
+  color: z.union([z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Warna harus format hex, cth. #14b8a6'), z.null()]).optional(),
 });
 
-export const PATCH = withAdminAuth(async (request: NextRequest, { user }: any) => {
+export const PATCH = withAdminAuth(async (request: NextRequest, user: any) => {
   await connectToDatabase();
 
   const url = new URL(request.url);
@@ -22,28 +23,28 @@ export const PATCH = withAdminAuth(async (request: NextRequest, { user }: any) =
   const body = await request.json();
   const result = updateUserSchema.safeParse(body);
   if (!result.success) {
-    return NextResponse.json(ErrorResponse.badRequest('Input tidak valid'));
+    return ErrorResponse.badRequest('Input tidak valid');
   }
 
   const targetUser = await User.findById(id);
   if (!targetUser || targetUser.role === 'super_admin') {
-    return NextResponse.json(ErrorResponse.notFound('User'));
+    return ErrorResponse.notFound('User');
   }
 
-  const { name, email, phone, specialization, isActive } = result.data;
+  const { name, email, phone, specialization, isActive, color } = result.data;
 
   if (name) targetUser.name = name.trim();
   if (email) {
     const emailExists = await User.findOne({ email: email.toLowerCase(), _id: { $ne: targetUser._id } });
     if (emailExists) {
-      return NextResponse.json(ErrorResponse.conflict('Email sudah digunakan'));
+      return ErrorResponse.conflict('Email sudah digunakan');
     }
     targetUser.email = email.toLowerCase().trim();
   }
   if (phone !== undefined) targetUser.phone = phone.trim() || undefined;
   if (isActive !== undefined) {
     if (targetUser._id.toString() === user.userId) {
-      return NextResponse.json(ErrorResponse.badRequest('Tidak bisa menonaktifkan akun sendiri'));
+      return ErrorResponse.badRequest('Tidak bisa menonaktifkan akun sendiri');
     }
     targetUser.isActive = isActive;
   }
@@ -54,13 +55,18 @@ export const PATCH = withAdminAuth(async (request: NextRequest, { user }: any) =
       : [];
     targetUser.markModified('profile');
   }
+  if (color !== undefined && targetUser.role === 'therapist') {
+    if (!targetUser.profile) targetUser.profile = {};
+    targetUser.profile.color = color ?? undefined;
+    targetUser.markModified('profile');
+  }
 
   await targetUser.save();
 
-  return NextResponse.json(SuccessResponse.ok({ user: targetUser.toSafeObject() }, 'Berhasil diperbarui'));
+  return SuccessResponse.ok({ user: targetUser.toSafeObject() }, 'Berhasil diperbarui');
 });
 
-export const DELETE = withAdminAuth(async (request: NextRequest, { user }: any) => {
+export const DELETE = withAdminAuth(async (request: NextRequest, user: any) => {
   await connectToDatabase();
 
   const url = new URL(request.url);
@@ -68,15 +74,15 @@ export const DELETE = withAdminAuth(async (request: NextRequest, { user }: any) 
 
   const targetUser = await User.findById(id);
   if (!targetUser || targetUser.role === 'super_admin') {
-    return NextResponse.json(ErrorResponse.notFound('User'));
+    return ErrorResponse.notFound('User');
   }
 
   if (targetUser._id.toString() === user.userId) {
-    return NextResponse.json(ErrorResponse.badRequest('Tidak bisa menghapus akun sendiri'));
+    return ErrorResponse.badRequest('Tidak bisa menghapus akun sendiri');
   }
 
   targetUser.isActive = false;
   await targetUser.save();
 
-  return NextResponse.json(SuccessResponse.ok({}, 'Terapis dinonaktifkan'));
+  return SuccessResponse.ok({}, 'Terapis dinonaktifkan');
 });

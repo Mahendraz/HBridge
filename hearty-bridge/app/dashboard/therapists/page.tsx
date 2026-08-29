@@ -39,7 +39,21 @@ interface Therapist {
   currentLeave?: string | null;
   assignedPatients: number;
   maxPatients: number;
+  color?: string | null;
 }
+
+const THERAPIST_COLOR_PRESETS = [
+  '#14b8a6', // teal
+  '#3b82f6', // blue
+  '#a855f7', // purple
+  '#f97316', // orange
+  '#ec4899', // pink
+  '#84cc16', // lime
+  '#eab308', // yellow
+  '#ef4444', // red
+  '#06b6d4', // cyan
+  '#6366f1', // indigo
+];
 
 interface LeaveRecord {
   _id: string;
@@ -73,7 +87,7 @@ export default function TherapistsPage() {
   // Edit state
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTherapist, setEditingTherapist] = useState<Therapist | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '', specialization: '' });
+  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '', specialization: '', color: '' as string });
   const [editError, setEditError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -222,6 +236,7 @@ export default function TherapistsPage() {
       email: therapist.email,
       phone: therapist.phone || '',
       specialization: therapist.specializations.join(', '),
+      color: therapist.color || '',
     });
     setEditError(null);
     setShowEditModal(true);
@@ -244,6 +259,7 @@ export default function TherapistsPage() {
           email: editForm.email,
           phone: editForm.phone || undefined,
           specialization: editForm.specialization || undefined,
+          color: editForm.color || null,
         }),
       });
       const result = await response.json();
@@ -410,12 +426,19 @@ export default function TherapistsPage() {
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0">
-            <div className={`w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg shrink-0 ${
+            <div className={`relative w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg shrink-0 ${
               therapist.status === 'on-leave' ? 'bg-amber-100 text-amber-700' :
               therapist.status === 'inactive' ? 'bg-gray-100 text-gray-400' :
               'bg-teal-100 text-teal-700'
             }`}>
               {therapist.name.charAt(0).toUpperCase()}
+              {therapist.color && (
+                <span
+                  className="absolute -bottom-0.5 -right-0.5 w-3.5 h-3.5 rounded-full border-2 border-white"
+                  style={{ backgroundColor: therapist.color }}
+                  title="Warna jadwal"
+                />
+              )}
             </div>
             <div className="min-w-0">
               <p className="font-semibold text-gray-900 leading-snug truncate">
@@ -635,6 +658,41 @@ export default function TherapistsPage() {
                 className="mt-1"
               />
               <p className="text-xs text-gray-500 mt-1">Pisahkan dengan koma untuk beberapa spesialisasi.</p>
+            </div>
+            <div>
+              <label className="text-sm font-medium text-gray-700">Warna Jadwal</label>
+              <p className="text-xs text-gray-500 mt-0.5 mb-2">Aksen warna untuk membedakan terapis di halaman Jadwal.</p>
+              <div className="flex flex-wrap items-center gap-2">
+                <button
+                  type="button"
+                  onClick={() => setEditForm(f => ({ ...f, color: '' }))}
+                  className={`w-7 h-7 rounded-full border-2 flex items-center justify-center text-gray-400 ${
+                    !editForm.color ? 'border-gray-700' : 'border-gray-200'
+                  }`}
+                  title="Tanpa warna"
+                >
+                  <XIcon className="h-3.5 w-3.5" />
+                </button>
+                {THERAPIST_COLOR_PRESETS.map((c) => (
+                  <button
+                    key={c}
+                    type="button"
+                    onClick={() => setEditForm(f => ({ ...f, color: c }))}
+                    className={`w-7 h-7 rounded-full border-2 ${
+                      editForm.color.toLowerCase() === c ? 'border-gray-700' : 'border-transparent'
+                    }`}
+                    style={{ backgroundColor: c }}
+                    title={c}
+                  />
+                ))}
+                <input
+                  type="color"
+                  value={editForm.color || '#14b8a6'}
+                  onChange={(e) => setEditForm(f => ({ ...f, color: e.target.value }))}
+                  className="w-7 h-7 rounded-full border-2 border-gray-200 cursor-pointer p-0 overflow-hidden"
+                  title="Pilih warna kustom"
+                />
+              </div>
             </div>
           </div>
 

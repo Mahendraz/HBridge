@@ -14,6 +14,7 @@ export interface IUser extends Document {
     clinic?: string;
     experience?: number;
     address?: string;
+    color?: string;
     emergencyContact?: {
       name: string;
       phone: string;
@@ -100,6 +101,11 @@ const UserSchema = new Schema<IUser>({
     address: {
       type: String,
       trim: true
+    },
+    color: {
+      type: String,
+      trim: true,
+      maxlength: [7, 'Color must be a hex code like #14b8a6']
     },
     emergencyContact: {
       name: String,

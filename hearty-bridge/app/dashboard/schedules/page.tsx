@@ -194,6 +194,7 @@ interface TherapistOption {
   _id: string;
   name: string;
   therapyType?: 'OT' | 'TW' | null;
+  color?: string | null;
 }
 
 /** Format therapy balance breakdown for patient dropdown labels.
@@ -220,6 +221,7 @@ function SlotCard({
   reportMap,
   patientPhotoUrl,
   isTherapistOnLeave,
+  therapistColor,
   onClick,
   onOpenReportModal,
 }: {
@@ -230,6 +232,7 @@ function SlotCard({
   reportMap: Record<string, string>;
   patientPhotoUrl?: string | null;
   isTherapistOnLeave?: boolean;
+  therapistColor?: string | null;
   onClick: () => void;
   onOpenReportModal: (slot: WeeklySlot, sessionDate: string) => void;
 }) {
@@ -267,6 +270,7 @@ function SlotCard({
   return (
     <div
       className={`p-2 rounded-lg border text-xs cursor-pointer transition-all hover:shadow-sm hover:-translate-y-px relative ${tc.card}`}
+      style={therapistColor ? { borderLeftWidth: 4, borderLeftColor: therapistColor } : undefined}
       onClick={onClick}
     >
       <div className="flex gap-2">
@@ -1353,6 +1357,10 @@ export default function SchedulesPage() {
   const [editingSlot, setEditingSlot] = useState<Partial<WeeklySlot> | null>(null);
   const [allPatients, setAllPatients] = useState<PatientOption[]>([]);
   const [allTherapists, setAllTherapists] = useState<TherapistOption[]>([]);
+  const therapistColorMap = useMemo(
+    () => Object.fromEntries(allTherapists.filter((t) => t.color).map((t) => [t._id, t.color as string])),
+    [allTherapists]
+  );
   const scheduledPatientIds = useMemo(() => new Set(slots.map((s) => s.patientId)), [slots]);
   // Count how many slots each patient currently has in the schedule
   const scheduledSlotCountByPatient = useMemo(() => {
@@ -1545,6 +1553,7 @@ export default function SchedulesPage() {
           _id: t._id?.toString() ?? "",
           name: t.name,
           therapyType: t.therapyType ?? null,
+          color: t.color ?? null,
         })));
       }
     } catch (err) {
@@ -1814,6 +1823,7 @@ export default function SchedulesPage() {
             reportMap={reportMap}
             patientPhotoUrl={patientPhotoMap[slot.patientId] ?? null}
             isTherapistOnLeave={leaveSet.has(`${slot.therapistId}_${dateStr}`)}
+            therapistColor={therapistColorMap[slot.therapistId] ?? null}
             onClick={() => {
               if (permissions.hasPermission("schedules:manage_all")) openEditSlot(slot);
             }}
@@ -1962,7 +1972,7 @@ export default function SchedulesPage() {
 
       {/* Therapist legend */}
       {permissions.hasAnyPermission(["schedules:view_own", "schedules:manage_all"]) && (
-        <div className="flex items-center gap-4 text-xs text-gray-500 bg-white border border-gray-200 rounded-lg px-4 py-2.5">
+        <div className="flex flex-wrap items-center gap-4 text-xs text-gray-500 bg-white border border-gray-200 rounded-lg px-4 py-2.5">
           <span className="font-medium text-gray-700">Keterangan:</span>
           <span className="flex items-center gap-1.5">
             <span className="w-3 h-3 rounded bg-teal-50 border border-teal-200 inline-block" />
@@ -1982,6 +1992,18 @@ export default function SchedulesPage() {
             <span className="w-3 h-3 rounded bg-indigo-50 border border-indigo-200 inline-block" />
             Asesmen
           </span>
+          {allTherapists.some((t) => t.color) && (
+            <>
+              <span className="w-px h-4 bg-gray-200" />
+              <span className="font-medium text-gray-700">Warna Terapis:</span>
+              {allTherapists.filter((t) => t.color).map((t) => (
+                <span key={t._id} className="flex items-center gap-1.5">
+                  <span className="w-3 h-3 rounded-full inline-block" style={{ backgroundColor: t.color ?? undefined }} />
+                  {t.name.replace(/,.*/, "")}
+                </span>
+              ))}
+            </>
+          )}
         </div>
       )}
 
