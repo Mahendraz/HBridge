@@ -74,6 +74,7 @@
   --animate-shimmer-slide: shimmer-slide var(--speed, 3s) ease-in-out infinite alternate;
   --animate-spin-around: spin-around calc(var(--speed, 3s) * 2) infinite linear;
   --animate-meteor: meteor 5s linear infinite;
+  --animate-ripple: ripple 3000ms ease infinite;
   --animate-marquee: marquee var(--duration, 40s) infinite linear;
   --animate-marquee-vertical: marquee-vertical var(--duration, 40s) linear infinite;
 }
@@ -98,6 +99,11 @@
   15%, 35% { transform: translateZ(0) rotate(90deg); }
   65%, 85% { transform: translateZ(0) rotate(270deg); }
   100% { transform: translateZ(0) rotate(360deg); }
+}
+
+@keyframes ripple {
+  0%, 100% { transform: translate(-50%, -50%) scale(1); }
+  50% { transform: translate(-50%, -50%) scale(0.92); }
 }
 
 @keyframes meteor {

@@ -5,7 +5,8 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { z } from "zod";
-import { EyeIcon, EyeOffIcon, HeartIcon, LockIcon } from "lucide-react";
+import Image from "next/image";
+import { EyeIcon, EyeOffIcon, LockIcon } from "lucide-react";
 
 import { Input } from "@/components/ui/input";
 import { ErrorAlert } from "@/components/ui/error";
@@ -90,9 +91,13 @@ export default function ChangePasswordPage() {
           {/* Brand header */}
           <div className="text-center space-y-2">
             <div className="flex items-center justify-center space-x-2 mb-3">
-              <div className="h-10 w-10 rounded-xl bg-teal-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
-                <HeartIcon className="h-6 w-6 text-white" />
-              </div>
+              <Image
+                src="/images/logo-heartybridge.png"
+                alt="Hearty Bridge"
+                width={44}
+                height={44}
+                className="h-11 w-11 object-contain"
+              />
               <span className="text-2xl font-bold text-white">
                 Hearty<span className="text-teal-400">Bridge</span>
               </span>
@@ -179,7 +184,7 @@ export default function ChangePasswordPage() {
 
                 <ShimmerButton
                   type="submit"
-                  background="rgba(15, 118, 110, 1)"
+                  background="rgba(196, 30, 52, 1)"
                   borderRadius="10px"
                   className="w-full justify-center text-sm font-semibold py-2.5 disabled:opacity-50"
                   disabled={isSubmitting}

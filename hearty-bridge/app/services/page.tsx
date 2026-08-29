@@ -17,6 +17,10 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from 'next-intl';
+import { PageHero } from "@/components/layout/page-hero";
+import { PageCta } from "@/components/layout/page-cta";
+import { ShimmerButton } from "@/components/magicui/shimmer-button";
+import { ArrowRightIcon } from "lucide-react";
 
 export default function ServicesPage() {
   const t = useTranslations('services');
@@ -25,16 +29,12 @@ export default function ServicesPage() {
     <div className="min-h-screen bg-gray-50">
 
       {/* Hero Section */}
-      <section className="bg-linear-to-r from-teal-700 to-green-800 text-white py-16">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center">
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">{t('hero.title')}</h1>
-            <p className="text-xl text-teal-100 max-w-3xl mx-auto">
-              {t('hero.subtitle')}
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageHero
+        badge="Pusat Terapi Anak & Tumbuh Kembang • Batam"
+        title="Layanan"
+        highlight="Kami"
+        subtitle={t('hero.subtitle')}
+      />
 
       {/* Main Services */}
       <section className="py-16">
@@ -293,132 +293,20 @@ export default function ServicesPage() {
         </div>
       </section>
 
-      {/* Pricing Section */}
-      <section className="py-16">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-12">
-            <h2 className="text-3xl font-bold text-gray-900 mb-4">{t('pricing.title')}</h2>
-            <p className="text-lg text-gray-600">
-              {t('pricing.subtitle')}
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            <Card className="border-2 border-gray-200">
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl">{t('pricing.individual.title')}</CardTitle>
-                <div className="text-3xl font-bold text-gray-900 mt-2">{t('pricing.individual.price')}</div>
-                <p className="text-gray-500">{t('pricing.individual.period')}</p>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
-                  <li className="flex items-center">
-                    <CheckIcon className="h-4 w-4 text-green-500 mr-2" />
-                    {t('pricing.individual.oneOnOne')}
-                  </li>
-                  <li className="flex items-center">
-                    <CheckIcon className="h-4 w-4 text-green-500 mr-2" />
-                    {t('pricing.individual.treatment')}
-                  </li>
-                  <li className="flex items-center">
-                    <CheckIcon className="h-4 w-4 text-green-500 mr-2" />
-                    {t('pricing.individual.tracking')}
-                  </li>
-                  <li className="flex items-center">
-                    <CheckIcon className="h-4 w-4 text-green-500 mr-2" />
-                    {t('pricing.individual.communication')}
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="border-2 border-green-500 relative">
-              <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
-                <Badge className="bg-green-700 text-white">{t('pricing.monthly.popular')}</Badge>
-              </div>
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl">{t('pricing.monthly.title')}</CardTitle>
-                <div className="text-3xl font-bold text-gray-900 mt-2">{t('pricing.monthly.price')}</div>
-                <p className="text-gray-500">{t('pricing.monthly.period')}</p>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
-                  <li className="flex items-center">
-                    <CheckIcon className="h-4 w-4 text-green-500 mr-2" />
-                    {t('pricing.monthly.everything')}
-                  </li>
-                  <li className="flex items-center">
-                    <CheckIcon className="h-4 w-4 text-green-500 mr-2" />
-                    {t('pricing.monthly.priority')}
-                  </li>
-                  <li className="flex items-center">
-                    <CheckIcon className="h-4 w-4 text-green-500 mr-2" />
-                    {t('pricing.monthly.reports')}
-                  </li>
-                  <li className="flex items-center">
-                    <CheckIcon className="h-4 w-4 text-green-500 mr-2" />
-                    {t('pricing.monthly.resources')}
-                  </li>
-                  <li className="flex items-center">
-                    <CheckIcon className="h-4 w-4 text-green-500 mr-2" />
-                    <span className="text-green-700 font-medium">{t('pricing.monthly.save')}</span>
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-
-            <Card className="border-2 border-gray-200">
-              <CardHeader className="text-center">
-                <CardTitle className="text-2xl">{t('pricing.insurance.title')}</CardTitle>
-                <div className="text-3xl font-bold text-gray-900 mt-2">{t('pricing.insurance.price')}</div>
-                <p className="text-gray-500">{t('pricing.insurance.period')}</p>
-              </CardHeader>
-              <CardContent>
-                <ul className="space-y-3">
-                  <li className="flex items-center">
-                    <CheckIcon className="h-4 w-4 text-green-500 mr-2" />
-                    {t('pricing.insurance.accept')}
-                  </li>
-                  <li className="flex items-center">
-                    <CheckIcon className="h-4 w-4 text-green-500 mr-2" />
-                    {t('pricing.insurance.billing')}
-                  </li>
-                  <li className="flex items-center">
-                    <CheckIcon className="h-4 w-4 text-green-500 mr-2" />
-                    {t('pricing.insurance.verification')}
-                  </li>
-                  <li className="flex items-center">
-                    <CheckIcon className="h-4 w-4 text-green-500 mr-2" />
-                    {t('pricing.insurance.authorization')}
-                  </li>
-                </ul>
-              </CardContent>
-            </Card>
-          </div>
-        </div>
-      </section>
-
       {/* CTA Section */}
-      <section className="bg-green-700 text-white py-16">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold mb-6">{t('cta.title')}</h2>
-          <p className="text-xl text-teal-100 mb-8 max-w-2xl mx-auto">
-            {t('cta.subtitle')}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/auth/register">
-              <Button size="lg" variant="secondary" className="bg-white text-teal-700 hover:bg-gray-100">
-                {t('cta.findTherapist')}
-              </Button>
-            </Link>
-            <Link href="/contact">
-              <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-green-800">
-                {t('cta.contactUs')}
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
+      <PageCta title={t('cta.title')} subtitle={t('cta.subtitle')}>
+        <Link href="/auth/register">
+          <ShimmerButton background="rgba(196, 30, 52, 1)" className="text-base px-6 py-3 font-semibold">
+            {t('cta.findTherapist')}
+            <ArrowRightIcon className="ml-2 h-5 w-5" />
+          </ShimmerButton>
+        </Link>
+        <Link href="/contact">
+          <Button size="lg" variant="outline" className="border-brand-coral text-brand-coral hover:bg-brand-coral-tint">
+            {t('cta.contactUs')}
+          </Button>
+        </Link>
+      </PageCta>
     </div>
   );
 }

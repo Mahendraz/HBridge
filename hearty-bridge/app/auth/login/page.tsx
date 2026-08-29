@@ -4,7 +4,8 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { EyeIcon, EyeOffIcon, HeartIcon } from "lucide-react";
+import Image from "next/image";
+import { EyeIcon, EyeOffIcon } from "lucide-react";
 import { useTranslations } from "next-intl";
 
 import { Input } from "@/components/ui/input";
@@ -96,9 +97,13 @@ export default function LoginPage() {
           {/* Brand header */}
           <div className="text-center space-y-2">
             <div className="flex items-center justify-center space-x-2 mb-3">
-              <div className="h-10 w-10 rounded-xl bg-teal-500 flex items-center justify-center shadow-lg shadow-teal-500/30">
-                <HeartIcon className="h-6 w-6 text-white" />
-              </div>
+              <Image
+                src="/images/logo-heartybridge.png"
+                alt="Hearty Bridge"
+                width={44}
+                height={44}
+                className="h-11 w-11 object-contain"
+              />
               <span className="text-2xl font-bold text-white">
                 Hearty<span className="text-teal-400">Bridge</span>
               </span>
@@ -188,7 +193,7 @@ export default function LoginPage() {
                 {/* Submit button */}
                 <ShimmerButton
                   type="submit"
-                  background="rgba(15, 118, 110, 1)"
+                  background="rgba(196, 30, 52, 1)"
                   borderRadius="10px"
                   className="w-full justify-center text-sm font-semibold py-2.5 disabled:opacity-50"
                   disabled={isLoading}

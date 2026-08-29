@@ -2,6 +2,7 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
+import Image from "next/image";
 import { usePathname } from "next/navigation";
 import {
   HomeIcon,
@@ -14,7 +15,6 @@ import {
   XIcon,
   CalendarIcon,
   FileTextIcon,
-  HeartIcon,
   BabyIcon,
   ShieldCheckIcon,
   UserIcon,
@@ -97,8 +97,21 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
       {/* Header */}
       <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
         <div className="flex items-center space-x-2">
-          <HeartIcon className="h-8 w-8 text-teal-600" />
-          <span className="text-xl font-bold text-gray-900">Hearty Bridge</span>
+          <Image
+            src="/images/logo-heartybridge.png"
+            alt="Hearty Bridge"
+            width={32}
+            height={32}
+            className="h-8 w-8 object-contain"
+          />
+          <span className="leading-tight">
+            <span className="block text-base font-bold text-gray-900">
+              Hearty<span className="text-teal-600">Bridge</span>
+            </span>
+            <span className="block text-[10px] font-semibold tracking-wide text-brand-coral">
+              Grow Up with Hug
+            </span>
+          </span>
         </div>
         <NotificationBell />
       </div>

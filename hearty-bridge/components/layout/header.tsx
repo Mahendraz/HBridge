@@ -88,7 +88,7 @@ export function Header() {
             ) : (
               <Link href="/auth/login">
                 <ShimmerButton
-                  background="rgba(15, 118, 110, 1)"
+                  background="rgba(196, 30, 52, 1)"
                   borderRadius="8px"
                   className="text-sm font-semibold px-4 py-2"
                 >
@@ -146,7 +146,7 @@ export function Header() {
               ) : (
                 <Link href="/auth/login" onClick={() => setIsMenuOpen(false)}>
                   <ShimmerButton
-                    background="rgba(15, 118, 110, 1)"
+                    background="rgba(196, 30, 52, 1)"
                     borderRadius="8px"
                     className="w-full justify-center text-sm font-semibold py-2.5"
                   >

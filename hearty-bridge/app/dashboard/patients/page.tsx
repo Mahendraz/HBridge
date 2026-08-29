@@ -452,7 +452,7 @@ export default function UnifiedPatientsPage() {
           {user?.role !== "admin" && user?.role !== "super_admin" && (
             <PermissionGuard userRole={user?.role || "parent"} permissions={["patients:create"]}>
               <Button
-                className="bg-green-600 hover:bg-green-700"
+                className="bg-green-700 hover:bg-green-800"
                 onClick={() => { fetchParents(); setShowCreatePatientModal(true); }}
               >
                 <PlusIcon className="h-4 w-4 mr-2" />
@@ -688,7 +688,7 @@ export default function UnifiedPatientsPage() {
                 {/* Action Buttons */}
                 <div className="flex flex-wrap gap-2 pt-4 border-t">
                   <Link href={`/dashboard/patients/${child.id}`}>
-                    <Button size="sm" className="bg-green-600 hover:bg-green-700">
+                    <Button size="sm" className="bg-green-700 hover:bg-green-800">
                       <EyeIcon className="h-4 w-4 mr-1" />
                       Lihat Detail
                     </Button>
@@ -900,7 +900,7 @@ export default function UnifiedPatientsPage() {
               Batal
             </Button>
             <Button
-              className="bg-green-600 hover:bg-green-700"
+              className="bg-green-700 hover:bg-green-800"
               onClick={handleCreatePatient}
               disabled={isCreatingPatient}
             >

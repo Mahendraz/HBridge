@@ -9,11 +9,11 @@ import {
   PhoneIcon,
   MapPinIcon,
   ClockIcon,
-  MessageSquareIcon,
   HeartIcon,
   SendIcon
 } from "lucide-react";
 import { useTranslations } from 'next-intl';
+import { PageHero } from "@/components/layout/page-hero";
 
 export default function ContactPage() {
   const t = useTranslations('contact');
@@ -58,17 +58,12 @@ export default function ContactPage() {
     <div className="min-h-screen bg-gray-50">
 
       {/* Hero Section */}
-      <section className="bg-linear-to-r from-teal-700 to-green-800 text-white py-16">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center">
-            <MessageSquareIcon className="h-16 w-16 text-green-200 mx-auto mb-6" />
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">{t('hero.title')}</h1>
-            <p className="text-xl text-teal-100 max-w-3xl mx-auto">
-              {t('hero.subtitle')}
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageHero
+        badge="Pusat Terapi Anak & Tumbuh Kembang • Batam"
+        title="Hubungi"
+        highlight="Kami"
+        subtitle={t('hero.subtitle')}
+      />
 
       {/* Contact Information & Form */}
       <section className="py-16">
@@ -242,7 +237,7 @@ export default function ContactPage() {
 
                   <Button
                     type="submit"
-                    className="w-full bg-green-700 hover:bg-green-800"
+                    className="w-full bg-brand-coral hover:opacity-90"
                     disabled={isSubmitting}
                   >
                     {isSubmitting ? (
@@ -323,28 +318,6 @@ export default function ContactPage() {
         </div>
       </section>
 
-      {/* Emergency Notice */}
-      <section className="bg-red-50 border-t-4 border-red-400 py-8">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center">
-            <h3 className="text-lg font-semibold text-red-800 mb-2">{t('crisis.title')}</h3>
-            <p className="text-red-700 mb-4">
-              {t('crisis.subtitle')}
-            </p>
-            <div className="flex flex-col sm:flex-row justify-center space-y-2 sm:space-y-0 sm:space-x-6">
-              <p className="text-red-800 font-medium">
-                {t('crisis.emergency')}
-              </p>
-              <p className="text-red-800 font-medium">
-                {t('crisis.hotline')}
-              </p>
-              <p className="text-red-800 font-medium">
-                {t('crisis.text')}
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
     </div>
   );
 }

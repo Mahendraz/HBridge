@@ -9,18 +9,33 @@ import {
   CalendarIcon,
   MessageSquareIcon,
   BarChart3Icon,
+  ClipboardListIcon,
+  ActivityIcon,
+  MessageCircleIcon,
+  WavesIcon,
+  HomeIcon,
 } from "lucide-react";
 import { AuthGuard } from "@/components/auth/auth-guard";
 import { useTranslations } from "next-intl";
 import { AnimatedGradientText } from "@/components/magicui/animated-gradient-text";
 import { BlurFade } from "@/components/magicui/blur-fade";
 import { MagicCard } from "@/components/magicui/magic-card";
-import { Meteors } from "@/components/magicui/meteors";
+import { Ripple } from "@/components/magicui/ripple";
 import { ShimmerButton } from "@/components/magicui/shimmer-button";
 import { DotPattern } from "@/components/magicui/dot-pattern";
+import { Marquee } from "@/components/magicui/marquee";
 import { InstagramFeedSection } from "@/components/instagram/instagram-feed-section";
 import { MapPinIcon } from "lucide-react";
 import { InstagramIcon } from "@/components/icons/instagram-icon";
+
+const services = [
+  { icon: ClipboardListIcon, label: "Asesmen Tumbuh Kembang" },
+  { icon: ActivityIcon, label: "Terapi Okupasi" },
+  { icon: MessageCircleIcon, label: "Terapi Wicara" },
+  { icon: WavesIcon, label: "Terapi Akuatik" },
+  { icon: UsersIcon, label: "Konsultasi Keluarga" },
+  { icon: HomeIcon, label: "Layanan Homecare" },
+];
 
 const features = [
   {
@@ -81,39 +96,36 @@ export default function Home() {
       <div className="min-h-screen bg-white">
 
         {/* ── HERO ─────────────────────────────────────────────── */}
-        <section className="relative overflow-hidden bg-gray-950 pt-20 pb-32">
-          <Meteors number={25} />
-          <div className="pointer-events-none absolute inset-0 flex items-center justify-center">
-            <div className="h-[600px] w-[600px] rounded-full bg-teal-500/10 blur-3xl" />
-          </div>
+        <section className="relative overflow-hidden bg-linear-to-b from-rose-50 via-white to-white pt-20 pb-32">
+          <Ripple mainCircleSize={260} numCircles={7} color="#c41e34" mainCircleOpacity={0.14} />
 
           <div className="relative mx-auto max-w-7xl px-6 text-center">
             <BlurFade delay={0} inView>
-              <div className="inline-flex items-center gap-2 rounded-full border border-teal-500/30 bg-teal-500/10 px-4 py-1.5 text-sm text-teal-300 mb-8">
-                <span className="h-1.5 w-1.5 rounded-full bg-teal-400 animate-pulse" />
+              <div className="inline-flex items-center gap-2 rounded-full border border-brand-coral-light bg-brand-coral-tint px-4 py-1.5 text-sm font-medium text-brand-coral mb-8">
+                <span className="h-1.5 w-1.5 rounded-full bg-brand-coral animate-pulse" />
                 Pusat Terapi Anak & Tumbuh Kembang • Batam
               </div>
             </BlurFade>
 
             <BlurFade delay={0.1} inView>
-              <h1 className="text-5xl font-bold tracking-tight text-white sm:text-7xl leading-tight">
+              <h1 className="text-5xl font-bold tracking-tight text-gray-900 sm:text-7xl leading-tight">
                 {t("hero.title")}
                 <br />
                 <AnimatedGradientText
-                  colorFrom="#14b8a6"
-                  colorTo="#22c55e"
+                  colorFrom="#c41e34"
+                  colorTo="#f0475a"
                   speed={0.8}
                   className="text-5xl sm:text-7xl font-bold"
                 >
                   {t("hero.titleHighlight")}
                 </AnimatedGradientText>
                 <br />
-                <span className="text-white">{t("hero.titleEnd")}</span>
+                <span className="text-gray-900">{t("hero.titleEnd")}</span>
               </h1>
             </BlurFade>
 
             <BlurFade delay={0.2} inView>
-              <p className="mt-6 text-lg leading-8 text-gray-400 max-w-2xl mx-auto">
+              <p className="mt-6 text-lg leading-8 text-gray-600 max-w-2xl mx-auto">
                 {t("hero.subtitle")}
               </p>
             </BlurFade>
@@ -122,7 +134,7 @@ export default function Home() {
               <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
                 <Link href="/auth/login">
                   <ShimmerButton
-                    background="rgba(15, 118, 110, 1)"
+                    background="rgba(196, 30, 52, 1)"
                     className="text-base px-8 py-3.5 font-semibold"
                   >
                     Masuk ke Platform
@@ -132,6 +144,22 @@ export default function Home() {
               </div>
             </BlurFade>
           </div>
+        </section>
+
+        {/* ── SERVICES MARQUEE ─────────────────────────────────── */}
+        <section className="relative overflow-hidden bg-rose-50 py-5 border-y border-rose-100">
+          <Marquee pauseOnHover className="[--duration:30s]">
+            {services.map((service) => (
+              <div
+                key={service.label}
+                className="flex items-center gap-2.5 px-4 text-sm font-medium text-gray-700 whitespace-nowrap"
+              >
+                <service.icon className="h-4 w-4 text-brand-coral shrink-0" />
+                {service.label}
+                <span className="text-rose-200 ml-2">•</span>
+              </div>
+            ))}
+          </Marquee>
         </section>
 
         {/* ── FEATURES / LAYANAN ──────────────────────────────── */}
@@ -175,7 +203,7 @@ export default function Home() {
               <div className="mt-14 text-center">
                 <Link href="/auth/login">
                   <ShimmerButton
-                    background="rgba(15, 118, 110, 1)"
+                    background="rgba(196, 30, 52, 1)"
                     className="text-base px-8 py-3.5 font-semibold"
                     borderRadius="12px"
                   >
@@ -192,13 +220,13 @@ export default function Home() {
         <InstagramFeedSection />
 
         {/* ── LOKASI & KONTAK ──────────────────────────────────── */}
-        <section className="py-16 bg-gray-950 text-white">
+        <section className="py-16 bg-rose-50 border-t border-rose-100">
           <div className="mx-auto max-w-5xl px-6 flex flex-col md:flex-row items-center justify-between gap-8">
             <div className="flex items-start gap-3">
-              <MapPinIcon className="h-6 w-6 text-teal-400 shrink-0 mt-1" />
+              <MapPinIcon className="h-6 w-6 text-brand-coral shrink-0 mt-1" />
               <div>
-                <p className="font-semibold text-white">Hearty Bridge Early Intervention Center</p>
-                <p className="text-gray-400 text-sm mt-1 max-w-md">
+                <p className="font-semibold text-gray-900">Hearty Bridge Early Intervention Center</p>
+                <p className="text-gray-600 text-sm mt-1 max-w-md">
                   Puri Casablanca No. A-18, Sukajadi, Kec. Batam Kota, Kota Batam, Kepulauan Riau 29432
                 </p>
               </div>
@@ -207,7 +235,7 @@ export default function Home() {
               href="https://www.instagram.com/heartybridge_/"
               target="_blank"
               rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl border border-teal-500/30 bg-teal-500/10 px-5 py-3 text-sm font-semibold text-teal-300 hover:bg-teal-500/20 transition-colors shrink-0"
+              className="inline-flex items-center gap-2 rounded-xl border border-brand-coral-light bg-white px-5 py-3 text-sm font-semibold text-brand-coral hover:bg-brand-coral-tint transition-colors shrink-0"
             >
               <InstagramIcon className="h-5 w-5" />
               @heartybridge_

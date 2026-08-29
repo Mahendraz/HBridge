@@ -9,10 +9,16 @@ import {
   ShieldCheckIcon,
   TrendingUpIcon,
   UsersIcon,
-  StarIcon
+  StarIcon,
+  ArrowRightIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { useTranslations } from 'next-intl';
+import { PageHero } from "@/components/layout/page-hero";
+import { PageCta } from "@/components/layout/page-cta";
+import { ShimmerButton } from "@/components/magicui/shimmer-button";
+import { NumberTicker } from "@/components/magicui/number-ticker";
+import { BorderBeam } from "@/components/magicui/border-beam";
 
 export default function AboutPage() {
   const t = useTranslations('about');
@@ -21,17 +27,12 @@ export default function AboutPage() {
     <div className="min-h-screen bg-gray-50">
 
       {/* Hero Section */}
-      <section className="bg-linear-to-r from-teal-700 to-green-800 text-white py-16">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center">
-            <HeartIcon className="h-16 w-16 text-green-200 mx-auto mb-6" />
-            <h1 className="text-4xl md:text-5xl font-bold mb-6">{t('hero.title')}</h1>
-            <p className="text-xl text-teal-100 max-w-3xl mx-auto">
-              {t('hero.subtitle')}
-            </p>
-          </div>
-        </div>
-      </section>
+      <PageHero
+        badge="Pusat Terapi Anak & Tumbuh Kembang • Batam"
+        title="Tentang"
+        highlight="Hearty Bridge"
+        subtitle={t('hero.subtitle')}
+      />
 
       {/* Mission Section */}
       <section className="py-16">
@@ -46,7 +47,7 @@ export default function AboutPage() {
                 {t('mission.p2')}
               </p>
               <Link href="/auth/register">
-                <Button size="lg" className="bg-green-700 hover:bg-green-800">
+                <Button size="lg" className="bg-brand-coral hover:opacity-90">
                   {t('mission.cta')}
                 </Button>
               </Link>
@@ -56,7 +57,9 @@ export default function AboutPage() {
                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <UsersIcon className="h-8 w-8 text-teal-600" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">6+</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  <NumberTicker value={6} />+
+                </h3>
                 <p className="text-gray-600">{t('stats.families')}</p>
               </div>
               <div className="text-center">
@@ -70,14 +73,18 @@ export default function AboutPage() {
                 <div className="w-16 h-16 bg-purple-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <TrendingUpIcon className="h-8 w-8 text-purple-600" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">360+</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  <NumberTicker value={360} />+
+                </h3>
                 <p className="text-gray-600">{t('stats.successRate')}</p>
               </div>
               <div className="text-center">
                 <div className="w-16 h-16 bg-yellow-100 rounded-full flex items-center justify-center mx-auto mb-4">
                   <StarIcon className="h-8 w-8 text-yellow-600" />
                 </div>
-                <h3 className="text-2xl font-bold text-gray-900 mb-2">679</h3>
+                <h3 className="text-2xl font-bold text-gray-900 mb-2">
+                  <NumberTicker value={679} />
+                </h3>
                 <p className="text-gray-600">{t('stats.avgRating')}</p>
               </div>
             </div>
@@ -152,7 +159,8 @@ export default function AboutPage() {
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-            <div className="text-center">
+            <div className="relative overflow-hidden rounded-2xl border border-gray-200 p-6 text-center">
+              <BorderBeam colorFrom="#2fa8a0" colorTo="#c41e34" size={60} duration={8} />
               <div className="w-24 h-24 bg-teal-100 rounded-full mx-auto mb-4 flex items-center justify-center">
                 <UserCheckIcon className="h-10 w-10 text-teal-600" />
               </div>
@@ -164,7 +172,8 @@ export default function AboutPage() {
               </p>
             </div>
 
-            <div className="text-center">
+            <div className="relative overflow-hidden rounded-2xl border border-gray-200 p-6 text-center">
+              <BorderBeam colorFrom="#2fa8a0" colorTo="#c41e34" size={60} duration={8} delay={2} />
               <div className="w-24 h-24 bg-teal-100 rounded-full mx-auto mb-4 flex items-center justify-center">
                 <HeartIcon className="h-10 w-10 text-teal-600" />
               </div>
@@ -176,7 +185,8 @@ export default function AboutPage() {
               </p>
             </div>
 
-            <div className="text-center">
+            <div className="relative overflow-hidden rounded-2xl border border-gray-200 p-6 text-center">
+              <BorderBeam colorFrom="#2fa8a0" colorTo="#c41e34" size={60} duration={8} delay={4} />
               <div className="w-24 h-24 bg-teal-100 rounded-full mx-auto mb-4 flex items-center justify-center">
                 <UsersIcon className="h-10 w-10 text-teal-600" />
               </div>
@@ -204,26 +214,19 @@ export default function AboutPage() {
       </section>
 
       {/* CTA Section */}
-      <section className="bg-green-700 text-white py-16">
-        <div className="max-w-7xl mx-auto px-6 text-center">
-          <h2 className="text-3xl font-bold mb-6">{t('cta.title')}</h2>
-          <p className="text-xl text-teal-100 mb-8 max-w-2xl mx-auto">
-            {t('cta.subtitle')}
-          </p>
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
-            <Link href="/auth/register">
-              <Button size="lg" variant="secondary" className="bg-white text-teal-700 hover:bg-gray-100">
-                {t('cta.getStarted')}
-              </Button>
-            </Link>
-            <Link href="/services">
-              <Button size="lg" variant="outline" className="bg-transparent border-white text-white hover:bg-teal-800">
-                {t('cta.services')}
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </section>
+      <PageCta title={t('cta.title')} subtitle={t('cta.subtitle')}>
+        <Link href="/auth/register">
+          <ShimmerButton background="rgba(196, 30, 52, 1)" className="text-base px-6 py-3 font-semibold">
+            {t('cta.getStarted')}
+            <ArrowRightIcon className="ml-2 h-5 w-5" />
+          </ShimmerButton>
+        </Link>
+        <Link href="/services">
+          <Button size="lg" variant="outline" className="border-brand-coral text-brand-coral hover:bg-brand-coral-tint">
+            {t('cta.services')}
+          </Button>
+        </Link>
+      </PageCta>
     </div>
   );
 }
