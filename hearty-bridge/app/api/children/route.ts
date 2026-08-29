@@ -53,6 +53,23 @@ export const GET = withAnyAuth(
       hasTherapist
     });
 
+    // Admin/therapist views group children by parent, so a search also needs to
+    // match the parent's name (e.g. searching "Agus" should find "Agus Supriyadi"'s
+    // kids even if none of them are named "Agus") — not just the child's own name.
+    if (search && user.role !== 'parent') {
+      const matchingParents = await User.find({
+        role: 'parent',
+        name: { $regex: search, $options: 'i' },
+      }).select('_id').lean();
+      const matchingParentIds = matchingParents.map((p: any) => p._id.toString());
+
+      delete searchQuery.name;
+      searchQuery.$or = [
+        { name: { $regex: search, $options: 'i' } },
+        ...(matchingParentIds.length > 0 ? [{ parentId: { $in: matchingParentIds } }] : []),
+      ];
+    }
+
     // Build sort query
     const sortQuery = buildChildSortQuery(sortBy, sortOrder);
 

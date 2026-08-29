@@ -110,19 +110,16 @@ export default function UnifiedPatientsPage() {
     if (user?.role === 'parent') fetchCompletedSessions();
   }, [user, permissions]);
 
-  // Debounced server-side search — the backend already supports ?search= (regex
-  // on name/diagnosis via buildChildSearchQuery), it just wasn't being called;
-  // the client-side filter below only ever saw the first page (limit=100) it had
-  // already fetched, so clinics with more active children than that got no results
-  // for anyone past the most-recently-created ones.
-  useEffect(() => {
-    if (!user) return;
-    const handle = setTimeout(() => {
-      fetchPatients(searchTerm);
-    }, 400);
-    return () => clearTimeout(handle);
-  // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [searchTerm]);
+  // Server-side search (?search= on /api/children) — the client-side filter
+  // below only ever saw the first page (limit=100) it had already fetched, so
+  // clinics with more active children than that got no results for anyone past
+  // the most-recently-created ones. Search fires on Enter (or the button), not
+  // on every keystroke — searchTerm only updates local input state until then.
+  const [submittedSearch, setSubmittedSearch] = useState("");
+  const runSearch = () => {
+    setSubmittedSearch(searchTerm);
+    fetchPatients(searchTerm);
+  };
 
   const fetchCompletedSessions = async () => {
     try {
@@ -349,7 +346,7 @@ export default function UnifiedPatientsPage() {
       <div className="flex items-center justify-center h-64">
         <div className="text-center space-y-3">
           <p className="text-red-600">{loadError}</p>
-          <Button variant="outline" onClick={() => fetchPatients(searchTerm)}>
+          <Button variant="outline" onClick={() => fetchPatients(submittedSearch)}>
             Coba Lagi
           </Button>
         </div>
@@ -379,7 +376,7 @@ export default function UnifiedPatientsPage() {
 
   // For therapist: derive unique parents from their assigned patients
   // For admin: use allParents (fetched separately, includes parents with no children)
-  const displayParents = permissions.hasPermission('users:view')
+  const displayParents = (permissions.hasPermission('users:view')
     ? allParents
     : (() => {
         const map = new Map<string, { _id: string; name: string; email: string; phone?: string }>();
@@ -394,7 +391,13 @@ export default function UnifiedPatientsPage() {
           }
         });
         return Array.from(map.values());
-      })();
+      })()
+  // A submitted search already narrowed `patients` server-side (by child name
+  // or parent name) — without this, every parent still rendered a card, most
+  // just showing "Belum ada anak terdaftar", which reads as "search did nothing".
+  ).filter(parent =>
+    !submittedSearch.trim() || filteredPatients.some(p => p.parent?.id === parent._id)
+  );
 
   const getPageTitle = () => {
     switch (user?.role) {
@@ -548,13 +551,17 @@ export default function UnifiedPatientsPage() {
         </CardHeader>
         <CardContent>
           <div className="flex flex-col sm:flex-row gap-4">
-            <div className="flex-1">
+            <div className="flex-1 flex gap-2">
               <Input
-                placeholder={user?.role === "parent" ? "Cari nama anak..." : "Cari pasien..."}
+                placeholder={user?.role === "parent" ? "Cari nama anak... (tekan Enter)" : "Cari pasien atau orang tua... (tekan Enter)"}
                 value={searchTerm}
                 onChange={(e) => setSearchTerm(e.target.value)}
+                onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); runSearch(); } }}
                 className="w-full"
               />
+              <Button type="button" variant="outline" onClick={runSearch}>
+                <SearchIcon className="h-4 w-4" />
+              </Button>
             </div>
             <Select
               value={statusFilter}
@@ -579,7 +586,11 @@ export default function UnifiedPatientsPage() {
             <Card key={child.id} className="overflow-hidden">
               <CardHeader className="bg-gradient-to-r from-green-50 to-teal-50">
                 <div className="flex justify-between items-start">
-                  <div className="flex items-center space-x-4">
+                  <div
+                    className="flex items-center space-x-4 cursor-pointer group"
+                    onClick={() => router.push(`/dashboard/patients/${child.id}`)}
+                    title="Lihat detail profil"
+                  >
                     <div className="w-16 h-16 rounded-full overflow-hidden border-2 border-teal-200 bg-teal-50 flex items-center justify-center shrink-0 relative">
                       <span className="text-2xl font-bold text-teal-600">{child.name.charAt(0).toUpperCase()}</span>
                       {child.photoUrl && (
@@ -587,7 +598,7 @@ export default function UnifiedPatientsPage() {
                       )}
                     </div>
                     <div>
-                      <CardTitle className="text-xl text-gray-900">{child.name}</CardTitle>
+                      <CardTitle className="text-xl text-gray-900 group-hover:text-teal-700 group-hover:underline">{child.name}</CardTitle>
                       <CardDescription className="flex items-center space-x-4">
                         <span>{calculateAge(child.birthDate || "")} tahun ({child.gender})</span>
                         <span>•</span>
@@ -749,15 +760,19 @@ export default function UnifiedPatientsPage() {
                       <div className="space-y-2">
                         {children.map(child => (
                           <div key={child.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                            <div className="flex items-center space-x-3">
+                            <div
+                              className="flex items-center space-x-3 cursor-pointer group flex-1 min-w-0"
+                              onClick={() => router.push(`/dashboard/patients/${child.id}`)}
+                              title="Lihat detail profil"
+                            >
                               <div className="w-9 h-9 rounded-full overflow-hidden border border-teal-200 bg-teal-50 flex items-center justify-center shrink-0 relative">
                                 <span className="text-sm font-bold text-teal-600">{child.name.charAt(0).toUpperCase()}</span>
                                 {child.photoUrl && (
                                   <img src={child.photoUrl} alt={child.name} className="absolute inset-0 w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                                 )}
                               </div>
-                              <div>
-                                <p className="font-medium text-sm text-gray-900">{child.name}</p>
+                              <div className="min-w-0">
+                                <p className="font-medium text-sm text-gray-900 group-hover:text-teal-700 group-hover:underline truncate">{child.name}</p>
                                 <p className="text-xs text-gray-500">
                                   {child.age} thn &bull; {child.gender === 'male' ? 'L' : 'P'} &bull; {child.diagnosis}
                                 </p>
