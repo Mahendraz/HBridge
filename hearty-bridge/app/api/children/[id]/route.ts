@@ -12,6 +12,7 @@ import {
 } from '@/lib/utils/child';
 import connectToDatabase from '@/lib/db/mongodb';
 import Child from '@/models/Child';
+import WeeklySchedule from '@/models/WeeklySchedule';
 import mongoose from 'mongoose';
 import { getR2SignedUrl } from '@/lib/services/r2-storage';
 
@@ -50,7 +51,7 @@ export const GET = withAnyAuth(
       } else {
         // Admin and therapist both get full populate
         childQuery = childQuery
-          .populate('parentId', 'name email phone')
+          .populate('parentId', 'name email phone profile.address')
           .populate('therapistId', 'name email profile.specialization profile.clinic');
       }
 
@@ -73,6 +74,22 @@ export const GET = withAnyAuth(
 
       // Format response with full details for authorized users
       const formattedChild = formatChildForResponse(child, true);
+
+      // Weekly schedule days + earliest effectiveFrom, used to show
+      // "hari jadwal" and a real "tanggal mulai terapi" (Child has no such
+      // field — createdAt is registration date, not therapy start date).
+      const scheduleSlots = await WeeklySchedule.find({ patientId: id })
+        .select('day effectiveFrom')
+        .lean();
+      const scheduleDays = Array.from(new Set(scheduleSlots.map((s: any) => s.day)));
+      const effectiveFromTimes = scheduleSlots
+        .map((s: any) => s.effectiveFrom)
+        .filter(Boolean)
+        .map((d: any) => new Date(d).getTime());
+      (formattedChild as any).scheduleDays = scheduleDays;
+      (formattedChild as any).therapyStartDate = effectiveFromTimes.length
+        ? new Date(Math.min(...effectiveFromTimes)).toISOString()
+        : null;
 
       // Sign R2 key for photo if present
       if (formattedChild.photoUrl && !formattedChild.photoUrl.startsWith('http')) {
@@ -189,9 +206,9 @@ export const PUT = withAnyAuth(
         { 
           new: true, 
           runValidators: true,
-          populate: user.role === 'parent' 
+          populate: user.role === 'parent'
             ? { path: 'therapistId', select: 'name email profile.specialization profile.clinic' }
-            : { path: 'parentId', select: 'name email phone' }
+            : { path: 'parentId', select: 'name email phone profile.address' }
         }
       );
 

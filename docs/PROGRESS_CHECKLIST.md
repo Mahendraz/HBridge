@@ -36,7 +36,7 @@ Checklist eksekusi untuk `docs/TASK_BREAKDOWN.md` (detail teknis per item ada di
 - [ ] 4.3 Tambah jadwal susulan di tengah paket berjalan
 - [x] 4.4 Cari anak di halaman jadwal — diverifikasi manual
 - [x] 4.5 Filter jadwal per terapis — diverifikasi manual (juga fix gate permission admin tidak lihat toolbar)
-- [ ] 4.6 Detail Profil Anak — field yang hilang
+- [x] 4.6 Detail Profil Anak — field yang hilang — tanggal mulai terapi (proxy dari `WeeklySchedule.effectiveFrom` terawal) & hari jadwal (union hari slot aktif) ditambahkan ke card Informasi Dasar; alamat reuse `User.profile.address` milik orang tua (keputusan klien: reuse, bukan field baru) — expose via API + edit-inline di card Orang Tua — diverifikasi manual (data tampil benar, edit alamat tersimpan & bertahan setelah reload)
 - [x] 4.7 Hapus field "keterangan" dari biodata anak — diverifikasi manual (lihat & edit)
 - [x] 4.8 Admin bisa edit & hapus invoice yang sudah diterbitkan — diverifikasi manual (edit, soft-delete, guard invoice lunas)
 - [x] 4.9 Notifikasi auto-hilang real-time — lonceng (1.2) sudah polling 20 detik; ditambah polling 20 detik ke badge komentar sidebar (sebelumnya cuma refetch saat pindah halaman) — diverifikasi manual (network request berulang otomatis). Fitur messaging (`Conversation`) sudah dinonaktifkan (410) di codebase saat ini jadi `markAsRead`/`incrementUnreadCount` tidak relevan disambungkan.

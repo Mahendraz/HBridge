@@ -43,6 +43,7 @@ export function formatChildForResponse(child: IChild, includePrivateInfo: boolea
       name: parent.name,
       email: parent.email,
       phone: parent.phone,
+      address: parent.profile?.address || '',
     };
   } else if (child.parentId) {
     baseInfo.parentId = (child.parentId as any).toString();

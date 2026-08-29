@@ -12,6 +12,7 @@ const updateUserSchema = z.object({
   specialization: z.string().optional(),
   isActive: z.boolean().optional(),
   color: z.union([z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Warna harus format hex, cth. #14b8a6'), z.null()]).optional(),
+  address: z.string().max(500, 'Alamat maksimal 500 karakter').optional(),
 });
 
 export const PATCH = withAdminAuth(async (request: NextRequest, user: any) => {
@@ -31,7 +32,7 @@ export const PATCH = withAdminAuth(async (request: NextRequest, user: any) => {
     return ErrorResponse.notFound('User');
   }
 
-  const { name, email, phone, specialization, isActive, color } = result.data;
+  const { name, email, phone, specialization, isActive, color, address } = result.data;
 
   if (name) targetUser.name = name.trim();
   if (email) {
@@ -58,6 +59,11 @@ export const PATCH = withAdminAuth(async (request: NextRequest, user: any) => {
   if (color !== undefined && targetUser.role === 'therapist') {
     if (!targetUser.profile) targetUser.profile = {};
     targetUser.profile.color = color ?? undefined;
+    targetUser.markModified('profile');
+  }
+  if (address !== undefined && targetUser.role === 'parent') {
+    if (!targetUser.profile) targetUser.profile = {};
+    targetUser.profile.address = address.trim();
     targetUser.markModified('profile');
   }
 

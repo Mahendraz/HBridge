@@ -24,6 +24,7 @@ import {
   CameraIcon,
   Trash2Icon,
   DownloadIcon,
+  MapPinIcon,
 } from "lucide-react";
 import Link from "next/link";
 import { Input } from "@/components/ui/input";
@@ -46,11 +47,18 @@ interface ChildDetail {
   isActive: boolean;
   createdAt: string;
   photoUrl?: string | null;
-  parent?: { id: string; name: string; email: string; phone?: string };
+  parent?: { id: string; name: string; email: string; phone?: string; address?: string };
   therapist?: { id: string; name: string; email: string; specialization?: string; clinic?: string };
   medicalInfo?: { conditions: string[]; medications: string[]; allergies: string[]; notes: string };
   tokenBalance?: number;
+  scheduleDays?: string[];
+  therapyStartDate?: string | null;
 }
+
+const DAY_LABELS: Record<string, string> = {
+  senin: 'Senin', selasa: 'Selasa', rabu: 'Rabu', kamis: 'Kamis', jumat: 'Jumat', sabtu: 'Sabtu',
+};
+const DAY_ORDER = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
 
 interface TokenTransaction {
   _id: string;
@@ -122,6 +130,12 @@ export default function PatientDetailPage() {
   } | null>(null);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+
+  // Inline parent-address edit
+  const [editingAddress, setEditingAddress] = useState(false);
+  const [addressValue, setAddressValue] = useState("");
+  const [addressSaving, setAddressSaving] = useState(false);
+  const [addressError, setAddressError] = useState<string | null>(null);
 
   // Package state
   const [packages, setPackages] = useState<TokenTransaction[]>([]);
@@ -458,6 +472,38 @@ export default function PatientDetailPage() {
     setShowEdit(true);
   };
 
+  const openAddressEdit = () => {
+    if (!child) return;
+    setAddressValue(child.parent?.address || "");
+    setAddressError(null);
+    setEditingAddress(true);
+  };
+
+  const handleSaveAddress = async () => {
+    if (!child?.parent) return;
+    setAddressSaving(true);
+    setAddressError(null);
+    try {
+      const token = localStorage.getItem("token");
+      const res = await fetch(`/api/admin/users/${child.parent.id}`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify({ address: addressValue }),
+      });
+      const result = await res.json();
+      if (res.ok && result.success) {
+        setChild((c) => c && c.parent ? { ...c, parent: { ...c.parent, address: addressValue.trim() } } : c);
+        setEditingAddress(false);
+      } else {
+        setAddressError(result.error || "Gagal menyimpan alamat.");
+      }
+    } catch {
+      setAddressError("Terjadi kesalahan. Silakan coba lagi.");
+    } finally {
+      setAddressSaving(false);
+    }
+  };
+
   const handleSave = async () => {
     if (!editForm) return;
     setSaving(true);
@@ -650,6 +696,26 @@ export default function PatientDetailPage() {
                   <p className="text-sm font-medium text-gray-900">
                     {new Date(child.createdAt).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
                   </p>
+                </div>
+              )}
+              {child.therapyStartDate && (
+                <div>
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1">Mulai Terapi</p>
+                  <p className="text-sm font-medium text-gray-900">
+                    {new Date(child.therapyStartDate).toLocaleDateString("id-ID", { day: "numeric", month: "long", year: "numeric" })}
+                  </p>
+                </div>
+              )}
+              {!!child.scheduleDays?.length && (
+                <div className="sm:col-span-2">
+                  <p className="text-xs text-gray-500 uppercase tracking-wide mb-1.5">Jadwal Terapi</p>
+                  <div className="flex flex-wrap gap-1.5">
+                    {[...child.scheduleDays].sort((a, b) => DAY_ORDER.indexOf(a) - DAY_ORDER.indexOf(b)).map((d) => (
+                      <Badge key={d} variant="outline" className="text-teal-700 border-teal-300">
+                        {DAY_LABELS[d] ?? d}
+                      </Badge>
+                    ))}
+                  </div>
                 </div>
               )}
             </CardContent>
@@ -1124,6 +1190,43 @@ export default function PatientDetailPage() {
                       <div className="flex items-center gap-2 text-sm text-gray-600">
                         <PhoneIcon className="h-4 w-4 text-gray-400 shrink-0" />
                         <span>{child.parent.phone}</span>
+                      </div>
+                    )}
+                    {editingAddress ? (
+                      <div className="pt-1 space-y-2">
+                        <textarea
+                          value={addressValue}
+                          onChange={(e) => setAddressValue(e.target.value)}
+                          placeholder="Alamat lengkap..."
+                          rows={2}
+                          className="w-full text-sm border border-gray-300 rounded-lg px-3 py-2 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                        />
+                        {addressError && <p className="text-xs text-red-600">{addressError}</p>}
+                        <div className="flex gap-2">
+                          <Button size="sm" onClick={handleSaveAddress} disabled={addressSaving}>
+                            {addressSaving ? "Menyimpan..." : "Simpan"}
+                          </Button>
+                          <Button size="sm" variant="outline" onClick={() => setEditingAddress(false)} disabled={addressSaving}>
+                            Batal
+                          </Button>
+                        </div>
+                      </div>
+                    ) : (
+                      <div className="flex items-start gap-2 text-sm text-gray-600">
+                        <MapPinIcon className="h-4 w-4 text-gray-400 shrink-0 mt-0.5" />
+                        {child.parent.address ? (
+                          <span className="flex-1">{child.parent.address}</span>
+                        ) : (
+                          <span className="flex-1 italic text-gray-400">Alamat belum diisi</span>
+                        )}
+                        {permissions.hasPermission('patients:edit') && (
+                          <button
+                            onClick={openAddressEdit}
+                            className="text-xs text-teal-600 hover:text-teal-700 font-medium shrink-0"
+                          >
+                            Edit
+                          </button>
+                        )}
                       </div>
                     )}
                   </div>
