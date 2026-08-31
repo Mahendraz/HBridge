@@ -30,6 +30,7 @@ const ALL_ROLES: UserRole[] = ['super_admin', 'admin', 'therapist', 'parent'];
 // memoized; see the comment on usePermissions in lib/utils/permissions.ts).
 const ROUTE_PERMISSION_SOURCE: Array<{ prefix: string; permission: Permission }> = [
   { prefix: '/dashboard/super-admin/packages', permission: 'packages:view' },
+  { prefix: '/dashboard/super-admin/bank-accounts', permission: 'bank_accounts:manage' },
   { prefix: '/dashboard/super-admin/financial', permission: 'financial:view_all' },
   { prefix: '/dashboard/super-admin/analytics', permission: 'reports:system_analytics' },
   { prefix: '/dashboard/therapists', permission: 'therapists:view' },

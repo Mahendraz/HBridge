@@ -5,6 +5,7 @@ import connectToDatabase from '@/lib/db/mongodb';
 import Invoice from '@/models/Invoice';
 import TokenTransaction from '@/models/TokenTransaction';
 import Child from '@/models/Child';
+import BankAccountSettings from '@/models/BankAccountSettings';
 import mongoose from 'mongoose';
 
 const PACKAGE_PRICES: Record<string, number> = { gold: 50000, platinum: 100000, diamond: 200000 };
@@ -72,7 +73,12 @@ export const GET = withAnyAuth(
       );
     }
 
-    return SuccessResponse.ok({ invoices: enriched, total, page, limit });
+    const bankSettings = await BankAccountSettings.findOne({}).lean();
+    const bankAccounts = (bankSettings?.accounts ?? [])
+      .filter((acc) => acc.isActive)
+      .sort((a, b) => a.order - b.order);
+
+    return SuccessResponse.ok({ invoices: enriched, total, page, limit, bankAccounts });
   })
 );
 

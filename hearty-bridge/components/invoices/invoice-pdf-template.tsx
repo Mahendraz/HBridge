@@ -27,6 +27,12 @@ const styles = StyleSheet.create({
   grandTotalLabel: { fontSize: 11, fontWeight: 700 },
   grandTotalValue: { fontSize: 13, fontWeight: 700, color: "#0d9488" },
   statusBadge: { alignSelf: "flex-start", fontSize: 9, fontWeight: 700, paddingVertical: 3, paddingHorizontal: 8, borderRadius: 10, marginTop: 12 },
+  bankSection: { marginTop: 16, borderTop: "1 solid #e5e7eb", paddingTop: 12 },
+  bankSectionTitle: { fontSize: 9, fontWeight: 700, color: "#0d9488", textTransform: "uppercase", marginBottom: 6 },
+  bankRow: { backgroundColor: "#f9fafb", borderRadius: 4, padding: 8, marginBottom: 6 },
+  bankName: { fontSize: 10, fontWeight: 700 },
+  bankDetail: { fontSize: 9, color: "#374151", marginTop: 2 },
+  bankNotes: { fontSize: 8, color: "#6b7280", marginTop: 2, fontStyle: "italic" },
   notes: { marginTop: 16, fontSize: 9, color: "#6b7280", fontStyle: "italic" },
   footer: { position: "absolute", bottom: 30, left: 40, right: 40, fontSize: 8, color: "#9ca3af", textAlign: "center", borderTop: "1 solid #e5e7eb", paddingTop: 8 },
 });
@@ -63,6 +69,7 @@ export interface InvoicePdfData {
   paidAt?: string | null;
   createdAt: string;
   notes?: string;
+  bankAccounts?: { bankName: string; accountNumber: string; accountHolderName: string; notes?: string }[];
 }
 
 export function InvoicePdfDocument({ invoice }: { invoice: InvoicePdfData }) {
@@ -129,6 +136,19 @@ export function InvoicePdfDocument({ invoice }: { invoice: InvoicePdfData }) {
           {STATUS_LABEL[invoice.status] ?? invoice.status.toUpperCase()}
           {invoice.status === "paid" && invoice.paidAt ? ` — ${formatDate(invoice.paidAt)}` : ""}
         </Text>
+
+        {invoice.status !== "paid" && invoice.bankAccounts && invoice.bankAccounts.length > 0 && (
+          <View style={styles.bankSection}>
+            <Text style={styles.bankSectionTitle}>Transfer Pembayaran Ke</Text>
+            {invoice.bankAccounts.map((acc, i) => (
+              <View key={i} style={styles.bankRow}>
+                <Text style={styles.bankName}>{acc.bankName}</Text>
+                <Text style={styles.bankDetail}>{acc.accountNumber} a.n. {acc.accountHolderName}</Text>
+                {acc.notes && <Text style={styles.bankNotes}>{acc.notes}</Text>}
+              </View>
+            ))}
+          </View>
+        )}
 
         {invoice.notes && <Text style={styles.notes}>{invoice.notes}</Text>}
 

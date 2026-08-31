@@ -4,6 +4,7 @@ import { withErrorHandling, ErrorResponse } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
 import Invoice from '@/models/Invoice';
 import User from '@/models/User';
+import BankAccountSettings from '@/models/BankAccountSettings';
 import mongoose from 'mongoose';
 import { renderToBuffer } from '@react-pdf/renderer';
 import { InvoicePdfDocument, type InvoicePdfData } from '@/components/invoices/invoice-pdf-template';
@@ -37,6 +38,17 @@ export const GET = withAnyAuth(
 
     const parent = await User.findById((invoice as any).parentId).select('name').lean();
 
+    const bankSettings = await BankAccountSettings.findOne({}).lean();
+    const bankAccounts = (bankSettings?.accounts ?? [])
+      .filter((acc) => acc.isActive)
+      .sort((a, b) => a.order - b.order)
+      .map((acc) => ({
+        bankName: acc.bankName,
+        accountNumber: acc.accountNumber,
+        accountHolderName: acc.accountHolderName,
+        notes: acc.notes,
+      }));
+
     const data: InvoicePdfData = {
       invoiceNumber: (invoice as any).invoiceNumber,
       childName: (invoice as any).childName,
@@ -52,6 +64,7 @@ export const GET = withAnyAuth(
       paidAt: (invoice as any).paidAt,
       createdAt: (invoice as any).createdAt,
       notes: (invoice as any).notes,
+      bankAccounts,
     };
 
     const buffer = await renderToBuffer(InvoicePdfDocument({ invoice: data }));

@@ -7,8 +7,16 @@ import {
   ReceiptIcon, CalendarIcon, CheckCircleIcon,
   XCircleIcon, ClockIcon, EyeIcon, EyeOffIcon, FilterIcon,
   UploadCloudIcon, MessageSquareIcon, X, FileImageIcon, DownloadIcon,
-  PencilIcon, Trash2Icon,
+  PencilIcon, Trash2Icon, LandmarkIcon,
 } from "lucide-react";
+
+interface BankAccount {
+  _id: string;
+  bankName: string;
+  accountNumber: string;
+  accountHolderName: string;
+  notes?: string;
+}
 
 interface Invoice {
   _id: string;
@@ -76,6 +84,7 @@ export default function InvoicesPage() {
   const isAdmin = permissions.hasPermission('invoices:manage');
 
   const [invoices, setInvoices] = useState<Invoice[]>([]);
+  const [bankAccounts, setBankAccounts] = useState<BankAccount[]>([]);
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState<string>('all');
   const [visibilityFilter, setVisibilityFilter] = useState<string>('all');
@@ -112,6 +121,7 @@ export default function InvoicesPage() {
       if (res.ok) {
         const data = await res.json();
         setInvoices(data.invoices ?? []);
+        setBankAccounts(data.bankAccounts ?? []);
       }
     } catch {
       // silently fail
@@ -397,6 +407,22 @@ export default function InvoicesPage() {
 
                 {inv.notes && (
                   <p className="text-xs text-gray-400 mt-2 italic">{inv.notes}</p>
+                )}
+
+                {/* Bank transfer details */}
+                {inv.status !== 'paid' && bankAccounts.length > 0 && (
+                  <div className="mt-4 pt-4 border-t border-gray-100 space-y-2">
+                    <p className="text-xs font-semibold text-gray-700 flex items-center gap-1.5">
+                      <LandmarkIcon className="h-3.5 w-3.5 text-teal-600" /> Rekening Tujuan Transfer
+                    </p>
+                    {bankAccounts.map((acc) => (
+                      <div key={acc._id} className="rounded-lg bg-gray-50 border border-gray-100 px-3 py-2">
+                        <p className="text-xs font-semibold text-gray-900">{acc.bankName}</p>
+                        <p className="text-xs text-gray-600 mt-0.5">{acc.accountNumber} a.n. {acc.accountHolderName}</p>
+                        {acc.notes && <p className="text-xs text-gray-400 italic mt-0.5">{acc.notes}</p>}
+                      </div>
+                    ))}
+                  </div>
                 )}
 
                 {/* Payment proof section */}

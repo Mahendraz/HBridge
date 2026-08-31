@@ -121,6 +121,9 @@ export type Permission =
   | "packages:edit"
   | "packages:delete"
 
+  // Bank account settings (super_admin only)
+  | "bank_accounts:manage"
+
   // Super admin financial access
   | "financial:view_all"
   | "financial:view_proofs";
@@ -190,6 +193,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "packages:create",
     "packages:edit",
     "packages:delete",
+    "bank_accounts:manage",
     "financial:view_all",
     "financial:view_proofs",
   ],
@@ -600,6 +604,12 @@ export class PermissionChecker {
           href: "/dashboard/super-admin/packages",
           icon: "PackageIcon",
           permissions: ["packages:view"]
+        },
+        {
+          name: "Rekening Bank",
+          href: "/dashboard/super-admin/bank-accounts",
+          icon: "LandmarkIcon",
+          permissions: ["bank_accounts:manage"]
         },
         {
           name: "Laporan Keuangan",

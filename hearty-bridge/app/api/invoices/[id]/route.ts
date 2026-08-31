@@ -3,6 +3,7 @@ import { withAnyAuth, withAdminAuth } from '@/lib/middleware/auth';
 import { withErrorHandling, SuccessResponse, ErrorResponse } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
 import Invoice from '@/models/Invoice';
+import BankAccountSettings from '@/models/BankAccountSettings';
 import mongoose from 'mongoose';
 import { notify } from '@/lib/utils/notify';
 
@@ -35,7 +36,12 @@ export const GET = withAnyAuth(
       return ErrorResponse.forbidden();
     }
 
-    return SuccessResponse.ok({ invoice });
+    const bankSettings = await BankAccountSettings.findOne({}).lean();
+    const bankAccounts = (bankSettings?.accounts ?? [])
+      .filter((acc) => acc.isActive)
+      .sort((a, b) => a.order - b.order);
+
+    return SuccessResponse.ok({ invoice, bankAccounts });
   })
 );
 
