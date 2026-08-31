@@ -11,6 +11,7 @@ import {
   CardTitle,
 } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import {
   CheckCircleIcon,
@@ -206,6 +207,25 @@ function SessionStatusBadge({ status }: { status: ChildAttendanceRecord["status"
   );
 }
 
+/** Placeholder rows for a table body while its section's own data is loading —
+ * used by both the child-attendance and staff-attendance tables below, which
+ * only ever block their own Card body, not the whole page. */
+function TableRowsSkeleton({ columns, rows = 5 }: { columns: number; rows?: number }) {
+  return (
+    <tbody className="divide-y divide-gray-50">
+      {Array.from({ length: rows }).map((_, r) => (
+        <tr key={r}>
+          {Array.from({ length: columns }).map((_, c) => (
+            <td key={c} className="px-4 py-3">
+              <Skeleton className="h-4 w-full max-w-[120px]" />
+            </td>
+          ))}
+        </tr>
+      ))}
+    </tbody>
+  );
+}
+
 function ChildAttendanceSection() {
   const [date, setDate] = useState<string>(todayWIB());
   const [records, setRecords] = useState<ChildAttendanceRecord[]>([]);
@@ -267,7 +287,20 @@ function ChildAttendanceSection() {
             </div>
           )}
           {loading ? (
-            <div className="py-10 text-center text-gray-400 text-sm">Memuat...</div>
+            <div className="overflow-x-auto -mx-4 sm:mx-0">
+              <table className="w-full text-sm">
+                <thead>
+                  <tr className="border-b border-gray-100">
+                    {Array.from({ length: 5 }).map((_, i) => (
+                      <th key={i} className="px-4 py-2">
+                        <Skeleton className="h-3 w-16" />
+                      </th>
+                    ))}
+                  </tr>
+                </thead>
+                <TableRowsSkeleton columns={5} />
+              </table>
+            </div>
           ) : records.length === 0 ? (
             <div className="py-10 text-center text-gray-500">
               <ClipboardCheckIcon className="h-10 w-10 mx-auto mb-3 text-gray-300" />
@@ -776,9 +809,19 @@ export default function AttendancePage() {
             </CardHeader>
             <CardContent className="p-0">
               {loading ? (
-                <div className="flex items-center justify-center py-10">
-                  <RefreshCwIcon className="h-5 w-5 animate-spin text-gray-400" />
-                  <span className="ml-2 text-sm text-gray-400">Memuat...</span>
+                <div className="overflow-x-auto">
+                  <table className="w-full text-sm">
+                    <thead className="bg-gray-50 border-b">
+                      <tr>
+                        {Array.from({ length: 5 }).map((_, i) => (
+                          <th key={i} className="px-4 py-3">
+                            <Skeleton className="h-3 w-16" />
+                          </th>
+                        ))}
+                      </tr>
+                    </thead>
+                    <TableRowsSkeleton columns={5} />
+                  </table>
                 </div>
               ) : adminRows.length === 0 ? (
                 <p className="text-sm text-gray-400 italic py-6 text-center">

@@ -4,6 +4,7 @@ import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { usePermissions } from "@/lib/utils/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { TrendingUpIcon, XCircleIcon, UsersIcon, WalletIcon, ReceiptIcon, ClockIcon } from "lucide-react";
 import {
   ResponsiveContainer,
@@ -56,6 +57,92 @@ function formatRupiahCompact(n: number): string {
     minimumFractionDigits: 0,
     notation: "compact",
   }).format(n);
+}
+
+/** Bar-chart-shaped placeholder for a chart panel's own loading state — each
+ * chart on this page fetches independently, so only that panel shows this. */
+function ChartSkeleton() {
+  const heights = [45, 70, 55, 85, 60, 95, 50, 75, 65, 90, 55, 80];
+  return (
+    <div style={{ width: "100%", height: 360 }} className="flex items-end gap-2 px-2 pb-6">
+      {heights.map((h, i) => (
+        <Skeleton key={i} className="flex-1" style={{ height: `${h}%` }} />
+      ))}
+    </div>
+  );
+}
+
+// ── Loading Skeleton ─────────────────────────────────────────────────────────
+// Full-page skeleton for the initial load, matching the same header + stat
+// cards + chart shape every other dashboard page uses.
+
+function AnalyticsSkeleton({ canViewFinancial }: { canViewFinancial: boolean }) {
+  return (
+    <div className="space-y-6">
+      <div className="flex items-center justify-between flex-wrap gap-3">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-40" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <Skeleton className="h-9 w-40 rounded-md" />
+      </div>
+
+      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+        {Array.from({ length: 2 }).map((_, i) => (
+          <Card key={i}>
+            <CardContent className="pt-5 flex items-center gap-4">
+              <Skeleton className="h-9 w-9 rounded-lg shrink-0" />
+              <div className="space-y-1.5">
+                <Skeleton className="h-3 w-32" />
+                <Skeleton className="h-5 w-14" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <Card>
+        <CardHeader className="pb-3">
+          <Skeleton className="h-5 w-64" />
+        </CardHeader>
+        <CardContent>
+          <ChartSkeleton />
+        </CardContent>
+      </Card>
+
+      {canViewFinancial && (
+        <>
+          <div className="pt-2 space-y-2">
+            <Skeleton className="h-6 w-52" />
+            <Skeleton className="h-4 w-80" />
+          </div>
+
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            {Array.from({ length: 3 }).map((_, i) => (
+              <Card key={i}>
+                <CardContent className="pt-5 flex items-center gap-4">
+                  <Skeleton className="h-9 w-9 rounded-lg shrink-0" />
+                  <div className="space-y-1.5">
+                    <Skeleton className="h-3 w-36" />
+                    <Skeleton className="h-5 w-16" />
+                  </div>
+                </CardContent>
+              </Card>
+            ))}
+          </div>
+
+          <Card>
+            <CardHeader className="pb-3">
+              <Skeleton className="h-5 w-56" />
+            </CardHeader>
+            <CardContent>
+              <ChartSkeleton />
+            </CardContent>
+          </Card>
+        </>
+      )}
+    </div>
+  );
 }
 
 export default function PatientAnalyticsPage() {
@@ -133,6 +220,10 @@ export default function PatientAnalyticsPage() {
     );
   }
 
+  if (loading) {
+    return <AnalyticsSkeleton canViewFinancial={canViewFinancial} />;
+  }
+
   const latest = data[data.length - 1];
   const totalNew = data.reduce((sum, p) => sum + p.newPatients, 0);
   const chartData = data.map((p) => ({ ...p, label: formatMonth(p.month) }));
@@ -192,8 +283,6 @@ export default function PatientAnalyticsPage() {
         <CardContent>
           {error ? (
             <div className="py-10 text-center text-sm text-red-600">{error}</div>
-          ) : loading ? (
-            <div className="py-10 text-center text-sm text-gray-400">Memuat data...</div>
           ) : chartData.length === 0 ? (
             <div className="py-10 text-center text-sm text-gray-400">Belum ada data pasien.</div>
           ) : (
@@ -235,47 +324,63 @@ export default function PatientAnalyticsPage() {
             </p>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <Card>
-              <CardContent className="pt-5 flex items-center gap-4">
-                <div className="p-2 bg-green-100 rounded-lg">
-                  <WalletIcon className="h-5 w-5 text-green-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Pendapatan ({months} Bulan Terakhir)</p>
-                  <p className="text-lg font-bold text-gray-900">
-                    {formatRupiahCompact(financialData.reduce((sum, p) => sum + p.revenue, 0))}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-5 flex items-center gap-4">
-                <div className="p-2 bg-teal-100 rounded-lg">
-                  <ReceiptIcon className="h-5 w-5 text-teal-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Ditagihkan Bulan Ini</p>
-                  <p className="text-lg font-bold text-gray-900">
-                    {formatRupiahCompact(financialData[financialData.length - 1]?.invoiced ?? 0)}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-            <Card>
-              <CardContent className="pt-5 flex items-center gap-4">
-                <div className="p-2 bg-amber-100 rounded-lg">
-                  <ClockIcon className="h-5 w-5 text-amber-600" />
-                </div>
-                <div>
-                  <p className="text-xs text-gray-500">Belum Tertagih ({outstanding?.count ?? 0} invoice)</p>
-                  <p className="text-lg font-bold text-gray-900">
-                    {formatRupiahCompact(outstanding?.total ?? 0)}
-                  </p>
-                </div>
-              </CardContent>
-            </Card>
-          </div>
+          {financialLoading ? (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <Card key={i}>
+                  <CardContent className="pt-5 flex items-center gap-4">
+                    <Skeleton className="h-9 w-9 rounded-lg shrink-0" />
+                    <div className="space-y-1.5">
+                      <Skeleton className="h-3 w-36" />
+                      <Skeleton className="h-5 w-16" />
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <Card>
+                <CardContent className="pt-5 flex items-center gap-4">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <WalletIcon className="h-5 w-5 text-green-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Pendapatan ({months} Bulan Terakhir)</p>
+                    <p className="text-lg font-bold text-gray-900">
+                      {formatRupiahCompact(financialData.reduce((sum, p) => sum + p.revenue, 0))}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-5 flex items-center gap-4">
+                  <div className="p-2 bg-teal-100 rounded-lg">
+                    <ReceiptIcon className="h-5 w-5 text-teal-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Ditagihkan Bulan Ini</p>
+                    <p className="text-lg font-bold text-gray-900">
+                      {formatRupiahCompact(financialData[financialData.length - 1]?.invoiced ?? 0)}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+              <Card>
+                <CardContent className="pt-5 flex items-center gap-4">
+                  <div className="p-2 bg-amber-100 rounded-lg">
+                    <ClockIcon className="h-5 w-5 text-amber-600" />
+                  </div>
+                  <div>
+                    <p className="text-xs text-gray-500">Belum Tertagih ({outstanding?.count ?? 0} invoice)</p>
+                    <p className="text-lg font-bold text-gray-900">
+                      {formatRupiahCompact(outstanding?.total ?? 0)}
+                    </p>
+                  </div>
+                </CardContent>
+              </Card>
+            </div>
+          )}
 
           <Card>
             <CardHeader className="pb-3">
@@ -285,7 +390,7 @@ export default function PatientAnalyticsPage() {
               {financialError ? (
                 <div className="py-10 text-center text-sm text-red-600">{financialError}</div>
               ) : financialLoading ? (
-                <div className="py-10 text-center text-sm text-gray-400">Memuat data...</div>
+                <ChartSkeleton />
               ) : financialData.length === 0 ? (
                 <div className="py-10 text-center text-sm text-gray-400">Belum ada data keuangan.</div>
               ) : (

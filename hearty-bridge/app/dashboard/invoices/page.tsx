@@ -3,6 +3,7 @@
 import { useState, useEffect, useCallback } from "react";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { usePermissions } from "@/lib/utils/permissions";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   ReceiptIcon, CalendarIcon, CheckCircleIcon,
   XCircleIcon, ClockIcon, EyeIcon, EyeOffIcon, FilterIcon,
@@ -329,14 +330,7 @@ export default function InvoicesPage() {
   };
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-3" />
-          <p className="text-sm text-gray-500">Memuat invoice...</p>
-        </div>
-      </div>
-    );
+    return <InvoicesSkeleton isAdmin={isAdmin} />;
   }
 
   // ── Parent view ──────────────────────────────────────────────────────────────
@@ -946,6 +940,83 @@ export default function InvoicesPage() {
           </div>
         </div>
       )}
+    </div>
+  );
+}
+
+// ── Loading Skeleton ─────────────────────────────────────────────────────────
+
+function InvoicesSkeleton({ isAdmin }: { isAdmin: boolean }) {
+  if (!isAdmin) {
+    return (
+      <div className="space-y-6">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-40" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <div key={i} className="rounded-xl border border-gray-200 bg-white p-5 space-y-3">
+              <div className="flex items-start justify-between">
+                <div className="space-y-1.5">
+                  <Skeleton className="h-3 w-20" />
+                  <Skeleton className="h-4 w-32" />
+                </div>
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+              <Skeleton className="h-16 w-full rounded-lg" />
+              <Skeleton className="h-9 w-full rounded-lg" />
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <Skeleton className="h-7 w-48" />
+        <Skeleton className="h-4 w-72" />
+      </div>
+
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <div key={i} className="rounded-xl border border-gray-200 bg-white p-4 text-center space-y-2">
+            <Skeleton className="h-7 w-10 mx-auto" />
+            <Skeleton className="h-3 w-20 mx-auto" />
+          </div>
+        ))}
+      </div>
+
+      <Skeleton className="h-6 w-72" />
+
+      <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
+        <div className="overflow-x-auto">
+          <table className="w-full min-w-[1300px] text-sm">
+            <thead>
+              <tr className="border-b border-gray-100 bg-gray-50">
+                {Array.from({ length: 10 }).map((_, i) => (
+                  <th key={i} className="px-4 py-3">
+                    <Skeleton className="h-3 w-16" />
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody className="divide-y divide-gray-50">
+              {Array.from({ length: 6 }).map((_, i) => (
+                <tr key={i}>
+                  {Array.from({ length: 10 }).map((_, c) => (
+                    <td key={c} className="px-4 py-3">
+                      <Skeleton className="h-4 w-full max-w-[100px]" />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
+      </div>
     </div>
   );
 }

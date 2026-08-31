@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/contexts/auth-context";
 import { usePermissions, PermissionGuard } from "@/lib/utils/permissions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import {
@@ -519,14 +520,7 @@ export default function TherapistsPage() {
   );
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-gray-500">Memuat terapis...</p>
-        </div>
-      </div>
-    );
+    return <TherapistsSkeleton />;
   }
 
   return (
@@ -937,6 +931,59 @@ export default function TherapistsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+// ── Loading Skeleton ─────────────────────────────────────────────────────────
+
+function TherapistsSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-52" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <Skeleton className="h-10 w-36 rounded-md" />
+      </div>
+
+      <Skeleton className="h-4 w-56" />
+
+      {/* Therapist cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Card key={i}>
+            <CardHeader className="pb-3">
+              <div className="flex items-start justify-between gap-2">
+                <div className="flex items-center gap-3">
+                  <Skeleton className="w-12 h-12 rounded-full shrink-0" />
+                  <div className="space-y-1.5">
+                    <Skeleton className="h-4 w-28" />
+                    <div className="flex gap-1">
+                      <Skeleton className="h-5 w-16 rounded-full" />
+                      <Skeleton className="h-5 w-12 rounded-full" />
+                    </div>
+                  </div>
+                </div>
+                <Skeleton className="h-5 w-14 rounded-full shrink-0" />
+              </div>
+            </CardHeader>
+            <CardContent className="space-y-4">
+              <div className="space-y-1.5">
+                <Skeleton className="h-3.5 w-40" />
+                <Skeleton className="h-3.5 w-32" />
+              </div>
+              <Skeleton className="h-12 w-full rounded-lg" />
+              <div className="flex gap-2">
+                <Skeleton className="h-8 flex-1 rounded-md" />
+                <Skeleton className="h-8 w-9 rounded-md" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

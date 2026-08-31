@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { usePermissions, PermissionGuard } from "@/lib/utils/permissions";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -332,14 +333,7 @@ export default function UnifiedPatientsPage() {
 
   // Show loading state
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4"></div>
-          <p className="text-gray-500">Memuat pasien...</p>
-        </div>
-      </div>
-    );
+    return <PatientsSkeleton />;
   }
 
   if (loadError) {
@@ -973,6 +967,73 @@ export default function UnifiedPatientsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+    </div>
+  );
+}
+
+// ── Loading Skeleton ─────────────────────────────────────────────────────────
+
+function PatientsSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div className="space-y-2">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <Skeleton className="h-10 w-36 rounded-md" />
+      </div>
+
+      {/* Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Card key={i}>
+            <CardContent className="p-6">
+              <div className="flex flex-col items-center gap-3">
+                <Skeleton className="w-12 h-12 rounded-full" />
+                <Skeleton className="h-7 w-12" />
+                <Skeleton className="h-4 w-28" />
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      {/* Search and filter */}
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-5 w-32" />
+        </CardHeader>
+        <CardContent>
+          <Skeleton className="h-10 w-full rounded-md" />
+        </CardContent>
+      </Card>
+
+      {/* Patient cards */}
+      <div className="space-y-6">
+        {Array.from({ length: 3 }).map((_, i) => (
+          <Card key={i} className="overflow-hidden">
+            <CardHeader className="bg-gray-50">
+              <div className="flex items-center space-x-4">
+                <Skeleton className="w-16 h-16 rounded-full shrink-0" />
+                <div className="space-y-2">
+                  <Skeleton className="h-5 w-40" />
+                  <Skeleton className="h-3.5 w-56" />
+                  <div className="flex gap-2 mt-2">
+                    <Skeleton className="h-5 w-20 rounded-full" />
+                    <Skeleton className="h-5 w-24 rounded-full" />
+                  </div>
+                </div>
+              </div>
+            </CardHeader>
+            <CardContent className="p-6 space-y-3">
+              <Skeleton className="h-14 w-full rounded-lg" />
+              <Skeleton className="h-14 w-full rounded-lg" />
+            </CardContent>
+          </Card>
+        ))}
+      </div>
     </div>
   );
 }

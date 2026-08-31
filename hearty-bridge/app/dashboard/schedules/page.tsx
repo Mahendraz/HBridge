@@ -6,6 +6,7 @@ import { useAuth } from "@/lib/contexts/auth-context";
 import { usePermissions } from "@/lib/utils/permissions";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import {
   Dialog,
   DialogContent,
@@ -138,6 +139,71 @@ const DAY_LABELS: Record<Day, string> = {
 };
 
 const HOURS = [9, 10, 11, 12, 13, 14, 15, 16] as const;
+
+// ---------------------------------------------------------------------------
+// ScheduleSkeleton — mirrors the page's header + week-nav + weekly grid shape
+// while the initial fetch is in flight.
+// ---------------------------------------------------------------------------
+
+function ScheduleSkeleton() {
+  return (
+    <div className="space-y-4">
+      {/* Page header */}
+      <div className="flex items-center justify-between">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-48" />
+          <Skeleton className="h-4 w-64" />
+        </div>
+        <Skeleton className="h-10 w-32 rounded-md" />
+      </div>
+
+      {/* Week navigation */}
+      <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
+        <Skeleton className="h-7 w-7 rounded" />
+        <Skeleton className="h-4 flex-1 max-w-[160px] mx-auto" />
+        <Skeleton className="h-7 w-7 rounded" />
+      </div>
+
+      {/* Search + filter bar */}
+      <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
+        <Skeleton className="h-8 flex-1" />
+        <Skeleton className="h-8 w-40" />
+      </div>
+
+      {/* Weekly grid */}
+      <Card className="hidden md:block">
+        <CardContent className="p-0 overflow-x-auto">
+          <table className="w-full border-collapse min-w-[720px]">
+            <thead>
+              <tr>
+                <th className="w-24 p-3 border-b border-r border-gray-200 bg-gray-50" />
+                {DAYS.map((day) => (
+                  <th key={day} className="p-3 border-b border-r border-gray-200 bg-gray-50 min-w-[130px]">
+                    <Skeleton className="h-3.5 w-14 mx-auto" />
+                  </th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {HOURS.slice(0, 5).map((hour) => (
+                <tr key={hour} className="border-b border-gray-100">
+                  <td className="p-3 border-r border-gray-200 bg-gray-50/50">
+                    <Skeleton className="h-3.5 w-10" />
+                  </td>
+                  {DAYS.map((day) => (
+                    <td key={day} className="p-1.5 border-r border-gray-100 align-top">
+                      <Skeleton className="h-16 w-full" />
+                    </td>
+                  ))}
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
 
 // ---------------------------------------------------------------------------
 // Types
@@ -2307,14 +2373,7 @@ export default function SchedulesPage() {
   // ---- Loading state ----
 
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4" />
-          <p className="text-gray-500">Memuat jadwal...</p>
-        </div>
-      </div>
-    );
+    return <ScheduleSkeleton />;
   }
 
   if (fetchError) {

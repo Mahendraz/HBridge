@@ -4,6 +4,7 @@ export * from "./input";
 export * from "./card";
 export * from "./select";
 export * from "./loading";
+export * from "./skeleton";
 export * from "./error";
 export * from "./badge";
 export * from "./avatar";

@@ -7,6 +7,7 @@ import { usePermissions, PermissionGuard, canActOnOwnRecord } from "@/lib/utils/
 import { useReportDraft } from "@/lib/hooks/useReportDraft";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
 import { MagicCard } from "@/components/magicui/magic-card";
 import { NumberTicker } from "@/components/magicui/number-ticker";
@@ -1261,14 +1262,7 @@ export default function ReportsPage() {
 
   // ── Render ──────────────────────────────────────────────────────────────────
   if (loading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-teal-600 mx-auto mb-4" />
-          <p className="text-gray-500">Memuat laporan...</p>
-        </div>
-      </div>
-    );
+    return <ReportsSkeleton />;
   }
 
   if (fetchError) {
@@ -1517,6 +1511,58 @@ export default function ReportsPage() {
           onClose={() => setViewingReport(null)}
         />
       )}
+    </div>
+  );
+}
+
+// ── Loading Skeleton ─────────────────────────────────────────────────────────
+
+function ReportsSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Header */}
+      <div className="flex justify-between items-center">
+        <div className="space-y-2">
+          <Skeleton className="h-7 w-56" />
+          <Skeleton className="h-4 w-72" />
+        </div>
+        <Skeleton className="h-10 w-36 rounded-md" />
+      </div>
+
+      {/* Filter + list */}
+      <Card>
+        <CardContent className="p-6">
+          <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4 mb-4">
+            <Skeleton className="h-10 flex-1" />
+            <div className="flex gap-2">
+              <Skeleton className="h-10 w-36" />
+              <Skeleton className="h-10 w-36" />
+              <Skeleton className="h-10 w-16" />
+            </div>
+          </div>
+
+          <Skeleton className="h-9 w-full max-w-md mb-6" />
+
+          <div className="rounded-xl border border-gray-200 overflow-hidden">
+            <div className="flex items-center gap-4 px-4 py-2.5 bg-gray-50 border-b border-gray-200">
+              <Skeleton className="h-3 w-14" />
+              <Skeleton className="h-3 flex-1" />
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-3 w-20" />
+              <Skeleton className="h-3 w-16" />
+            </div>
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="flex items-center gap-4 px-4 py-3 border-b border-gray-100 last:border-0">
+                <Skeleton className="h-5 w-14 rounded-full" />
+                <Skeleton className="h-4 flex-1" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-4 w-20" />
+                <Skeleton className="h-5 w-16 rounded-full" />
+              </div>
+            ))}
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }

@@ -5,6 +5,7 @@ import { useAuth } from "@/lib/contexts/auth-context";
 import { usePermissions } from "@/lib/utils/permissions";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
+import { Skeleton } from "@/components/ui/skeleton";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import {
@@ -82,6 +83,82 @@ function formatRupiah(n: number) {
 
 function formatDate(d: string) {
   return new Date(d).toLocaleDateString("id-ID", { day: "numeric", month: "short", year: "numeric" });
+}
+
+/** Placeholder rows for a table body while its own tab's data is loading —
+ * each tab (invoices/transactions) fetches independently, so only that
+ * tab's table shows this, not the whole page. */
+function FinancialTableSkeleton({ columns }: { columns: number }) {
+  return (
+    <div className="overflow-x-auto rounded-lg border border-gray-200">
+      <table className="w-full text-sm">
+        <thead className="bg-gray-50">
+          <tr>
+            {Array.from({ length: columns }).map((_, c) => (
+              <th key={c} className="px-4 py-3">
+                <Skeleton className="h-3 w-16" />
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-100">
+          {Array.from({ length: 6 }).map((_, r) => (
+            <tr key={r}>
+              {Array.from({ length: columns }).map((_, c) => (
+                <td key={c} className="px-4 py-3">
+                  <Skeleton className="h-4 w-full max-w-[110px]" />
+                </td>
+              ))}
+            </tr>
+          ))}
+        </tbody>
+      </table>
+    </div>
+  );
+}
+
+/** Full-page skeleton for the initial load, matching the same header + stat
+ * cards + content shape every other dashboard page uses. */
+function FinancialSkeleton() {
+  return (
+    <div className="space-y-6">
+      <div className="space-y-2">
+        <Skeleton className="h-7 w-52" />
+        <Skeleton className="h-4 w-72" />
+      </div>
+
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={i}>
+            <CardContent className="pt-5">
+              <div className="flex items-center gap-3">
+                <Skeleton className="h-9 w-9 rounded-lg shrink-0" />
+                <div className="space-y-1.5">
+                  <Skeleton className="h-3 w-24" />
+                  <Skeleton className="h-5 w-20" />
+                  <Skeleton className="h-3 w-16" />
+                </div>
+              </div>
+            </CardContent>
+          </Card>
+        ))}
+      </div>
+
+      <div className="flex gap-4 border-b border-gray-200">
+        <Skeleton className="h-8 w-16 mb-2" />
+        <Skeleton className="h-8 w-32 mb-2" />
+      </div>
+
+      <div className="flex flex-wrap gap-3 items-end">
+        <Skeleton className="h-9 w-32" />
+        <Skeleton className="h-9 w-36" />
+        <Skeleton className="h-9 w-36" />
+        <Skeleton className="h-9 w-16" />
+      </div>
+
+      <FinancialTableSkeleton columns={7} />
+    </div>
+  );
 }
 
 export default function SuperAdminFinancialPage() {
@@ -183,6 +260,10 @@ export default function SuperAdminFinancialPage() {
         <p className="text-sm">Halaman ini hanya untuk Super Admin.</p>
       </div>
     );
+  }
+
+  if (invLoading && !summary) {
+    return <FinancialSkeleton />;
   }
 
   const invPages = Math.ceil(invTotal / 20);
@@ -312,10 +393,7 @@ export default function SuperAdminFinancialPage() {
           </div>
 
           {invLoading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin h-6 w-6 border-b-2 border-teal-600 rounded-full mx-auto mb-2" />
-              <p className="text-sm text-gray-400">Memuat invoice...</p>
-            </div>
+            <FinancialTableSkeleton columns={7} />
           ) : invoices.length === 0 ? (
             <div className="text-center py-12 text-gray-400">Tidak ada invoice.</div>
           ) : (
@@ -421,10 +499,7 @@ export default function SuperAdminFinancialPage() {
           </div>
 
           {txLoading ? (
-            <div className="text-center py-12">
-              <div className="animate-spin h-6 w-6 border-b-2 border-teal-600 rounded-full mx-auto mb-2" />
-              <p className="text-sm text-gray-400">Memuat transaksi...</p>
-            </div>
+            <FinancialTableSkeleton columns={7} />
           ) : transactions.length === 0 ? (
             <div className="text-center py-12 text-gray-400">Tidak ada transaksi.</div>
           ) : (

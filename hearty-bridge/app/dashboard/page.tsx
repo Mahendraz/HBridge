@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect } from "react";
 import { Badge } from "@/components/ui/badge";
-import { LoadingSpinner } from "@/components/ui/loading";
+import { Skeleton } from "@/components/ui/skeleton";
 import { useAuth } from "@/lib/contexts/auth-context";
 import {
   UsersIcon,
@@ -190,11 +190,7 @@ export default function UnifiedDashboard() {
   };
 
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center h-64">
-        <LoadingSpinner size="lg" />
-      </div>
-    );
+    return <DashboardSkeleton />;
   }
 
   const role = user?.role ?? "parent";
@@ -250,6 +246,54 @@ export default function UnifiedDashboard() {
       {role === "parent" && data && (
         <ParentMainContent data={data} />
       )}
+    </div>
+  );
+}
+
+// ── Loading Skeleton ─────────────────────────────────────────────────────────
+
+function DashboardSkeleton() {
+  return (
+    <div className="space-y-6">
+      {/* Welcome */}
+      <div className="rounded-2xl border border-gray-200 bg-white p-6 flex items-center space-x-4">
+        <Skeleton className="w-12 h-12 rounded-full flex-shrink-0" />
+        <div className="space-y-2">
+          <Skeleton className="h-6 w-64" />
+          <Skeleton className="h-4 w-40" />
+        </div>
+      </div>
+
+      {/* Stats cards */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-4">
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="rounded-xl border border-gray-200 bg-white p-5">
+            <div className="flex items-start justify-between">
+              <div className="flex-1 min-w-0 space-y-2">
+                <Skeleton className="h-3 w-20" />
+                <Skeleton className="h-6 w-16" />
+                <Skeleton className="h-3 w-24" />
+              </div>
+              <Skeleton className="h-10 w-10 rounded-xl flex-shrink-0 ml-3" />
+            </div>
+          </div>
+        ))}
+      </div>
+
+      {/* Main content block */}
+      <div className="rounded-xl border border-gray-200 bg-white p-5 space-y-4">
+        <Skeleton className="h-5 w-40" />
+        {Array.from({ length: 5 }).map((_, i) => (
+          <div key={i} className="flex items-center gap-3">
+            <Skeleton className="h-9 w-9 rounded-full flex-shrink-0" />
+            <div className="flex-1 space-y-1.5">
+              <Skeleton className="h-3.5 w-1/3" />
+              <Skeleton className="h-3 w-1/4" />
+            </div>
+            <Skeleton className="h-6 w-16 rounded-full flex-shrink-0" />
+          </div>
+        ))}
+      </div>
     </div>
   );
 }
