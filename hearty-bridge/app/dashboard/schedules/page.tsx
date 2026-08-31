@@ -173,12 +173,12 @@ function ScheduleSkeleton() {
       {/* Weekly grid */}
       <Card className="hidden md:block">
         <CardContent className="p-0 overflow-x-auto">
-          <table className="w-full border-collapse min-w-[720px]">
+          <table className="w-full border-collapse min-w-[720px] table-fixed">
             <thead>
               <tr>
                 <th className="w-24 p-3 border-b border-r border-gray-200 bg-gray-50" />
                 {DAYS.map((day) => (
-                  <th key={day} className="p-3 border-b border-r border-gray-200 bg-gray-50 min-w-[130px]">
+                  <th key={day} className="p-3 border-b border-r border-gray-200 bg-gray-50 w-[130px]">
                     <Skeleton className="h-3.5 w-14 mx-auto" />
                   </th>
                 ))}
@@ -2536,7 +2536,7 @@ export default function SchedulesPage() {
           Replaced below md with a single-day agenda view instead (see below). */}
       <Card className="hidden md:block">
         <CardContent className="p-0 overflow-x-auto">
-          <table className="w-full border-collapse min-w-[720px]">
+          <table className="w-full border-collapse min-w-[720px] table-fixed">
             <thead>
               <tr>
                 {/* Time column header */}
@@ -2553,7 +2553,7 @@ export default function SchedulesPage() {
                   return (
                     <th
                       key={day}
-                      className={`p-3 text-xs font-semibold text-center border-b border-r border-gray-200 min-w-[130px] ${
+                      className={`p-3 text-xs font-semibold text-center border-b border-r border-gray-200 w-[130px] ${
                         isToday
                           ? "bg-teal-50 text-teal-700"
                           : "bg-gray-50 text-gray-700"

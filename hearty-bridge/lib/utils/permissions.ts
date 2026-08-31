@@ -184,6 +184,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "assessments:edit",
     "assessments:delete",
     "assessments:manage",
+    "attendance:view",
+    "attendance:checkin",
     // Super admin exclusive
     "dashboard:activity",
     "leaves:view_all",

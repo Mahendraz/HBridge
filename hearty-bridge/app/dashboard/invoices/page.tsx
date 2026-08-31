@@ -566,19 +566,19 @@ export default function InvoicesPage() {
       ) : (
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1300px] text-sm">
+            <table className="w-full min-w-[1250px] text-sm table-fixed">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">No. Invoice</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Pasien</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Paket</th>
-                  <th className="text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Harga</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Jatuh Tempo</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Status</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Bukti Bayar</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Kirim ke Orang Tua</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Unduh</th>
-                  <th className="text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide whitespace-nowrap">Aksi</th>
+                  <th className="w-[130px] text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">No. Invoice</th>
+                  <th className="w-[140px] text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Pasien</th>
+                  <th className="w-[170px] text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Paket</th>
+                  <th className="w-[100px] text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Harga</th>
+                  <th className="w-[110px] text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Jatuh Tempo</th>
+                  <th className="w-[140px] text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                  <th className="w-[140px] text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Bukti Bayar</th>
+                  <th className="w-[150px] text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Kirim ke Orang Tua</th>
+                  <th className="w-[90px] text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Unduh</th>
+                  <th className="w-[80px] text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
@@ -591,8 +591,8 @@ export default function InvoicesPage() {
                     </td>
 
                     {/* Pasien */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <p className="font-medium text-gray-900">{inv.childName}</p>
+                    <td className="px-4 py-3">
+                      <p className="font-medium text-gray-900 truncate" title={inv.childName}>{inv.childName}</p>
                     </td>
 
                     {/* Paket */}
@@ -993,11 +993,11 @@ function InvoicesSkeleton({ isAdmin }: { isAdmin: boolean }) {
 
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1300px] text-sm">
+          <table className="w-full min-w-[1250px] text-sm table-fixed">
             <thead>
               <tr className="border-b border-gray-100 bg-gray-50">
-                {Array.from({ length: 10 }).map((_, i) => (
-                  <th key={i} className="px-4 py-3">
+                {["130px", "140px", "170px", "100px", "110px", "140px", "140px", "150px", "90px", "80px"].map((w, i) => (
+                  <th key={i} className="px-4 py-3" style={{ width: w }}>
                     <Skeleton className="h-3 w-16" />
                   </th>
                 ))}
