@@ -41,12 +41,17 @@ export const GET = withAdminAuth(
 
 /**
  * PATCH /api/sessions/[id]
- * Admin: update session date (reschedule) and/or status.
- * Body: { date?: 'YYYY-MM-DD', status?: 'scheduled' | 'completed' | 'cancelled' | 'no-show', notes?: string }
+ * Admin: update session date/time (reschedule) and/or status.
+ * Body: { date?: 'YYYY-MM-DD', time?: 'HH:mm', status?: 'scheduled' | 'completed' | 'cancelled' | 'no-show', notes?: string, force?: boolean }
  *
  * When status → 'completed': auto-deducts 1 token from child balance.
  * When status → 'no-show' or 'cancelled': no token deducted.
- * When date changes: no token effect, just moves the session in the calendar.
+ * When date/time changes: no token effect, just moves the session in the calendar.
+ *
+ * If the new date+time collides with another active, non-cancelled session for the
+ * same therapist, the request is rejected with 409 unless `force: true` is passed —
+ * the caller (e.g. drag-and-drop reschedule in the schedule grid) is expected to
+ * show the conflict to the admin and resubmit with force to override.
  */
 export const PATCH = withAdminAuth(
   withErrorHandling(async (req: NextRequest, user: any) => {
@@ -63,10 +68,12 @@ export const PATCH = withAdminAuth(
     }
 
     const body = await req.json();
-    const { date, status, notes } = body as {
+    const { date, time, status, notes, force } = body as {
       date?: string;
+      time?: string;
       status?: 'scheduled' | 'completed' | 'cancelled' | 'no-show';
       notes?: string;
+      force?: boolean;
     };
 
     const VALID_STATUSES = ['scheduled', 'completed', 'cancelled', 'no-show'];
@@ -77,16 +84,56 @@ export const PATCH = withAdminAuth(
       );
     }
 
+    if (time !== undefined && !/^\d{1,2}:\d{2}$/.test(time)) {
+      return NextResponse.json(ErrorResponse.badRequest('Invalid time format'), { status: 400 });
+    }
+
     const wasAlreadyCompleted = session.status === 'completed';
 
-    // Apply updates
-    if (date) {
-      const parsed = new Date(date + 'T00:00:00Z');
-      if (isNaN(parsed.getTime())) {
+    // Resolve the target date/time (falling back to the session's current
+    // values when only one of the two is being changed) and check for a
+    // double-booking before applying anything.
+    let parsedDate: Date | undefined;
+    if (date !== undefined) {
+      parsedDate = new Date(date + 'T00:00:00Z');
+      if (isNaN(parsedDate.getTime())) {
         return NextResponse.json(ErrorResponse.badRequest('Invalid date format'), { status: 400 });
       }
-      session.date = parsed;
     }
+
+    if ((date !== undefined || time !== undefined) && !force) {
+      const targetDate = parsedDate ?? session.date;
+      const targetTime = time ?? session.time;
+
+      const conflict = await Session.findOne({
+        _id: { $ne: session._id },
+        therapistId: session.therapistId,
+        date: targetDate,
+        time: targetTime,
+        status: { $ne: 'cancelled' },
+        isActive: true,
+      }).populate('childId', 'name');
+
+      if (conflict) {
+        const conflictChildName =
+          (conflict.childId as unknown as { name?: string } | null)?.name || 'pasien lain';
+        return NextResponse.json(
+          {
+            success: false,
+            error: `Terapis sudah punya jadwal lain jam ${targetTime} untuk ${conflictChildName}.`,
+            code: 'SCHEDULE_CONFLICT',
+            conflict: true,
+            conflictingSession: { childName: conflictChildName, time: targetTime },
+            timestamp: new Date().toISOString(),
+          },
+          { status: 409 }
+        );
+      }
+    }
+
+    // Apply updates
+    if (parsedDate) session.date = parsedDate;
+    if (time !== undefined) session.time = time;
     if (status) session.status = status;
     if (notes !== undefined) session.notes = notes;
 

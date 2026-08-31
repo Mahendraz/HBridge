@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { usePermissions } from "@/lib/utils/permissions";
@@ -226,6 +226,8 @@ function SlotCard({
   therapistColor,
   onClick,
   onOpenReportModal,
+  onSlotDragStart,
+  onSlotDragEnd,
 }: {
   slot: WeeklySlot;
   isOwn: boolean;
@@ -237,6 +239,8 @@ function SlotCard({
   therapistColor?: string | null;
   onClick: () => void;
   onOpenReportModal: (slot: WeeklySlot, sessionDate: string) => void;
+  onSlotDragStart?: (slot: WeeklySlot) => void;
+  onSlotDragEnd?: () => void;
 }) {
   const sessionDate = slotSessionDate(weekStart, slot.day);
   const hasReport = !!reportMap[`${slot.patientId}_${sessionDate}`];
@@ -279,23 +283,46 @@ function SlotCard({
   // therapist's actual color. On leave, red always wins over it.
   const useTherapistColor = !!therapistColor && !isTherapistOnLeave;
 
+  // Only a slot backed by a concrete Session (sessionId) can be dragged to
+  // reschedule — a template-only slot (no Session generated for this week
+  // yet) has nothing for a drag-drop to PATCH, so it stays click-only. Native
+  // HTML5 drag-and-drop (not dnd-kit) is used here: the browser renders and
+  // positions the drag ghost itself, so there's no rect-measurement to get
+  // wrong.
+  const [isDragging, setIsDragging] = useState(false);
+
+  const baseStyle: React.CSSProperties = useTherapistColor
+    ? {
+        backgroundColor: hexToRgba(therapistColor as string, 0.07),
+        borderColor: hexToRgba(therapistColor as string, 0.35),
+        borderLeftWidth: 4,
+        borderLeftColor: therapistColor as string,
+      }
+    : therapistColor
+    ? { borderLeftWidth: 4, borderLeftColor: therapistColor }
+    : {};
+
   return (
     <div
-      className={`p-2 rounded-lg border text-xs cursor-pointer transition-all hover:shadow-sm hover:-translate-y-px relative ${
+      draggable={!!slot.sessionId}
+      onDragStart={(e) => {
+        if (!slot.sessionId) return;
+        e.dataTransfer.effectAllowed = "move";
+        e.dataTransfer.setData("text/plain", slot.sessionId);
+        setIsDragging(true);
+        onSlotDragStart?.(slot);
+      }}
+      onDragEnd={() => {
+        setIsDragging(false);
+        onSlotDragEnd?.();
+      }}
+      className={`p-2 rounded-lg border text-xs transition-all hover:shadow-sm hover:-translate-y-px relative ${
         isTherapistOnLeave ? 'bg-red-50 border-red-300 hover:bg-red-100' : useTherapistColor ? '' : fallback.card
-      }`}
-      style={
-        useTherapistColor
-          ? {
-              backgroundColor: hexToRgba(therapistColor as string, 0.07),
-              borderColor: hexToRgba(therapistColor as string, 0.35),
-              borderLeftWidth: 4,
-              borderLeftColor: therapistColor as string,
-            }
-          : therapistColor
-          ? { borderLeftWidth: 4, borderLeftColor: therapistColor }
-          : undefined
-      }
+      } ${slot.sessionId ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}
+      style={{
+        ...baseStyle,
+        opacity: isDragging ? 0.35 : 1,
+      }}
       onClick={onClick}
     >
       <div className="flex gap-2">
@@ -393,6 +420,46 @@ function SlotCard({
           )}
         </div>
       </div>
+    </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// DroppableCell — wraps a grid cell's content so a dragged SlotCard can be
+// dropped onto it (drop target = a specific day/hour combo for the week in view).
+// ---------------------------------------------------------------------------
+
+function DroppableCell({
+  day,
+  hour,
+  className,
+  children,
+  onDropSlot,
+}: {
+  day: string;
+  hour: number;
+  className?: string;
+  children: React.ReactNode;
+  onDropSlot?: (day: string, hour: number) => void;
+}) {
+  const [isOver, setIsOver] = useState(false);
+
+  return (
+    <div
+      onDragOver={(e) => {
+        e.preventDefault(); // required so the browser allows a drop here
+        e.dataTransfer.dropEffect = "move";
+        if (!isOver) setIsOver(true);
+      }}
+      onDragLeave={() => setIsOver(false)}
+      onDrop={(e) => {
+        e.preventDefault();
+        setIsOver(false);
+        onDropSlot?.(day, hour);
+      }}
+      className={`${className ?? ""} ${isOver ? "ring-2 ring-teal-400 ring-inset rounded" : ""}`}
+    >
+      {children}
     </div>
   );
 }
@@ -1672,6 +1739,22 @@ export default function SchedulesPage() {
   const [rescheduleError, setRescheduleError] = useState<string | null>(null);
   const [markStatusLoading, setMarkStatusLoading] = useState(false);
 
+  // Drag-and-drop reschedule state — dragging a SlotCard onto a different
+  // grid cell PATCHes that one Session's date/time directly (no modal). A ref
+  // (not state) tracks the in-flight dragged slot: dragstart → drop can fire
+  // within the same tick, before a state update triggered by dragstart would
+  // have re-rendered and handed handleCellDrop a fresh closure — a ref reads
+  // the current value immediately, with no such render-timing race.
+  const draggedSlotRef = useRef<WeeklySlot | null>(null);
+  const [dragSaving, setDragSaving] = useState(false);
+  const [dragError, setDragError] = useState<string | null>(null);
+  const [dragConflict, setDragConflict] = useState<{
+    sessionId: string;
+    date: string;
+    time: string;
+    message: string;
+  } | null>(null);
+
   // Package session modal state
   const [showPackageModal, setShowPackageModal] = useState(false);
 
@@ -1962,6 +2045,63 @@ export default function SchedulesPage() {
     }
   };
 
+  // ---- Drag-and-drop reschedule ----
+
+  const submitDragReschedule = useCallback(
+    async (sessionId: string, date: string, time: string, force = false) => {
+      setDragSaving(true);
+      setDragError(null);
+      try {
+        const token = localStorage.getItem("token");
+        const res = await fetch(`/api/sessions/${sessionId}`, {
+          method: "PATCH",
+          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+          body: JSON.stringify({ date, time, ...(force ? { force: true } : {}) }),
+        });
+        if (res.status === 409) {
+          const data = await res.json().catch(() => ({}));
+          setDragConflict({
+            sessionId,
+            date,
+            time,
+            message: data.error || `Terapis sudah punya jadwal lain jam ${time}.`,
+          });
+          return;
+        }
+        if (!res.ok) {
+          const err = await res.json().catch(() => ({}));
+          throw new Error(err.error || `Gagal memindahkan jadwal (${res.status})`);
+        }
+        setDragConflict(null);
+        await fetchSlots();
+      } catch (e) {
+        setDragError(e instanceof Error ? e.message : "Gagal memindahkan jadwal");
+      } finally {
+        setDragSaving(false);
+      }
+    },
+    [fetchSlots]
+  );
+
+  const handleSlotDragStart = (slot: WeeklySlot) => {
+    setDragError(null);
+    draggedSlotRef.current = slot;
+  };
+
+  const handleSlotDragEnd = () => {
+    draggedSlotRef.current = null;
+  };
+
+  const handleCellDrop = (day: string, hour: number) => {
+    const slot = draggedSlotRef.current;
+    draggedSlotRef.current = null;
+    if (!slot?.sessionId) return;
+    if (slot.day === day && slot.hour === hour) return; // dropped back where it was
+    const newDate = slotSessionDate(weekStart, day);
+    const newTime = `${String(hour).padStart(2, "0")}:00`;
+    void submitDragReschedule(slot.sessionId, newDate, newTime);
+  };
+
   // ---- Package session creation ----
 
   const handleCreatePackageSessions = async (childId: string, date: string, hour: number, therapistId: string) => {
@@ -2132,6 +2272,8 @@ export default function SchedulesPage() {
             onClick={() => {
               if (permissions.hasPermission("schedules:manage_all")) openEditSlot(slot);
             }}
+            onSlotDragStart={handleSlotDragStart}
+            onSlotDragEnd={handleSlotDragEnd}
             onOpenReportModal={(s, sd) => {
               const existingReportId = reportMap[`${s.patientId}_${sd}`];
               if (existingReportId) {
@@ -2151,7 +2293,7 @@ export default function SchedulesPage() {
         ))}
         {permissions.hasPermission("schedules:manage_all") && (
           <button
-            className="w-full h-7 flex items-center justify-center text-gray-300 hover:text-teal-500 hover:bg-teal-50 rounded border border-dashed border-gray-200 hover:border-teal-300 transition-colors"
+            className="w-full flex-1 min-h-7 flex items-center justify-center text-gray-300 hover:text-teal-500 hover:bg-teal-50 rounded border border-dashed border-gray-200 hover:border-teal-300 transition-colors"
             onClick={() => openNewSlot(day, hour)}
             title={`Tambah slot ${DAY_LABELS[day as Day]} ${String(hour).padStart(2, "0")}:00`}
           >
@@ -2320,6 +2462,15 @@ export default function SchedulesPage() {
         </div>
       )}
 
+      {dragError && (
+        <div className="flex items-center justify-between gap-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-3 py-2">
+          <span>{dragError}</span>
+          <button onClick={() => setDragError(null)} className="text-red-400 hover:text-red-600 shrink-0">
+            <XIcon className="h-3.5 w-3.5" />
+          </button>
+        </div>
+      )}
+
       {/* Calendar grid — desktop/tablet: full 7-column table.
           Below md, a 720px-wide table required horizontal scroll with no visual
           hint that it was scrollable, so users thought data was simply missing.
@@ -2388,9 +2539,9 @@ export default function SchedulesPage() {
                           isToday ? "bg-teal-50/30" : ""
                         }`}
                       >
-                        <div className="space-y-1 min-h-[64px]">
+                        <DroppableCell day={day} hour={hour} className="flex flex-col gap-1 min-h-[64px] h-full" onDropSlot={handleCellDrop}>
                           <CellContent day={day} hour={hour} />
-                        </div>
+                        </DroppableCell>
                       </td>
                     );
                   })}
@@ -2437,9 +2588,9 @@ export default function SchedulesPage() {
                 <div className="w-14 shrink-0 pt-1 text-xs font-medium text-gray-500">
                   {String(hour).padStart(2, "0")}:00
                 </div>
-                <div className="flex-1 min-w-0 space-y-1">
+                <DroppableCell day={selectedMobileDay} hour={hour} className="flex-1 min-w-0 flex flex-col gap-1" onDropSlot={handleCellDrop}>
                   <CellContent day={selectedMobileDay} hour={hour} />
-                </div>
+                </DroppableCell>
               </div>
             ))}
           </CardContent>
@@ -2732,6 +2883,28 @@ export default function SchedulesPage() {
         </Dialog>
       )}
 
+      {/* Drag-drop reschedule conflict confirmation */}
+      {dragConflict && (
+        <Dialog open onOpenChange={(o) => { if (!o) setDragConflict(null); }}>
+          <DialogContent size="sm">
+            <DialogHeader>
+              <DialogTitle>Jadwal Bentrok</DialogTitle>
+            </DialogHeader>
+            <div className="mt-3 space-y-3">
+              <p className="text-sm text-gray-700">{dragConflict.message} Tetap pindahkan sesi ini ke slot tersebut?</p>
+              <div className="flex justify-end gap-2">
+                <Button variant="outline" onClick={() => setDragConflict(null)} disabled={dragSaving}>Batal</Button>
+                <Button
+                  onClick={() => submitDragReschedule(dragConflict.sessionId, dragConflict.date, dragConflict.time, true)}
+                  disabled={dragSaving}
+                >
+                  {dragSaving ? "Memindahkan..." : "Tetap Pindahkan"}
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
 
     </div>
   );

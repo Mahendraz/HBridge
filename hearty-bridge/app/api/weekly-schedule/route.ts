@@ -335,11 +335,17 @@ export const GET = withAnyAuth(
       // week, or a susulan slot added mid-package), and each needs its own
       // matching Session document, not whichever one was inserted into the map last.
       const weekSessionMap = new Map<string, any>();
+      // Packages that already have a session somewhere this week (any day/hour) —
+      // used below to tell "not generated yet" apart from "this week's occurrence
+      // was rescheduled to a different day/hour" for a slot with no direct match.
+      const weekPackageIdsWithSession = new Set<string>();
       for (const ws of weekSessions) {
         const dayName = dateToDayName(new Date((ws as any).date));
         const hour = timeToHour((ws as any).time ?? '09:00');
-        const key = `${(ws as any).packageId.toString()}_${dayName}_${hour}`;
+        const pkgIdStr = (ws as any).packageId.toString();
+        const key = `${pkgIdStr}_${dayName}_${hour}`;
         weekSessionMap.set(key, ws);
+        weekPackageIdsWithSession.add(pkgIdStr);
       }
 
       // For slots without a session for this specific week, estimate the session number.
@@ -371,6 +377,16 @@ export const GET = withAnyAuth(
         const completed = completedMap.get(pkgIdStr) ?? 0;
         const total     = slot.totalSessions ?? 0;
         const weekSession = weekSessionMap.get(`${pkgIdStr}_${slot.day}_${slot.hour}`);
+
+        // No session at this template's usual day/hour, but the package already
+        // has one somewhere else this week — that means this week's occurrence
+        // was rescheduled to a different slot (e.g. via drag-and-drop), not that
+        // it simply hasn't been generated yet. Showing this slot would duplicate
+        // the same occurrence at both its old and new position.
+        if (!weekSession && weekPackageIdsWithSession.has(pkgIdStr)) {
+          hiddenSlotIds.add(String(slot._id));
+          continue;
+        }
 
         let sessionNumber: number | null = weekSession?.sessionNumber ?? null;
 
