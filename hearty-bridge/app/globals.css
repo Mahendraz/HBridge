@@ -145,6 +145,12 @@ html {
   scroll-behavior: smooth;
 }
 
+/* Keep anchored sections clear of the sticky header when scrolled to */
+section[id],
+div[id] {
+  scroll-margin-top: 5rem;
+}
+
 /* Better typography
    No `color` here on purpose: many headings sit on colored/dark sections and
    rely on inheriting `color: white` from an ancestor (e.g. a hero section with

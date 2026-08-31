@@ -27,6 +27,9 @@ import { Marquee } from "@/components/magicui/marquee";
 import { InstagramFeedSection } from "@/components/instagram/instagram-feed-section";
 import { MapPinIcon } from "lucide-react";
 import { InstagramIcon } from "@/components/icons/instagram-icon";
+import { AboutSection } from "@/components/home/about-section";
+import { ServicesSection } from "@/components/home/services-section";
+import { ContactSection } from "@/components/home/contact-section";
 
 const services = [
   { icon: ClipboardListIcon, label: "Asesmen Tumbuh Kembang" },
@@ -93,156 +96,172 @@ export default function Home() {
 
   return (
     <AuthGuard requireAuth={false}>
-      <div className="min-h-screen bg-white">
+      {/* ── BERANDA ─────────────────────────────────────────────── */}
+      <div id="home">
+        <div className="min-h-screen bg-white">
+          {/* HERO */}
+          <section className="relative overflow-hidden bg-linear-to-b from-rose-50 via-white to-white pt-20 pb-32">
+            <Ripple mainCircleSize={260} numCircles={7} color="#c41e34" mainCircleOpacity={0.14} />
 
-        {/* ── HERO ─────────────────────────────────────────────── */}
-        <section className="relative overflow-hidden bg-linear-to-b from-rose-50 via-white to-white pt-20 pb-32">
-          <Ripple mainCircleSize={260} numCircles={7} color="#c41e34" mainCircleOpacity={0.14} />
+            <div className="relative mx-auto max-w-7xl px-6 text-center">
+              <BlurFade delay={0}>
+                <div className="inline-flex items-center gap-2 rounded-full border border-brand-coral-light bg-brand-coral-tint px-4 py-1.5 text-sm font-medium text-brand-coral mb-8">
+                  <span className="h-1.5 w-1.5 rounded-full bg-brand-coral animate-pulse" />
+                  Pusat Terapi Anak & Tumbuh Kembang • Batam
+                </div>
+              </BlurFade>
 
-          <div className="relative mx-auto max-w-7xl px-6 text-center">
-            <BlurFade delay={0}>
-              <div className="inline-flex items-center gap-2 rounded-full border border-brand-coral-light bg-brand-coral-tint px-4 py-1.5 text-sm font-medium text-brand-coral mb-8">
-                <span className="h-1.5 w-1.5 rounded-full bg-brand-coral animate-pulse" />
-                Pusat Terapi Anak & Tumbuh Kembang • Batam
-              </div>
-            </BlurFade>
+              <BlurFade delay={0.1}>
+                <h1 className="text-5xl font-bold tracking-tight text-gray-900 sm:text-7xl leading-tight">
+                  {t("hero.title")}
+                  <br />
+                  <AnimatedGradientText
+                    colorFrom="#c41e34"
+                    colorTo="#f0475a"
+                    speed={0.8}
+                    className="text-5xl sm:text-7xl font-bold"
+                  >
+                    {t("hero.titleHighlight")}
+                  </AnimatedGradientText>
+                  <br />
+                  <span className="text-gray-900">{t("hero.titleEnd")}</span>
+                </h1>
+              </BlurFade>
 
-            <BlurFade delay={0.1}>
-              <h1 className="text-5xl font-bold tracking-tight text-gray-900 sm:text-7xl leading-tight">
-                {t("hero.title")}
-                <br />
-                <AnimatedGradientText
-                  colorFrom="#c41e34"
-                  colorTo="#f0475a"
-                  speed={0.8}
-                  className="text-5xl sm:text-7xl font-bold"
+              <BlurFade delay={0.2}>
+                <p className="mt-6 text-lg leading-8 text-gray-600 max-w-2xl mx-auto">
+                  {t("hero.subtitle")}
+                </p>
+              </BlurFade>
+
+              <BlurFade delay={0.3}>
+                <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
+                  <Link href="/auth/login">
+                    <ShimmerButton
+                      background="rgba(196, 30, 52, 1)"
+                      className="text-base px-8 py-3.5 font-semibold"
+                    >
+                      Masuk ke Platform
+                      <ArrowRightIcon className="ml-2 h-5 w-5" />
+                    </ShimmerButton>
+                  </Link>
+                </div>
+              </BlurFade>
+            </div>
+          </section>
+
+          {/* SERVICES MARQUEE */}
+          <section className="relative overflow-hidden bg-rose-50 py-5 border-y border-rose-100">
+            <Marquee pauseOnHover className="[--duration:30s]">
+              {services.map((service) => (
+                <div
+                  key={service.label}
+                  className="flex items-center gap-2.5 px-4 text-sm font-medium text-gray-700 whitespace-nowrap"
                 >
-                  {t("hero.titleHighlight")}
-                </AnimatedGradientText>
-                <br />
-                <span className="text-gray-900">{t("hero.titleEnd")}</span>
-              </h1>
-            </BlurFade>
-
-            <BlurFade delay={0.2}>
-              <p className="mt-6 text-lg leading-8 text-gray-600 max-w-2xl mx-auto">
-                {t("hero.subtitle")}
-              </p>
-            </BlurFade>
-
-            <BlurFade delay={0.3}>
-              <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-                <Link href="/auth/login">
-                  <ShimmerButton
-                    background="rgba(196, 30, 52, 1)"
-                    className="text-base px-8 py-3.5 font-semibold"
-                  >
-                    Masuk ke Platform
-                    <ArrowRightIcon className="ml-2 h-5 w-5" />
-                  </ShimmerButton>
-                </Link>
-              </div>
-            </BlurFade>
-          </div>
-        </section>
-
-        {/* ── SERVICES MARQUEE ─────────────────────────────────── */}
-        <section className="relative overflow-hidden bg-rose-50 py-5 border-y border-rose-100">
-          <Marquee pauseOnHover className="[--duration:30s]">
-            {services.map((service) => (
-              <div
-                key={service.label}
-                className="flex items-center gap-2.5 px-4 text-sm font-medium text-gray-700 whitespace-nowrap"
-              >
-                <service.icon className="h-4 w-4 text-brand-coral shrink-0" />
-                {service.label}
-                <span className="text-rose-200 ml-2">•</span>
-              </div>
-            ))}
-          </Marquee>
-        </section>
-
-        {/* ── FEATURES / LAYANAN ──────────────────────────────── */}
-        <section className="relative py-24 bg-gray-50 overflow-hidden">
-          <DotPattern className="opacity-60" />
-          <div className="relative mx-auto max-w-7xl px-6">
-            <BlurFade>
-              <div className="text-center mb-16">
-                <span className="inline-flex items-center rounded-full bg-teal-50 border border-teal-200 px-4 py-1.5 text-sm font-semibold text-teal-700 mb-4">
-                  Layanan Kami
-                </span>
-                <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-                  {t("features.title")}
-                </h2>
-                <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
-                  {t("features.subtitle")}
-                </p>
-              </div>
-            </BlurFade>
-
-            <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-              {features.map((feature, i) => (
-                <BlurFade key={feature.title} delay={i * 0.08}>
-                  <MagicCard
-                    className="rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow"
-                    gradientColor="#f0fdfa"
-                    gradientFrom="#14b8a6"
-                    gradientTo="#22c55e"
-                  >
-                    <div className={`inline-flex p-3 rounded-xl ${feature.bg} mb-4`}>
-                      <feature.icon className={`h-6 w-6 ${feature.color}`} />
-                    </div>
-                    <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
-                    <p className="text-sm text-gray-600 leading-relaxed">{feature.description}</p>
-                  </MagicCard>
-                </BlurFade>
+                  <service.icon className="h-4 w-4 text-brand-coral shrink-0" />
+                  {service.label}
+                  <span className="text-rose-200 ml-2">•</span>
+                </div>
               ))}
-            </div>
+            </Marquee>
+          </section>
 
-            <BlurFade delay={0.5}>
-              <div className="mt-14 text-center">
-                <Link href="/auth/login">
-                  <ShimmerButton
-                    background="rgba(196, 30, 52, 1)"
-                    className="text-base px-8 py-3.5 font-semibold"
-                    borderRadius="12px"
-                  >
-                    Masuk & Mulai Sekarang
-                    <ArrowRightIcon className="ml-2 h-5 w-5" />
-                  </ShimmerButton>
-                </Link>
+          {/* FEATURES / LAYANAN */}
+          <section className="relative py-24 bg-gray-50 overflow-hidden">
+            <DotPattern className="opacity-60" />
+            <div className="relative mx-auto max-w-7xl px-6">
+              <BlurFade>
+                <div className="text-center mb-16">
+                  <span className="inline-flex items-center rounded-full bg-teal-50 border border-teal-200 px-4 py-1.5 text-sm font-semibold text-teal-700 mb-4">
+                    Layanan Kami
+                  </span>
+                  <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
+                    {t("features.title")}
+                  </h2>
+                  <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
+                    {t("features.subtitle")}
+                  </p>
+                </div>
+              </BlurFade>
+
+              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
+                {features.map((feature, i) => (
+                  <BlurFade key={feature.title} delay={i * 0.08}>
+                    <MagicCard
+                      className="rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow"
+                      gradientColor="#f0fdfa"
+                      gradientFrom="#14b8a6"
+                      gradientTo="#22c55e"
+                    >
+                      <div className={`inline-flex p-3 rounded-xl ${feature.bg} mb-4`}>
+                        <feature.icon className={`h-6 w-6 ${feature.color}`} />
+                      </div>
+                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
+                      <p className="text-sm text-gray-600 leading-relaxed">{feature.description}</p>
+                    </MagicCard>
+                  </BlurFade>
+                ))}
               </div>
-            </BlurFade>
-          </div>
-        </section>
 
-        {/* ── INSTAGRAM ────────────────────────────────────────── */}
-        <InstagramFeedSection />
-
-        {/* ── LOKASI & KONTAK ──────────────────────────────────── */}
-        <section className="py-16 bg-rose-50 border-t border-rose-100">
-          <div className="mx-auto max-w-5xl px-6 flex flex-col md:flex-row items-center justify-between gap-8">
-            <div className="flex items-start gap-3">
-              <MapPinIcon className="h-6 w-6 text-brand-coral shrink-0 mt-1" />
-              <div>
-                <p className="font-semibold text-gray-900">Hearty Bridge Early Intervention Center</p>
-                <p className="text-gray-600 text-sm mt-1 max-w-md">
-                  Puri Casablanca No. A-18, Sukajadi, Kec. Batam Kota, Kota Batam, Kepulauan Riau 29432
-                </p>
-              </div>
+              <BlurFade delay={0.5}>
+                <div className="mt-14 text-center">
+                  <Link href="/auth/login">
+                    <ShimmerButton
+                      background="rgba(196, 30, 52, 1)"
+                      className="text-base px-8 py-3.5 font-semibold"
+                      borderRadius="12px"
+                    >
+                      Masuk & Mulai Sekarang
+                      <ArrowRightIcon className="ml-2 h-5 w-5" />
+                    </ShimmerButton>
+                  </Link>
+                </div>
+              </BlurFade>
             </div>
-            <a
-              href="https://www.instagram.com/heartybridge_/"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="inline-flex items-center gap-2 rounded-xl border border-brand-coral-light bg-white px-5 py-3 text-sm font-semibold text-brand-coral hover:bg-brand-coral-tint transition-colors shrink-0"
-            >
-              <InstagramIcon className="h-5 w-5" />
-              @heartybridge_
-            </a>
-          </div>
-        </section>
+          </section>
 
+          {/* INSTAGRAM */}
+          <InstagramFeedSection />
+
+          {/* LOKASI & KONTAK */}
+          <section className="py-16 bg-rose-50 border-t border-rose-100">
+            <div className="mx-auto max-w-5xl px-6 flex flex-col md:flex-row items-center justify-between gap-8">
+              <div className="flex items-start gap-3">
+                <MapPinIcon className="h-6 w-6 text-brand-coral shrink-0 mt-1" />
+                <div>
+                  <p className="font-semibold text-gray-900">Hearty Bridge Early Intervention Center</p>
+                  <p className="text-gray-600 text-sm mt-1 max-w-md">
+                    Puri Casablanca No. A-18, Sukajadi, Kec. Batam Kota, Kota Batam, Kepulauan Riau 29432
+                  </p>
+                </div>
+              </div>
+              <a
+                href="https://www.instagram.com/heartybridge_/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-2 rounded-xl border border-brand-coral-light bg-white px-5 py-3 text-sm font-semibold text-brand-coral hover:bg-brand-coral-tint transition-colors shrink-0"
+              >
+                <InstagramIcon className="h-5 w-5" />
+                @heartybridge_
+              </a>
+            </div>
+          </section>
+        </div>
+      </div>
+
+      {/* ── TENTANG KAMI ────────────────────────────────────────── */}
+      <div id="about">
+        <AboutSection />
+      </div>
+
+      {/* ── LAYANAN ─────────────────────────────────────────────── */}
+      <div id="services">
+        <ServicesSection />
+      </div>
+
+      {/* ── KONTAK ──────────────────────────────────────────────── */}
+      <div id="contact">
+        <ContactSection />
       </div>
     </AuthGuard>
   );

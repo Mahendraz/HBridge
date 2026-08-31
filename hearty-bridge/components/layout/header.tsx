@@ -10,10 +10,10 @@ import { useAuth } from "@/lib/contexts/auth-context";
 import { ShimmerButton } from "@/components/magicui/shimmer-button";
 
 const navigation = [
-  { name: "Beranda", href: "/" },
-  { name: "Tentang Kami", href: "/about" },
-  { name: "Layanan", href: "/services" },
-  { name: "Kontak", href: "/contact" },
+  { name: "Beranda", href: "#home" },
+  { name: "Tentang Kami", href: "#about" },
+  { name: "Layanan", href: "#services" },
+  { name: "Kontak", href: "#contact" },
 ];
 
 export function Header() {
