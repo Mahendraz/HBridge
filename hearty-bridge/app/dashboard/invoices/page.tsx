@@ -566,55 +566,54 @@ export default function InvoicesPage() {
       ) : (
         <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
           <div className="overflow-x-auto">
-            <table className="w-full min-w-[1250px] text-sm table-fixed">
+            <table className="w-full min-w-[1180px] text-sm table-fixed">
               <thead>
-                <tr className="border-b border-gray-100 bg-gray-50">
-                  <th className="w-[130px] text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">No. Invoice</th>
-                  <th className="w-[140px] text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Pasien</th>
-                  <th className="w-[170px] text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Paket</th>
-                  <th className="w-[100px] text-right px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Harga</th>
-                  <th className="w-[110px] text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Jatuh Tempo</th>
-                  <th className="w-[140px] text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Status</th>
-                  <th className="w-[140px] text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Bukti Bayar</th>
-                  <th className="w-[150px] text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Kirim ke Orang Tua</th>
-                  <th className="w-[90px] text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Unduh</th>
-                  <th className="w-[80px] text-left px-4 py-3 text-xs font-semibold text-gray-500 uppercase tracking-wide">Aksi</th>
+                <tr className="border-b border-gray-200 bg-gray-50">
+                  <th className="w-[130px] border-r border-gray-100 text-center px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Invoice</th>
+                  <th className="w-[150px] border-r border-gray-100 text-center px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Pasien</th>
+                  <th className="w-[130px] border-r border-gray-100 text-center px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Paket</th>
+                  <th className="w-[110px] border-r border-gray-100 text-center px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Total</th>
+                  <th className="w-[110px] border-r border-gray-100 text-center px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Jatuh Tempo</th>
+                  <th className="w-[120px] border-r border-gray-100 text-center px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Status</th>
+                  <th className="w-[160px] border-r border-gray-100 text-center px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Bukti Bayar</th>
+                  <th className="w-[110px] border-r border-gray-100 text-center px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide" title="Kirim ke Orang Tua">Terkirim</th>
+                  <th className="w-[160px] text-center px-4 py-3 text-[11px] font-semibold text-gray-500 uppercase tracking-wide">Aksi</th>
                 </tr>
               </thead>
               <tbody className="divide-y divide-gray-50">
                 {displayed.map((inv) => (
-                  <tr key={inv._id} className={`hover:bg-gray-50 transition-colors ${inv.isVisibleToParent ? '' : 'opacity-75'}`}>
-                    {/* No. Invoice */}
-                    <td className="px-4 py-3 whitespace-nowrap">
+                  <tr key={inv._id} className={`align-top hover:bg-gray-50/70 transition-colors ${inv.isVisibleToParent ? '' : 'opacity-75'}`}>
+                    {/* Invoice */}
+                    <td className="px-4 py-3.5 border-r border-gray-100 whitespace-nowrap">
                       <p className="font-mono text-xs text-gray-600">{inv.invoiceNumber}</p>
                       <p className="text-xs text-gray-400 mt-0.5">{formatDate(inv.createdAt)}</p>
                     </td>
 
                     {/* Pasien */}
-                    <td className="px-4 py-3">
+                    <td className="px-4 py-3.5 border-r border-gray-100">
                       <p className="font-medium text-gray-900 truncate" title={inv.childName}>{inv.childName}</p>
                     </td>
 
                     {/* Paket */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5">
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${PACKAGE_COLOR[inv.packageType]}`}>
+                    <td className="px-4 py-3.5 border-r border-gray-100 whitespace-nowrap overflow-hidden">
+                      <div className="flex items-center gap-1">
+                        <span className={`shrink-0 text-[11px] font-semibold px-1.5 py-0.5 rounded whitespace-nowrap ${PACKAGE_COLOR[inv.packageType]}`}>
                           {PACKAGE_LABEL[inv.packageType]}
                         </span>
-                        <span className={`text-xs font-semibold px-2 py-0.5 rounded-full whitespace-nowrap ${THERAPY_COLOR[inv.therapyType]}`}>
+                        <span className={`shrink-0 text-[11px] font-semibold px-1.5 py-0.5 rounded whitespace-nowrap ${THERAPY_COLOR[inv.therapyType]}`}>
                           {THERAPY_LABEL[inv.therapyType] ?? inv.therapyType}
                         </span>
                         <span className="text-xs text-gray-400 whitespace-nowrap">{inv.sessions} sesi</span>
                       </div>
                     </td>
 
-                    {/* Harga */}
-                    <td className="px-4 py-3 text-right whitespace-nowrap">
+                    {/* Total */}
+                    <td className="px-4 py-3.5 border-r border-gray-100 whitespace-nowrap">
                       <p className="font-semibold text-gray-900">{formatRupiah(inv.amount)}</p>
                     </td>
 
                     {/* Jatuh Tempo */}
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-4 py-3.5 border-r border-gray-100 whitespace-nowrap">
                       {editingId === inv._id ? (
                         <div className="flex items-center gap-1.5">
                           <input
@@ -653,70 +652,40 @@ export default function InvoicesPage() {
                       )}
                     </td>
 
-                    {/* Status + mark paid */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex flex-col items-start gap-1.5">
-                        <StatusBadge status={inv.status} />
-                        {inv.status !== 'paid' ? (
-                          <button
-                            onClick={() => handleMarkPaid(inv)}
-                            disabled={savingId === inv._id + '_status'}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-green-50 text-green-700 border border-green-200 hover:bg-green-100 disabled:opacity-40 transition-colors"
-                          >
-                            {savingId === inv._id + '_status'
-                              ? <span className="inline-block h-2.5 w-2.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                              : <CheckCircleIcon className="h-3 w-3" />
-                            }
-                            Tandai Lunas
-                          </button>
-                        ) : (
-                          <button
-                            onClick={() => handleMarkPaid(inv)}
-                            disabled={savingId === inv._id + '_status'}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-gray-50 text-gray-500 border border-gray-200 hover:bg-gray-100 disabled:opacity-40 transition-colors"
-                          >
-                            {savingId === inv._id + '_status'
-                              ? <span className="inline-block h-2.5 w-2.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                              : <XCircleIcon className="h-3 w-3" />
-                            }
-                            Batalkan
-                          </button>
-                        )}
-                      </div>
+                    {/* Status */}
+                    <td className="px-4 py-3.5 border-r border-gray-100 whitespace-nowrap">
+                      <StatusBadge status={inv.status} />
+                      {inv.status === 'paid' && inv.paidAt && (
+                        <p className="text-xs text-gray-400 mt-1">{formatDate(inv.paidAt)}</p>
+                      )}
                     </td>
 
-                    {/* Bukti Bayar */}
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    {/* Bukti Bayar — just the link; date/message are on hover via title, to keep the row from feeling crowded */}
+                    <td className="px-4 py-3.5 border-r border-gray-100 whitespace-nowrap">
                       {inv.paymentSubmittedAt ? (
-                        <div className="space-y-1">
-                          <button
-                            onClick={() => handleViewProof(inv._id, inv.invoiceNumber)}
-                            className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-semibold bg-blue-50 text-blue-700 border border-blue-200 hover:bg-blue-100 transition-colors"
-                          >
-                            <FileImageIcon className="h-3 w-3" /> Lihat Bukti
-                          </button>
-                          <p className="text-xs text-gray-400">{formatDate(inv.paymentSubmittedAt)}</p>
-                          {inv.paymentMessage && (
-                            <p className="text-xs text-gray-500 italic max-w-[140px] truncate" title={inv.paymentMessage}>
-                              <MessageSquareIcon className="h-3 w-3 inline mr-0.5" />{inv.paymentMessage}
-                            </p>
-                          )}
-                        </div>
+                        <button
+                          onClick={() => handleViewProof(inv._id, inv.invoiceNumber)}
+                          className="inline-flex items-center gap-1 text-xs font-semibold text-blue-700 hover:text-blue-800 hover:underline"
+                          title={`Dikirim ${formatDate(inv.paymentSubmittedAt)}${inv.paymentMessage ? ` — "${inv.paymentMessage}"` : ''}`}
+                        >
+                          <FileImageIcon className="h-3 w-3" /> Lihat Bukti
+                        </button>
                       ) : (
                         <span className="text-xs text-gray-300">—</span>
                       )}
                     </td>
 
                     {/* Kirim ke Orang Tua toggle */}
-                    <td className="px-4 py-3 whitespace-nowrap">
+                    <td className="px-4 py-3.5 border-r border-gray-100 whitespace-nowrap">
                       <button
                         onClick={() => handleToggleVisibility(inv)}
                         disabled={savingId === inv._id}
-                        className={`inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold transition-colors disabled:opacity-40 ${
+                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold transition-colors disabled:opacity-40 ${
                           inv.isVisibleToParent
-                            ? 'bg-teal-50 text-teal-700 border border-teal-200 hover:bg-teal-100'
-                            : 'bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100'
+                            ? 'bg-teal-50 text-teal-700 hover:bg-teal-100'
+                            : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                         }`}
+                        title={inv.isVisibleToParent ? 'Sudah terkirim ke orang tua — klik untuk sembunyikan' : 'Belum terkirim — klik untuk kirim ke orang tua'}
                       >
                         {savingId === inv._id ? (
                           <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -728,19 +697,34 @@ export default function InvoicesPage() {
                       </button>
                     </td>
 
-                    {/* Unduh */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <button
-                        onClick={() => handleDownloadInvoicePdf(inv._id, inv.invoiceNumber)}
-                        className="inline-flex items-center gap-1 px-2 py-1 rounded text-xs font-medium bg-gray-50 text-gray-600 border border-gray-200 hover:bg-gray-100 transition-colors"
-                      >
-                        <DownloadIcon className="h-3 w-3" /> Unduh
-                      </button>
-                    </td>
-
                     {/* Aksi */}
-                    <td className="px-4 py-3 whitespace-nowrap">
-                      <div className="flex items-center gap-1.5">
+                    <td className="px-4 py-3.5 whitespace-nowrap">
+                      <div className="flex items-center gap-0.5">
+                        <button
+                          onClick={() => handleMarkPaid(inv)}
+                          disabled={savingId === inv._id + '_status'}
+                          className={`p-1.5 rounded transition-colors disabled:opacity-40 ${
+                            inv.status === 'paid'
+                              ? 'text-gray-400 hover:text-gray-600 hover:bg-gray-100'
+                              : 'text-green-600 hover:text-green-700 hover:bg-green-50'
+                          }`}
+                          title={inv.status === 'paid' ? 'Batalkan status lunas' : 'Tandai lunas'}
+                        >
+                          {savingId === inv._id + '_status' ? (
+                            <span className="inline-block h-3.5 w-3.5 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                          ) : inv.status === 'paid' ? (
+                            <XCircleIcon className="h-3.5 w-3.5" />
+                          ) : (
+                            <CheckCircleIcon className="h-3.5 w-3.5" />
+                          )}
+                        </button>
+                        <button
+                          onClick={() => handleDownloadInvoicePdf(inv._id, inv.invoiceNumber)}
+                          className="p-1.5 rounded text-gray-500 hover:text-teal-700 hover:bg-teal-50 transition-colors"
+                          title="Unduh PDF"
+                        >
+                          <DownloadIcon className="h-3.5 w-3.5" />
+                        </button>
                         <button
                           onClick={() => openEditModal(inv)}
                           className="p-1.5 rounded text-gray-500 hover:text-teal-700 hover:bg-teal-50 transition-colors"
@@ -993,10 +977,10 @@ function InvoicesSkeleton({ isAdmin }: { isAdmin: boolean }) {
 
       <div className="rounded-xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="w-full min-w-[1250px] text-sm table-fixed">
+          <table className="w-full min-w-[1180px] text-sm table-fixed">
             <thead>
-              <tr className="border-b border-gray-100 bg-gray-50">
-                {["130px", "140px", "170px", "100px", "110px", "140px", "140px", "150px", "90px", "80px"].map((w, i) => (
+              <tr className="border-b border-gray-200 bg-gray-50">
+                {["130px", "150px", "130px", "110px", "110px", "120px", "160px", "110px", "160px"].map((w, i) => (
                   <th key={i} className="px-4 py-3" style={{ width: w }}>
                     <Skeleton className="h-3 w-16" />
                   </th>
@@ -1006,8 +990,8 @@ function InvoicesSkeleton({ isAdmin }: { isAdmin: boolean }) {
             <tbody className="divide-y divide-gray-50">
               {Array.from({ length: 6 }).map((_, i) => (
                 <tr key={i}>
-                  {Array.from({ length: 10 }).map((_, c) => (
-                    <td key={c} className="px-4 py-3">
+                  {Array.from({ length: 9 }).map((_, c) => (
+                    <td key={c} className="px-4 py-3.5">
                       <Skeleton className="h-4 w-full max-w-[100px]" />
                     </td>
                   ))}
