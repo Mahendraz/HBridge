@@ -1038,10 +1038,10 @@
     "semantic_hash": "22c81fe3f5858809deedc5929c668497"
   },
   "hearty-bridge/messages/id.json": {
-    "mtime": 1788007357.5754323,
-    "seen": 1789120314.0149367,
-    "ast_hash": "ce8892a404c796718b68c0472e4923d3",
-    "semantic_hash": "ce8892a404c796718b68c0472e4923d3"
+    "mtime": 1789982447.9310164,
+    "seen": 1789982651.5730455,
+    "ast_hash": "9b64d22de9a3270d7cdab57a19f67e80",
+    "semantic_hash": ""
   },
   "hearty-bridge/models/Announcement.ts": {
     "mtime": 1787851668.9617264,
@@ -1492,5 +1492,335 @@
     "seen": 1789120314.015007,
     "ast_hash": "ab575e944f15d39a5486cf9fca385c5e",
     "semantic_hash": "ab575e944f15d39a5486cf9fca385c5e"
+  },
+  ".claude/agents/backend-specialist.md": {
+    "mtime": 1787851668.8117826,
+    "seen": 1789982651.5730455,
+    "ast_hash": "ac1c8a739e1ae20e44d08b35116c558e",
+    "semantic_hash": ""
+  },
+  ".claude/agents/development-spec-architect.md": {
+    "mtime": 1787851668.8117826,
+    "seen": 1789982651.5730455,
+    "ast_hash": "70b4c98816e96bc8a7162a0dec837812",
+    "semantic_hash": ""
+  },
+  ".claude/agents/development-spec-writer.md": {
+    "mtime": 1787851668.8127842,
+    "seen": 1789982651.5730455,
+    "ast_hash": "6f81aa8f8c0b3444b1dcb4b89f6036d5",
+    "semantic_hash": ""
+  },
+  ".claude/agents/frontend-dev-specialist.md": {
+    "mtime": 1787851668.8137858,
+    "seen": 1789982651.5730455,
+    "ast_hash": "988d1532a947e3d3007420f03b1edec7",
+    "semantic_hash": ""
+  },
+  ".claude/agents/project-management-advisor.md": {
+    "mtime": 1787851668.8137858,
+    "seen": 1789982651.5730455,
+    "ast_hash": "2812e056f12047207785c1043db695e5",
+    "semantic_hash": ""
+  },
+  ".claude/agents/project-monitoring-agent.md": {
+    "mtime": 1787851668.8147845,
+    "seen": 1789982651.5730455,
+    "ast_hash": "9d52009d8ab3acc1b82fc3c8481d20a1",
+    "semantic_hash": ""
+  },
+  "CLAUDE.md": {
+    "mtime": 1787851668.8157818,
+    "seen": 1789982651.5730455,
+    "ast_hash": "71defeac5f531808460610933451397d",
+    "semantic_hash": ""
+  },
+  "docs/COMPREHENSIVE_DOCUMENTATION.md": {
+    "mtime": 1787851668.8193717,
+    "seen": 1789982651.5730455,
+    "ast_hash": "c1229c51ea34ed32bbb12d44535a7891",
+    "semantic_hash": ""
+  },
+  "docs/README.md": {
+    "mtime": 1788005965.7413065,
+    "seen": 1789982651.5730455,
+    "ast_hash": "69ad83183e0788b9ee615331f188fe0e",
+    "semantic_hash": ""
+  },
+  "docs/architecture/API_UNUSED_ENDPOINTS.md": {
+    "mtime": 1787851668.8168223,
+    "seen": 1789982651.5730455,
+    "ast_hash": "c638c04a1a82f1eb9a52dba5a30ab804",
+    "semantic_hash": ""
+  },
+  "docs/architecture/DASHBOARD_VIEWS_BY_ROLE.md": {
+    "mtime": 1787851668.8193717,
+    "seen": 1789982651.5730455,
+    "ast_hash": "c9c6b3cbdaf55e097576eac0758f3a58",
+    "semantic_hash": ""
+  },
+  "docs/architecture/ROLE_ARCHITECTURE.md": {
+    "mtime": 1787851668.828527,
+    "seen": 1789982651.5730455,
+    "ast_hash": "9062f74dc64bb4f584ac6c47c5936b2d",
+    "semantic_hash": ""
+  },
+  "docs/architecture/ROLE_PERMISSION_REFACTOR_PLAN.md": {
+    "mtime": 1787851668.8296714,
+    "seen": 1789982651.5730455,
+    "ast_hash": "7752c667e7070ebb7c3552696c5ef70d",
+    "semantic_hash": ""
+  },
+  "docs/ask.md": {
+    "mtime": 1789982453.0647833,
+    "seen": 1789982651.5730455,
+    "ast_hash": "af639eeee7b7075a73457cbde72edb91",
+    "semantic_hash": ""
+  },
+  "docs/misc/PEMPEK_IG_AUTOMATION.md": {
+    "mtime": 1787851668.8225224,
+    "seen": 1789982651.5730455,
+    "ast_hash": "4e550fa65425a246d353e86c1772bcf9",
+    "semantic_hash": ""
+  },
+  "docs/ops/CLAUDE_AGENTS_REFERENCE.md": {
+    "mtime": 1787851668.818277,
+    "seen": 1789982651.5730455,
+    "ast_hash": "1338f806b39269190ca297634ddcff28",
+    "semantic_hash": ""
+  },
+  "docs/ops/DATABASE_SETUP.md": {
+    "mtime": 1787851668.8349545,
+    "seen": 1789982651.5730455,
+    "ast_hash": "65e36ce257e8dbb900153d3a71a431d0",
+    "semantic_hash": ""
+  },
+  "docs/ops/MANUAL_USER_CREATION_GUIDE.md": {
+    "mtime": 1787851668.83595,
+    "seen": 1789982651.5730455,
+    "ast_hash": "9116642bfafaa92fe36e60d5f56d9df5",
+    "semantic_hash": ""
+  },
+  "docs/ops/PRODUCTION_MONITORING_DASHBOARD.md": {
+    "mtime": 1787851668.8255222,
+    "seen": 1789982651.5730455,
+    "ast_hash": "a1b9aa5bd327e011baf039983493556f",
+    "semantic_hash": ""
+  },
+  "docs/ops/SETUP_SUMMARY.md": {
+    "mtime": 1788005976.8382792,
+    "seen": 1789982651.5730455,
+    "ast_hash": "84a7133245e52e09b606dd8d4e51d113",
+    "semantic_hash": ""
+  },
+  "docs/planning/ANNOUNCEMENT_WALL_PLAN.md": {
+    "mtime": 1787851668.8168223,
+    "seen": 1789982651.5730455,
+    "ast_hash": "5dce09b66e186d1337612adfe29b3ba2",
+    "semantic_hash": ""
+  },
+  "docs/planning/PHASE_1_DETAILED.md": {
+    "mtime": 1787851668.8235238,
+    "seen": 1789982651.5730455,
+    "ast_hash": "217f78a6b0b6b8732f7ca9325be21c8c",
+    "semantic_hash": ""
+  },
+  "docs/planning/PHASE_2_COMPREHENSIVE_PROJECT_PLAN.md": {
+    "mtime": 1787851668.824521,
+    "seen": 1789982651.5730455,
+    "ast_hash": "46e83ed585f9982376f8e5537b8aa823",
+    "semantic_hash": ""
+  },
+  "docs/planning/PHASE_2_COMPREHENSIVE_SPECIFICATION.md": {
+    "mtime": 1787851668.8374379,
+    "seen": 1789982651.5730455,
+    "ast_hash": "50c69d1fd6855c4b44ec7634df3e9e4c",
+    "semantic_hash": ""
+  },
+  "docs/planning/PHASE_2_FRONTEND_COMPONENTS.md": {
+    "mtime": 1787851668.8374379,
+    "seen": 1789982651.5730455,
+    "ast_hash": "dd93e3b5f8e93b955b52c89b2a081d75",
+    "semantic_hash": ""
+  },
+  "docs/planning/PROJECT_PLAN.md": {
+    "mtime": 1787851668.8265233,
+    "seen": 1789982651.5730455,
+    "ast_hash": "78813bee57d32f90c44e4970c5862a86",
+    "semantic_hash": ""
+  },
+  "docs/planning/TASK_BREAKDOWN.md": {
+    "mtime": 1787941806.905949,
+    "seen": 1789982651.5730455,
+    "ast_hash": "f520a52b8193fa5cfd665161b66bd7bf",
+    "semantic_hash": ""
+  },
+  "docs/progress/API_IMPLEMENTATION_SUMMARY.md": {
+    "mtime": 1787851668.8327096,
+    "seen": 1789982651.5730455,
+    "ast_hash": "3087750b68bd3524549a168843db27b0",
+    "semantic_hash": ""
+  },
+  "docs/progress/DASHBOARD_IMPLEMENTATION_SUMMARY.md": {
+    "mtime": 1787851668.8338892,
+    "seen": 1789982651.5730455,
+    "ast_hash": "160dbc33093fe6b4b9367e301f837db2",
+    "semantic_hash": ""
+  },
+  "docs/progress/PHASE_1_COMPLETION_REPORT.md": {
+    "mtime": 1787851668.8225224,
+    "seen": 1789982651.5730455,
+    "ast_hash": "b041f046fa7a0102d6b1dcb9c8d4f878",
+    "semantic_hash": ""
+  },
+  "docs/progress/PHASE_2_API_IMPLEMENTATION_SUMMARY.md": {
+    "mtime": 1787851668.83595,
+    "seen": 1789982651.5730455,
+    "ast_hash": "a880188f8a97bc6d172a85911e52360c",
+    "semantic_hash": ""
+  },
+  "docs/progress/PHASE_2_COMPLETION_REPORT.md": {
+    "mtime": 1787851668.8235238,
+    "seen": 1789982651.5730455,
+    "ast_hash": "430386e2af2ba55c7cd700213e2b41bb",
+    "semantic_hash": ""
+  },
+  "docs/progress/PROGRESS_CHECKLIST.md": {
+    "mtime": 1787971173.9764853,
+    "seen": 1789982651.5730455,
+    "ast_hash": "81306553de8de7c473b2c0b45f5d1b25",
+    "semantic_hash": ""
+  },
+  "docs/progress/PROGRESS_TRACKER.md": {
+    "mtime": 1787851668.8255222,
+    "seen": 1789982651.5730455,
+    "ast_hash": "7e0abdbf8d89e559f52fc65b4288fdac",
+    "semantic_hash": ""
+  },
+  "docs/progress/UPDATE_CHECKLIST.md": {
+    "mtime": 1787939999.8858829,
+    "seen": 1789982651.5730455,
+    "ast_hash": "cb756ba7ad8b27e8ae21fae86ef85038",
+    "semantic_hash": ""
+  },
+  "docs/templates/INVOICE_TEMPLATE.md": {
+    "mtime": 1787851668.8203726,
+    "seen": 1789982651.5730455,
+    "ast_hash": "65154490126740cc7568c8d44b1dcbd2",
+    "semantic_hash": ""
+  },
+  "docs/templates/KONTRAK_TEMPLATE.md": {
+    "mtime": 1787851668.8214946,
+    "seen": 1789982651.5730455,
+    "ast_hash": "c4545e92f163151653a62b86d435e2ca",
+    "semantic_hash": ""
+  },
+  "docs/templates/PATIENT_INVOICE_TEMPLATE.md": {
+    "mtime": 1787951882.7670527,
+    "seen": 1789982651.5730455,
+    "ast_hash": "b1575d17b633298ee323e469abac90de",
+    "semantic_hash": ""
+  },
+  "docs/templates/PROPOSAL_CLIENT.md": {
+    "mtime": 1787851668.8275194,
+    "seen": 1789982651.5730455,
+    "ast_hash": "45f11e5afa594ef6fbe5043482376046",
+    "semantic_hash": ""
+  },
+  "docs/templates/SOW_FASE2_TEMPLATE.md": {
+    "mtime": 1787851668.8296714,
+    "seen": 1789982651.5730455,
+    "ast_hash": "b00ab192220e7c3fd31552715e829021",
+    "semantic_hash": ""
+  },
+  "docs/testing/MANUAL_TESTING_GUIDE.md": {
+    "mtime": 1787944265.6768672,
+    "seen": 1789982651.5730455,
+    "ast_hash": "1407298529b777b073d30ec2d418b021",
+    "semantic_hash": ""
+  },
+  "docs/testing/TESTING_GUIDE.md": {
+    "mtime": 1787851668.8307054,
+    "seen": 1789982651.5730455,
+    "ast_hash": "2e966cfac3f1d504231a8ac559d58e77",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/AGENTS.md": {
+    "mtime": 1787851668.8317058,
+    "seen": 1789982651.5730455,
+    "ast_hash": "26def4c3fb65ee91bdcb7415bee0c974",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/CLAUDE.md": {
+    "mtime": 1787851668.8338892,
+    "seen": 1789982651.5730455,
+    "ast_hash": "30ccc29d531593a72fd723a5c9abcd0c",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/README.md": {
+    "mtime": 1787851668.838437,
+    "seen": 1789982651.5730455,
+    "ast_hash": "9162add00befbcdb432430f405c4ad8d",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/create-test-users.html": {
+    "mtime": 1787851668.933339,
+    "seen": 1789982651.5730455,
+    "ast_hash": "28130b952279f0a1f2dcce9a597949f5",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/app/apple-icon.png": {
+    "mtime": 1788033132.641,
+    "seen": 1789982651.5730455,
+    "ast_hash": "a86c9612dd7fb1cd711fc67212065f1f",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/app/icon.png": {
+    "mtime": 1788033132.612,
+    "seen": 1789982651.5730455,
+    "ast_hash": "62754fad16c6c737a1a51d670ade8ac8",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/public/file.svg": {
+    "mtime": 1787851668.9797628,
+    "seen": 1789982651.5730455,
+    "ast_hash": "d09f95206c3fa0bb9bd9fefabfd0ea71",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/public/globe.svg": {
+    "mtime": 1787851668.9807634,
+    "seen": 1789982651.5730455,
+    "ast_hash": "2aaafa6a49b6563925fe440891e32717",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/public/images/logo-heartybridge.png": {
+    "mtime": 1788007170.8557835,
+    "seen": 1789982651.5730455,
+    "ast_hash": "8beb4121bc374b238282639c27b0e49d",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/public/images/og-image.png": {
+    "mtime": 1788032823.075,
+    "seen": 1789982651.5730455,
+    "ast_hash": "40b48149a3b1d116f21ed0fc51c6c7da",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/public/next.svg": {
+    "mtime": 1787851668.9807634,
+    "seen": 1789982651.5730455,
+    "ast_hash": "8e061864f388b47f33a1c3780831193e",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/public/vercel.svg": {
+    "mtime": 1787851668.9817631,
+    "seen": 1789982651.5730455,
+    "ast_hash": "c0af2f507b369b085b35ef4bbe3bcf1e",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/public/window.svg": {
+    "mtime": 1787851668.9817631,
+    "seen": 1789982651.5730455,
+    "ast_hash": "a2760511c65806022ad20adf74370ff3",
+    "semantic_hash": ""
   }
 }
