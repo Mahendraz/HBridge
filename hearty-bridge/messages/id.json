@@ -259,7 +259,7 @@
       "subtitle": "Terapi berkualitas seharusnya terjangkau. Kami bekerja sama dengan sebagian besar rencana asuransi.",
       "individual": {
         "title": "Sesi Individual",
-        "price": "$120",
+        "price": "Rp 250.000",
         "period": "per sesi 50 menit",
         "oneOnOne": "Terapi satu-satu",
         "treatment": "Rencana perawatan personal",
@@ -268,14 +268,14 @@
       },
       "monthly": {
         "title": "Paket Bulanan",
-        "price": "$420",
+        "price": "Rp 900.000",
         "period": "4 sesi per bulan",
         "popular": "Paling Populer",
         "everything": "Semua fitur Individual",
         "priority": "Penjadwalan prioritas",
         "reports": "Laporan kemajuan bulanan",
         "resources": "Akses sumber daya keluarga",
-        "save": "Hemat $60/bulan"
+        "save": "Hemat Rp 100.000/bulan"
       },
       "insurance": {
         "title": "Asuransi",
