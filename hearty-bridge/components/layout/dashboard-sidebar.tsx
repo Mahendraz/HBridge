@@ -32,6 +32,10 @@ import { UserRole } from "@/lib/types/auth";
 import { Button } from "@/components/ui/button";
 import { usePermissions } from "@/lib/utils/permissions";
 import { NotificationBell } from "@/components/layout/notification-bell";
+import { fetchWithTimeout } from "@/lib/utils/fetch-with-timeout";
+
+const COMMENT_BADGE_POLL_INTERVAL_MS = 60_000;
+const COMMENT_BADGE_TIMEOUT_MS = 15_000;
 
 const iconMap = {
   HomeIcon,
@@ -69,18 +73,38 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
     const token = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
     if (!token) return;
 
-    const fetchCommentBadge = () => {
-      fetch('/api/reports/comments/unresolved-count', {
-        headers: { Authorization: `Bearer ${token}` },
-      })
-        .then((r) => r.json())
-        .then((d) => setCommentBadge(d?.count ?? 0))
-        .catch(() => {});
+    let inFlight = false;
+
+    const fetchCommentBadge = async () => {
+      if (document.visibilityState !== "visible" || inFlight) return;
+      inFlight = true;
+      try {
+        const response = await fetchWithTimeout(
+          "/api/reports/comments/unresolved-count",
+          { headers: { Authorization: `Bearer ${token}` } },
+          COMMENT_BADGE_TIMEOUT_MS
+        );
+        if (!response.ok) return;
+        const data = await response.json();
+        setCommentBadge(data?.count ?? 0);
+      } catch {
+        // Polling is best-effort; the next visible interval will retry.
+      } finally {
+        inFlight = false;
+      }
     };
 
-    fetchCommentBadge();
-    const interval = setInterval(fetchCommentBadge, 20000);
-    return () => clearInterval(interval);
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") void fetchCommentBadge();
+    };
+
+    void fetchCommentBadge();
+    const interval = setInterval(fetchCommentBadge, COMMENT_BADGE_POLL_INTERVAL_MS);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, [user, pathname, permissions]);
 
   if (!user) return null;
@@ -94,7 +118,7 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
     return pathname.startsWith(href);
   };
 
-  const SidebarContent = () => (
+  const SidebarContent = ({ showNotificationBell = true }: { showNotificationBell?: boolean }) => (
     <div className="flex flex-col h-full">
       {/* Header */}
       <div className="flex items-center justify-between h-16 px-4 border-b border-gray-200">
@@ -115,7 +139,7 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
             </span>
           </span>
         </div>
-        <NotificationBell />
+        {showNotificationBell && <NotificationBell />}
       </div>
 
       {/* User info */}
@@ -226,7 +250,7 @@ export function DashboardSidebar({ className }: DashboardSidebarProps) {
 
       {/* Desktop sidebar */}
       <div className={`hidden lg:flex lg:flex-col lg:w-64 lg:fixed lg:inset-y-0 bg-white border-r border-gray-200 ${className || ""}`}>
-        <SidebarContent />
+        <SidebarContent showNotificationBell={!isMobileMenuOpen} />
       </div>
     </>
   );

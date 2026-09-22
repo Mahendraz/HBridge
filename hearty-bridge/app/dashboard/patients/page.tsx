@@ -33,9 +33,11 @@ import {
   UserPlusIcon,
   PhoneIcon,
   MailIcon,
-  UsersIcon
+  UsersIcon,
+  KeyRoundIcon
 } from "lucide-react";
 import Link from "next/link";
+import { ResetPasswordDialog, type ResetPasswordTarget } from "@/components/admin/reset-password-dialog";
 
 interface Patient {
   id: string;
@@ -104,6 +106,9 @@ export default function UnifiedPatientsPage() {
   const [isCreatingPatient, setIsCreatingPatient] = useState(false);
   const [parentsList, setParentsList] = useState<Array<{ _id: string; name: string; email: string }>>([]);
   const [allParents, setAllParents] = useState<Array<{ _id: string; name: string; email: string; phone?: string }>>([]);
+
+  // Reset password state (admin & super admin)
+  const [resetTarget, setResetTarget] = useState<ResetPasswordTarget | null>(null);
 
   useEffect(() => {
     fetchPatients();
@@ -732,20 +737,33 @@ export default function UnifiedPatientsPage() {
                           </div>
                         </div>
                       </div>
-                      {permissions.hasPermission('patients:edit') && (
-                        <Button
-                          size="sm"
-                          variant="outline"
-                          onClick={() => {
-                            setCreatePatientForm(prev => ({ ...prev, parentId: parent._id }));
-                            fetchParents();
-                            setShowCreatePatientModal(true);
-                          }}
-                        >
-                          <PlusIcon className="h-4 w-4 mr-1" />
-                          Tambah Anak
-                        </Button>
-                      )}
+                      <div className="flex items-center gap-2 shrink-0">
+                        {permissions.hasPermission('users:reset_password') && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="text-teal-700 border-teal-200 hover:bg-teal-50"
+                            onClick={() => setResetTarget({ _id: parent._id, name: parent.name, email: parent.email })}
+                            title="Reset password akun orang tua"
+                          >
+                            <KeyRoundIcon className="h-4 w-4" />
+                          </Button>
+                        )}
+                        {permissions.hasPermission('patients:edit') && (
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setCreatePatientForm(prev => ({ ...prev, parentId: parent._id }));
+                              fetchParents();
+                              setShowCreatePatientModal(true);
+                            }}
+                          >
+                            <PlusIcon className="h-4 w-4 mr-1" />
+                            Tambah Anak
+                          </Button>
+                        )}
+                      </div>
                     </div>
                   </CardHeader>
                   <CardContent className="pt-0">
@@ -823,6 +841,9 @@ export default function UnifiedPatientsPage() {
           </div>
         )}
       </div>
+
+      {/* Reset Password Dialog */}
+      <ResetPasswordDialog target={resetTarget} onClose={() => setResetTarget(null)} />
 
       {/* Create Patient Modal */}
       <Dialog open={showCreatePatientModal} onOpenChange={setShowCreatePatientModal}>

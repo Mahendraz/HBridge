@@ -28,8 +28,10 @@ import {
   XIcon,
   PlusIcon,
   AlertCircleIcon,
+  KeyRoundIcon,
 } from "lucide-react";
 import { THERAPIST_COLOR_PRESETS } from "@/lib/utils/therapist-colors";
+import { ResetPasswordDialog, type ResetPasswordTarget } from "@/components/admin/reset-password-dialog";
 
 interface Therapist {
   _id: string;
@@ -83,6 +85,9 @@ export default function TherapistsPage() {
   // Deactivate state
   const [confirmDeactivate, setConfirmDeactivate] = useState<Therapist | null>(null);
   const [isDeactivating, setIsDeactivating] = useState(false);
+
+  // Reset password state
+  const [resetTarget, setResetTarget] = useState<ResetPasswordTarget | null>(null);
 
   // Leave management state
   const [leaveModalTherapist, setLeaveModalTherapist] = useState<Therapist | null>(null);
@@ -404,12 +409,14 @@ export default function TherapistsPage() {
     onDeactivate,
     onReactivate,
     onManageLeave,
+    onResetPassword,
   }: {
     therapist: Therapist;
     onEdit: (t: Therapist) => void;
     onDeactivate: (t: Therapist) => void;
     onReactivate: (t: Therapist) => void;
     onManageLeave: (t: Therapist) => void;
+    onResetPassword: (t: Therapist) => void;
   }) => (
     <Card className={`hover:shadow-md transition-shadow ${therapist.status === 'inactive' && !therapist.currentLeave ? 'opacity-60' : ''}`}>
       <CardHeader className="pb-3">
@@ -480,6 +487,17 @@ export default function TherapistsPage() {
               <EditIcon className="h-4 w-4 mr-1.5" />
               Edit
             </Button>
+            {permissions.hasPermission('users:reset_password') && (
+              <Button
+                variant="outline"
+                size="sm"
+                className="text-teal-700 border-teal-200 hover:bg-teal-50"
+                onClick={() => onResetPassword(therapist)}
+                title="Reset password"
+              >
+                <KeyRoundIcon className="h-4 w-4" />
+              </Button>
+            )}
             {/* Leave management — super_admin only */}
             {permissions.hasPermission('therapists:manage_leave') && (
               <Button
@@ -582,6 +600,7 @@ export default function TherapistsPage() {
               onDeactivate={setConfirmDeactivate}
               onReactivate={handleReactivateTherapist}
               onManageLeave={openLeaveModal}
+              onResetPassword={(t) => setResetTarget({ _id: t._id, name: t.name, email: t.email })}
             />
           ))}
         </div>
@@ -712,6 +731,9 @@ export default function TherapistsPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Reset Password Dialog */}
+      <ResetPasswordDialog target={resetTarget} onClose={() => setResetTarget(null)} />
 
       {/* Leave Management Modal */}
       <Dialog open={!!leaveModalTherapist} onOpenChange={(open) => !open && setLeaveModalTherapist(null)}>

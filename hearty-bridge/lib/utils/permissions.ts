@@ -84,6 +84,7 @@ export type Permission =
   | "users:edit"
   | "users:delete"
   | "users:manage_roles"
+  | "users:reset_password"
 
   // Financial permissions
   | "billing:view"
@@ -175,6 +176,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "users:edit",
     "users:delete",
     "users:manage_roles",
+    "users:reset_password",
     "billing:view",
     "billing:manage",
     "invoices:manage",
@@ -263,6 +265,7 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "users:edit",
     "users:delete",
     "users:manage_roles",
+    "users:reset_password",
 
     // Financial
     "billing:view",
@@ -416,7 +419,8 @@ export const PERMISSION_CATEGORIES = {
     "users:create",
     "users:edit",
     "users:delete",
-    "users:manage_roles"
+    "users:manage_roles",
+    "users:reset_password"
   ]
 };
 

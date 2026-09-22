@@ -3,6 +3,7 @@
 import { useEffect, useRef, useState, useCallback } from "react";
 import { BellIcon } from "lucide-react";
 import { useAuth } from "@/lib/contexts/auth-context";
+import { fetchWithTimeout } from "@/lib/utils/fetch-with-timeout";
 
 interface NotificationItem {
   _id: string;
@@ -14,7 +15,8 @@ interface NotificationItem {
   createdAt: string;
 }
 
-const POLL_INTERVAL_MS = 20000;
+const POLL_INTERVAL_MS = 60_000;
+const REQUEST_TIMEOUT_MS = 15_000;
 const PANEL_WIDTH = 256; // px, matches w-64 — deliberately no wider than the
 // desktop sidebar (lg:w-64) so the panel never has to spill past it into the
 // main content area (it can still cover the sidebar's own nav links while open,
@@ -38,6 +40,7 @@ export function NotificationBell() {
   const [unreadCount, setUnreadCount] = useState(0);
   const containerRef = useRef<HTMLDivElement>(null);
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const notificationsRequestRef = useRef(false);
   const [panelPos, setPanelPos] = useState<{ top: number; left: number } | null>(null);
 
   // The panel is `fixed` and positioned from the button's actual screen
@@ -63,13 +66,17 @@ export function NotificationBell() {
   }, []);
 
   const fetchNotifications = useCallback(async () => {
-    if (!user) return;
+    if (!user || document.visibilityState !== "visible" || notificationsRequestRef.current) return;
     const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
     if (!token) return;
+    notificationsRequestRef.current = true;
     try {
-      const res = await fetch("/api/notifications?limit=15", {
-        headers: { Authorization: `Bearer ${token}` },
-      });
+      const res = await fetchWithTimeout(
+        "/api/notifications?limit=15",
+        { headers: { Authorization: `Bearer ${token}` } },
+        REQUEST_TIMEOUT_MS
+      );
+      if (!res.ok) return;
       const data = await res.json();
       if (data?.success) {
         setNotifications(data.notifications ?? []);
@@ -77,13 +84,22 @@ export function NotificationBell() {
       }
     } catch {
       // silent — polling will retry
+    } finally {
+      notificationsRequestRef.current = false;
     }
   }, [user]);
 
   useEffect(() => {
-    fetchNotifications();
+    if (document.visibilityState === "visible") void fetchNotifications();
+    const onVisibilityChange = () => {
+      if (document.visibilityState === "visible") void fetchNotifications();
+    };
     const interval = setInterval(fetchNotifications, POLL_INTERVAL_MS);
-    return () => clearInterval(interval);
+    document.addEventListener("visibilitychange", onVisibilityChange);
+    return () => {
+      clearInterval(interval);
+      document.removeEventListener("visibilitychange", onVisibilityChange);
+    };
   }, [fetchNotifications]);
 
   useEffect(() => {
