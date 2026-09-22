@@ -396,10 +396,10 @@
     "semantic_hash": "b5c5af64bf6fcfc4c2d28cdc52bc6a35"
   },
   "hearty-bridge/app/dashboard/patients/page.tsx": {
-    "mtime": 1789986363.9024796,
-    "seen": 1790077093.0817199,
-    "ast_hash": "668cbf701eaefd1c3449d03b42118a08",
-    "semantic_hash": ""
+    "mtime": 1788177498.3479905,
+    "seen": 1789120314.0148315,
+    "ast_hash": "4ee0951f2e5abd83d826d376924a09f8",
+    "semantic_hash": "4ee0951f2e5abd83d826d376924a09f8"
   },
   "hearty-bridge/app/dashboard/reports/[id]/edit/page.tsx": {
     "mtime": 1787953534.2123082,
@@ -456,10 +456,10 @@
     "semantic_hash": "30991806500ed8a3c94211dc733a5e91"
   },
   "hearty-bridge/app/dashboard/therapists/page.tsx": {
-    "mtime": 1789986318.7962227,
-    "seen": 1790077093.0817199,
-    "ast_hash": "0660559f83fdf1d9c05b96faffb91c72",
-    "semantic_hash": ""
+    "mtime": 1788177579.0461147,
+    "seen": 1789120314.0148413,
+    "ast_hash": "e1f14ff2345fb69ec89658726d1768e9",
+    "semantic_hash": "e1f14ff2345fb69ec89658726d1768e9"
   },
   "hearty-bridge/app/layout.tsx": {
     "mtime": 1788161403.9037406,
@@ -582,10 +582,10 @@
     "semantic_hash": "890ad45269c263f7e3e330bbecc057c2"
   },
   "hearty-bridge/components/layout/dashboard-sidebar.tsx": {
-    "mtime": 1790076826.814665,
-    "seen": 1790077093.0817199,
-    "ast_hash": "56162e5f6fdde78143d582edc3a88276",
-    "semantic_hash": ""
+    "mtime": 1788064990.4158134,
+    "seen": 1789120314.0148637,
+    "ast_hash": "840146a07f13825a1a5eb5327908cd8a",
+    "semantic_hash": "840146a07f13825a1a5eb5327908cd8a"
   },
   "hearty-bridge/components/layout/footer.tsx": {
     "mtime": 1788007420.6387982,
@@ -600,10 +600,10 @@
     "semantic_hash": "b927290378d11225a79a2513fe4af7a6"
   },
   "hearty-bridge/components/layout/notification-bell.tsx": {
-    "mtime": 1790076843.9543178,
-    "seen": 1790077093.0817199,
-    "ast_hash": "b11b75b2c9ac212e6b74d547fb3b673f",
-    "semantic_hash": ""
+    "mtime": 1787975496.2246573,
+    "seen": 1789120314.0148664,
+    "ast_hash": "b5d747dc0e2a8004057c3d5f14b52913",
+    "semantic_hash": "b5d747dc0e2a8004057c3d5f14b52913"
   },
   "hearty-bridge/components/layout/page-cta.tsx": {
     "mtime": 1788014593.3485017,
@@ -972,10 +972,10 @@
     "semantic_hash": "e439830d69242bc40e9b1404505e9e8e"
   },
   "hearty-bridge/lib/utils/permissions.ts": {
-    "mtime": 1789986238.1439948,
-    "seen": 1790077093.0817199,
-    "ast_hash": "144a0f638111c08c459af7ddcf348cb8",
-    "semantic_hash": ""
+    "mtime": 1788195847.4533415,
+    "seen": 1789120314.014924,
+    "ast_hash": "9ae29095c6942c84737b7aa44d155c74",
+    "semantic_hash": "9ae29095c6942c84737b7aa44d155c74"
   },
   "hearty-bridge/lib/utils/report-access.ts": {
     "mtime": 1787851668.9552708,
@@ -1821,36 +1821,6 @@
     "mtime": 1787851668.9817631,
     "seen": 1789982651.5730455,
     "ast_hash": "a2760511c65806022ad20adf74370ff3",
-    "semantic_hash": ""
-  },
-  "hearty-bridge/app/api/admin/users/[id]/reset-password/route.ts": {
-    "mtime": 1789986225.7769876,
-    "seen": 1790077093.0807195,
-    "ast_hash": "9c41408bf1d54957e40f1204180405c4",
-    "semantic_hash": ""
-  },
-  "hearty-bridge/components/admin/reset-password-dialog.tsx": {
-    "mtime": 1789986461.651114,
-    "seen": 1790077093.0817199,
-    "ast_hash": "ed6fc003bc63895a9d25497fe02fd9f0",
-    "semantic_hash": ""
-  },
-  "hearty-bridge/lib/utils/generate-password.ts": {
-    "mtime": 1789986211.12521,
-    "seen": 1790077093.0817199,
-    "ast_hash": "019dd0de658f63f58aa1e718b7f522fd",
-    "semantic_hash": ""
-  },
-  "hearty-bridge/scripts/reset-user-password.js": {
-    "mtime": 1789986394.4689124,
-    "seen": 1790077093.0817199,
-    "ast_hash": "7bc9f945727bee834da31b18db86ddbc",
-    "semantic_hash": ""
-  },
-  "AGENTS.md": {
-    "mtime": 1790069772.1062882,
-    "seen": 1790077093.0817199,
-    "ast_hash": "c1ef204ed3c29e24050e98513087f119",
     "semantic_hash": ""
   }
 }
