@@ -1,268 +1,81 @@
-"use client";
-
-import Link from "next/link";
-import {
-  ArrowRightIcon,
-  ShieldIcon,
-  UsersIcon,
-  HeartHandshakeIcon,
-  CalendarIcon,
-  MessageSquareIcon,
-  BarChart3Icon,
-  ClipboardListIcon,
-  ActivityIcon,
-  MessageCircleIcon,
-  WavesIcon,
-  HomeIcon,
-} from "lucide-react";
+import type { Metadata } from "next";
 import { AuthGuard } from "@/components/auth/auth-guard";
-import { useTranslations } from "next-intl";
-import { AnimatedGradientText } from "@/components/magicui/animated-gradient-text";
-import { BlurFade } from "@/components/magicui/blur-fade";
-import { MagicCard } from "@/components/magicui/magic-card";
-import { Ripple } from "@/components/magicui/ripple";
-import { ShimmerButton } from "@/components/magicui/shimmer-button";
-import { DotPattern } from "@/components/magicui/dot-pattern";
-import { Marquee } from "@/components/magicui/marquee";
-import { InstagramFeedSection } from "@/components/instagram/instagram-feed-section";
-import { MapPinIcon } from "lucide-react";
-import { InstagramIcon } from "@/components/icons/instagram-icon";
+import { InquiryProvider } from "@/components/home/inquiry-context";
+import { HeroSection } from "@/components/home/hero-section";
+import { ServicesMarquee } from "@/components/home/services-marquee";
+import { ConditionsSection } from "@/components/home/conditions-section";
+import { ServicesExplorer } from "@/components/home/services-explorer";
+import { JourneySection } from "@/components/home/journey-section";
+import { SessionFactsSection } from "@/components/home/session-facts-section";
+import { WhySection } from "@/components/home/why-section";
 import { AboutSection } from "@/components/home/about-section";
-import { ServicesSection } from "@/components/home/services-section";
+import { TeamSection } from "@/components/home/team-section";
+import { CollaborationSection } from "@/components/home/collaboration-section";
+import { InstagramFeedSection } from "@/components/instagram/instagram-feed-section";
+import { FaqSection } from "@/components/home/faq-section";
 import { ContactSection } from "@/components/home/contact-section";
+import { FinalCtaSection } from "@/components/home/final-cta-section";
+import { InquiryPanel } from "@/components/home/inquiry-panel";
+import { StickyCta } from "@/components/home/sticky-cta";
+import { FAQ } from "@/lib/content/landing";
 
-const services = [
-  { icon: ClipboardListIcon, label: "Asesmen Tumbuh Kembang" },
-  { icon: ActivityIcon, label: "Terapi Okupasi" },
-  { icon: MessageCircleIcon, label: "Terapi Wicara" },
-  { icon: WavesIcon, label: "Terapi Akuatik" },
-  { icon: UsersIcon, label: "Konsultasi Keluarga" },
-  { icon: HomeIcon, label: "Layanan Homecare" },
-];
+// Only the landing is canonical "/" (the root layout no longer sets it, so
+// /auth/* and /dashboard don't claim to be the home page).
+export const metadata: Metadata = {
+  alternates: { canonical: "/" },
+};
 
-const features = [
-  {
-    icon: ShieldIcon,
-    title: "Terpercaya & Hangat",
-    description:
-      "Tim kami mendampingi setiap anak dengan pendekatan yang hangat dan profesional. Data tumbuh kembang anak Anda tersimpan aman.",
-    color: "text-teal-600",
-    bg: "bg-teal-50",
-  },
-  {
-    icon: UsersIcon,
-    title: "Tim Terapis Berpengalaman",
-    description:
-      "Asesmen, terapi okupasi, terapi wicara, terapi akuatik, hingga konsultasi keluarga — semua dalam satu tim di Batam.",
-    color: "text-emerald-600",
-    bg: "bg-emerald-50",
-  },
-  {
-    icon: HeartHandshakeIcon,
-    title: "Perawatan Personal",
-    description:
-      "Setiap anak unik. Kami menyesuaikan program terapi dengan kebutuhan spesifik putra-putri Anda.",
-    color: "text-green-600",
-    bg: "bg-green-50",
-  },
-  {
-    icon: CalendarIcon,
-    title: "Jadwal Fleksibel",
-    description:
-      "Atur jadwal sesi terapi langsung dari aplikasi. Pengingat otomatis agar tidak ada sesi yang terlewat.",
-    color: "text-teal-600",
-    bg: "bg-teal-50",
-  },
-  {
-    icon: MessageSquareIcon,
-    title: "Komunikasi Real-time",
-    description:
-      "Chat langsung dengan terapis, kirim laporan perkembangan, dan dapatkan feedback secara instan kapan saja.",
-    color: "text-emerald-600",
-    bg: "bg-emerald-50",
-  },
-  {
-    icon: BarChart3Icon,
-    title: "Pantau Perkembangan",
-    description:
-      "Laporan perkembangan terperinci setiap sesi. Lihat progres anak Anda secara visual dan terukur.",
-    color: "text-green-600",
-    bg: "bg-green-50",
-  },
-];
+// Built from the same FAQ array the accordion renders, so the structured data
+// can never drift from the visible answers. Rendered here (a Server Component)
+// so it is in the initial HTML. `<` is escaped so an answer can never close
+// the <script> tag early.
+const FAQ_JSON_LD = JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "FAQPage",
+  mainEntity: FAQ.map((item) => ({
+    "@type": "Question",
+    name: item.q,
+    acceptedAnswer: { "@type": "Answer", text: item.a },
+  })),
+}).replace(/</g, "\\u003c");
 
+// Public landing page. Every section owns its own <section id>, background,
+// padding and container, so nothing here adds wrappers or spacing between them.
+//
+// Constraints the order depends on:
+// - JourneySection pins with `position: sticky`, so no ancestor may set
+//   overflow hidden/auto/scroll; SessionFactsSection must follow it directly
+//   (its teal-50 background continues the journey's final frame).
+// - InquiryPanel and StickyCta are position: fixed overlays; keep them outside
+//   any element with a transform or filter.
+// - No mobile bottom padding for the sticky bar: it hides over #contact and
+//   #mulai (the last two sections) and keeps that zone over the footer, so it
+//   never covers the end of the page.
+// - AuthGuard renders the sections while auth is still loading
+//   (renderWhileLoading), so the whole landing is server-rendered; signed-in
+//   visitors are redirected to the dashboard once the check resolves.
 export default function Home() {
-  const t = useTranslations("home");
-
   return (
-    <AuthGuard requireAuth={false}>
-      {/* ── BERANDA ─────────────────────────────────────────────── */}
-      <div id="home">
-        <div className="min-h-screen bg-white">
-          {/* HERO */}
-          <section className="relative overflow-hidden bg-linear-to-b from-rose-50 via-white to-white pt-20 pb-32">
-            <Ripple mainCircleSize={260} numCircles={7} color="#c41e34" mainCircleOpacity={0.14} />
-
-            <div className="relative mx-auto max-w-7xl px-6 text-center">
-              <BlurFade delay={0}>
-                <div className="inline-flex items-center gap-2 rounded-full border border-brand-coral-light bg-brand-coral-tint px-4 py-1.5 text-sm font-medium text-brand-coral mb-8">
-                  <span className="h-1.5 w-1.5 rounded-full bg-brand-coral animate-pulse" />
-                  Pusat Terapi Anak & Tumbuh Kembang • Batam
-                </div>
-              </BlurFade>
-
-              <BlurFade delay={0.1}>
-                <h1 className="text-5xl font-bold tracking-tight text-gray-900 sm:text-7xl leading-tight">
-                  {t("hero.title")}
-                  <br />
-                  <AnimatedGradientText
-                    colorFrom="#c41e34"
-                    colorTo="#f0475a"
-                    speed={0.8}
-                    className="text-5xl sm:text-7xl font-bold"
-                  >
-                    {t("hero.titleHighlight")}
-                  </AnimatedGradientText>
-                  <br />
-                  <span className="text-gray-900">{t("hero.titleEnd")}</span>
-                </h1>
-              </BlurFade>
-
-              <BlurFade delay={0.2}>
-                <p className="mt-6 text-lg leading-8 text-gray-600 max-w-2xl mx-auto">
-                  {t("hero.subtitle")}
-                </p>
-              </BlurFade>
-
-              <BlurFade delay={0.3}>
-                <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
-                  <Link href="/auth/login">
-                    <ShimmerButton
-                      background="rgba(196, 30, 52, 1)"
-                      className="text-base px-8 py-3.5 font-semibold"
-                    >
-                      Masuk ke Platform
-                      <ArrowRightIcon className="ml-2 h-5 w-5" />
-                    </ShimmerButton>
-                  </Link>
-                </div>
-              </BlurFade>
-            </div>
-          </section>
-
-          {/* SERVICES MARQUEE */}
-          <section className="relative overflow-hidden bg-rose-50 py-5 border-y border-rose-100">
-            <Marquee pauseOnHover className="[--duration:30s]">
-              {services.map((service) => (
-                <div
-                  key={service.label}
-                  className="flex items-center gap-2.5 px-4 text-sm font-medium text-gray-700 whitespace-nowrap"
-                >
-                  <service.icon className="h-4 w-4 text-brand-coral shrink-0" />
-                  {service.label}
-                  <span className="text-rose-200 ml-2">•</span>
-                </div>
-              ))}
-            </Marquee>
-          </section>
-
-          {/* FEATURES / LAYANAN */}
-          <section className="relative py-24 bg-gray-50 overflow-hidden">
-            <DotPattern className="opacity-60" />
-            <div className="relative mx-auto max-w-7xl px-6">
-              <BlurFade>
-                <div className="text-center mb-16">
-                  <span className="inline-flex items-center rounded-full bg-teal-50 border border-teal-200 px-4 py-1.5 text-sm font-semibold text-teal-700 mb-4">
-                    Layanan Kami
-                  </span>
-                  <h2 className="text-3xl font-bold tracking-tight text-gray-900 sm:text-4xl">
-                    {t("features.title")}
-                  </h2>
-                  <p className="mt-4 text-lg text-gray-600 max-w-2xl mx-auto">
-                    {t("features.subtitle")}
-                  </p>
-                </div>
-              </BlurFade>
-
-              <div className="grid grid-cols-1 gap-6 md:grid-cols-2 lg:grid-cols-3">
-                {features.map((feature, i) => (
-                  <BlurFade key={feature.title} delay={i * 0.08}>
-                    <MagicCard
-                      className="rounded-2xl p-6 shadow-sm hover:shadow-md transition-shadow"
-                      gradientColor="#f0fdfa"
-                      gradientFrom="#14b8a6"
-                      gradientTo="#22c55e"
-                    >
-                      <div className={`inline-flex p-3 rounded-xl ${feature.bg} mb-4`}>
-                        <feature.icon className={`h-6 w-6 ${feature.color}`} />
-                      </div>
-                      <h3 className="text-lg font-semibold text-gray-900 mb-2">{feature.title}</h3>
-                      <p className="text-sm text-gray-600 leading-relaxed">{feature.description}</p>
-                    </MagicCard>
-                  </BlurFade>
-                ))}
-              </div>
-
-              <BlurFade delay={0.5}>
-                <div className="mt-14 text-center">
-                  <Link href="/auth/login">
-                    <ShimmerButton
-                      background="rgba(196, 30, 52, 1)"
-                      className="text-base px-8 py-3.5 font-semibold"
-                      borderRadius="12px"
-                    >
-                      Masuk & Mulai Sekarang
-                      <ArrowRightIcon className="ml-2 h-5 w-5" />
-                    </ShimmerButton>
-                  </Link>
-                </div>
-              </BlurFade>
-            </div>
-          </section>
-
-          {/* INSTAGRAM */}
-          <InstagramFeedSection />
-
-          {/* LOKASI & KONTAK */}
-          <section className="py-16 bg-rose-50 border-t border-rose-100">
-            <div className="mx-auto max-w-5xl px-6 flex flex-col md:flex-row items-center justify-between gap-8">
-              <div className="flex items-start gap-3">
-                <MapPinIcon className="h-6 w-6 text-brand-coral shrink-0 mt-1" />
-                <div>
-                  <p className="font-semibold text-gray-900">Hearty Bridge Early Intervention Center</p>
-                  <p className="text-gray-600 text-sm mt-1 max-w-md">
-                    Puri Casablanca No. A-18, Sukajadi, Kec. Batam Kota, Kota Batam, Kepulauan Riau 29432
-                  </p>
-                </div>
-              </div>
-              <a
-                href="https://www.instagram.com/heartybridge_/"
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-2 rounded-xl border border-brand-coral-light bg-white px-5 py-3 text-sm font-semibold text-brand-coral hover:bg-brand-coral-tint transition-colors shrink-0"
-              >
-                <InstagramIcon className="h-5 w-5" />
-                @heartybridge_
-              </a>
-            </div>
-          </section>
-        </div>
-      </div>
-
-      {/* ── TENTANG KAMI ────────────────────────────────────────── */}
-      <div id="about">
+    <AuthGuard requireAuth={false} renderWhileLoading>
+      <script type="application/ld+json" dangerouslySetInnerHTML={{ __html: FAQ_JSON_LD }} />
+      <InquiryProvider>
+        <HeroSection />
+        <ServicesMarquee />
+        <ConditionsSection />
+        <ServicesExplorer />
+        <JourneySection />
+        <SessionFactsSection />
+        <WhySection />
         <AboutSection />
-      </div>
-
-      {/* ── LAYANAN ─────────────────────────────────────────────── */}
-      <div id="services">
-        <ServicesSection />
-      </div>
-
-      {/* ── KONTAK ──────────────────────────────────────────────── */}
-      <div id="contact">
+        <TeamSection />
+        <CollaborationSection />
+        <InstagramFeedSection />
+        <FaqSection />
         <ContactSection />
-      </div>
+        <FinalCtaSection />
+        <InquiryPanel />
+        <StickyCta />
+      </InquiryProvider>
     </AuthGuard>
   );
 }

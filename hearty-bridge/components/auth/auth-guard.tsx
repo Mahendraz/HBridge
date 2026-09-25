@@ -9,6 +9,12 @@ interface AuthGuardProps {
   children: React.ReactNode;
   requireAuth?: boolean;
   redirectTo?: string;
+  /**
+   * Public pages only (`requireAuth` false): render the children while the
+   * auth check is still running instead of a spinner, so the page is part of
+   * the server HTML. Signed-in users are still redirected once it resolves.
+   */
+  renderWhileLoading?: boolean;
 }
 
 /**
@@ -18,7 +24,8 @@ interface AuthGuardProps {
 export function AuthGuard({ 
   children, 
   requireAuth = false,
-  redirectTo 
+  redirectTo,
+  renderWhileLoading = false,
 }: AuthGuardProps) {
   const { user, isLoading } = useAuth();
   const router = useRouter();
@@ -64,6 +71,9 @@ export function AuthGuard({
 
   // Show loading spinner while checking authentication
   if (isLoading) {
+    // Same fragment as the final branch, so the children don't remount
+    // when isLoading flips.
+    if (renderWhileLoading && !requireAuth) return <>{children}</>;
     return (
       <div className="min-h-screen flex items-center justify-center">
         <LoadingSpinner size="lg" />
