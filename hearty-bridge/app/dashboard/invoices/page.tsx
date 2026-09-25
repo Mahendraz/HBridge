@@ -23,9 +23,13 @@ interface Invoice {
   _id: string;
   invoiceNumber: string;
   childName: string;
-  packageType: 'gold' | 'platinum' | 'diamond';
+  packageId?: string | null;
+  /** Package name at the time the invoice was made/edited. */
+  packageType: string;
   therapyType: 'OT' | 'TW' | 'both' | 'assessment';
   sessions: number;
+  originalAmount?: number;
+  discountAmount?: number;
   amount: number;
   dueDate: string;
   status: 'unpaid' | 'paid' | 'overdue';
@@ -39,12 +43,15 @@ interface Invoice {
   createdAt: string;
 }
 
-const PACKAGE_LABEL: Record<string, string> = { gold: 'Gold', platinum: 'Platinum', diamond: 'Diamond' };
-const PACKAGE_COLOR: Record<string, string> = {
-  gold:     'bg-yellow-100 text-yellow-800',
-  platinum: 'bg-gray-100 text-gray-700',
-  diamond:  'bg-blue-100 text-blue-800',
-};
+interface PackageOption {
+  _id: string;
+  name: string;
+  sessions: number;
+  price: number;
+  therapyType: 'OT' | 'TW' | 'both' | 'assessment';
+  isActive: boolean;
+}
+
 const THERAPY_LABEL: Record<string, string> = { OT: 'OT', TW: 'TW', both: 'OT & TW', assessment: 'Asesmen' };
 const THERAPY_COLOR: Record<string, string> = {
   OT:         'bg-blue-50 text-blue-700',
@@ -102,13 +109,15 @@ export default function InvoicesPage() {
   const [proofModal, setProofModal] = useState<{ url: string; message: string; invoiceNumber: string } | null>(null);
 
   const [editModal, setEditModal] = useState<Invoice | null>(null);
-  const [editAmount, setEditAmount] = useState<number | string>('');
-  const [editSessions, setEditSessions] = useState<number | string>('');
-  const [editPackageType, setEditPackageType] = useState('');
+  const [packages, setPackages] = useState<PackageOption[]>([]);
+  const [editPackageId, setEditPackageId] = useState('');
   const [editNotes, setEditNotes] = useState('');
   const [editSaving, setEditSaving] = useState(false);
   const [editError, setEditError] = useState<string | null>(null);
   const [deletingId, setDeletingId] = useState<string | null>(null);
+
+  // Parent view: "Belum lunas" vs "Riwayat" (paid)
+  const [parentTab, setParentTab] = useState<'unpaid' | 'history'>('unpaid');
 
   const fetchInvoices = useCallback(async () => {
     setLoading(true);
@@ -174,26 +183,55 @@ export default function InvoicesPage() {
     return data;
   };
 
+  const fetchPackages = async () => {
+    if (packages.length > 0) return;
+    try {
+      const token = localStorage.getItem('token');
+      const res = await fetch('/api/super-admin/packages', {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (res.ok) {
+        const data = await res.json();
+        setPackages(data.packages ?? []);
+      }
+    } catch {
+      // dropdown stays empty; the current package is still shown
+    }
+  };
+
   const openEditModal = (inv: Invoice) => {
     setEditModal(inv);
-    setEditAmount(inv.amount);
-    setEditSessions(inv.sessions);
-    setEditPackageType(inv.packageType);
+    setEditPackageId(inv.packageId ?? '');
     setEditNotes(inv.notes || '');
     setEditError(null);
+    fetchPackages();
   };
+
+  // Packages the invoice can switch to: active ones of the same kind
+  // (assessment <-> assessment, therapy <-> therapy), plus the current package
+  // even if it has since been deactivated.
+  const packageOptions = editModal
+    ? packages.filter((p) =>
+        p._id === editModal.packageId ||
+        (p.isActive && (p.therapyType === 'assessment') === (editModal.therapyType === 'assessment'))
+      )
+    : [];
+  const selectedPackage = packages.find((p) => p._id === editPackageId) ?? null;
+  const editDiscount = editModal?.discountAmount ?? 0;
 
   const handleSaveEdit = async () => {
     if (!editModal) return;
+    const body: Record<string, unknown> = { notes: editNotes };
+    if (editPackageId && editPackageId !== editModal.packageId) {
+      if (selectedPackage && selectedPackage.sessions !== editModal.sessions &&
+          !confirm(`Jumlah sesi berubah dari ${editModal.sessions} ke ${selectedPackage.sessions}. Saldo sesi dan jadwal paket ini ikut disesuaikan. Lanjutkan?`)) {
+        return;
+      }
+      body.packageId = editPackageId;
+    }
     setEditSaving(true);
     setEditError(null);
     try {
-      const body: Record<string, unknown> = { notes: editNotes };
-      if (editModal.status !== 'paid') {
-        body.amount = Number(editAmount) || 0;
-        body.sessions = Number(editSessions) || 1;
-        body.packageType = editPackageType;
-      }
       const result = await patch(editModal._id, body);
       const updated = result?.invoice;
       if (updated) {
@@ -247,6 +285,7 @@ export default function InvoicesPage() {
 
   const handleMarkPaid = async (inv: Invoice) => {
     const newStatus = inv.status === 'paid' ? 'unpaid' : 'paid';
+    if (newStatus === 'unpaid' && !confirm(`Batalkan status lunas invoice ${inv.invoiceNumber}? Invoice akan bisa diedit lagi.`)) return;
     setSavingId(inv._id + '_status');
     setError(null);
     try {
@@ -335,22 +374,53 @@ export default function InvoicesPage() {
 
   // ── Parent view ──────────────────────────────────────────────────────────────
   if (!isAdmin) {
+    const unpaidInvoices = invoices.filter((i) => i.status !== 'paid');
+    const paidInvoices = invoices.filter((i) => i.status === 'paid');
+    const parentInvoices = parentTab === 'unpaid' ? unpaidInvoices : paidInvoices;
     return (
       <div className="space-y-6">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Invoice Saya</h1>
-          <p className="text-sm text-gray-500 mt-0.5">Rincian tagihan paket terapi anak Anda</p>
+          <p className="text-sm text-gray-500 mt-0.5">Rincian tagihan dan riwayat pembelian paket terapi anak Anda</p>
         </div>
 
-        {invoices.length === 0 ? (
+        <div className="flex gap-2 border-b border-gray-200">
+          {([
+            { key: 'unpaid', label: 'Belum Lunas', count: unpaidInvoices.length },
+            { key: 'history', label: 'Riwayat', count: paidInvoices.length },
+          ] as const).map((t) => (
+            <button
+              key={t.key}
+              onClick={() => setParentTab(t.key)}
+              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+                parentTab === t.key ? 'border-teal-600 text-teal-700' : 'border-transparent text-gray-500 hover:text-gray-700'
+              }`}
+            >
+              {t.label}
+              <span className={`ml-1.5 text-xs px-1.5 py-0.5 rounded-full ${
+                parentTab === t.key ? 'bg-teal-100 text-teal-700' : 'bg-gray-100 text-gray-500'
+              }`}>
+                {t.count}
+              </span>
+            </button>
+          ))}
+        </div>
+
+        {parentInvoices.length === 0 ? (
           <div className="rounded-xl border border-gray-200 bg-white py-16 text-center">
             <ReceiptIcon className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-            <p className="font-medium text-gray-700">Belum ada invoice</p>
-            <p className="text-sm text-gray-400 mt-1">Invoice akan muncul setelah dikirimkan oleh admin</p>
+            <p className="font-medium text-gray-700">
+              {parentTab === 'unpaid' ? 'Tidak ada tagihan yang belum lunas' : 'Belum ada riwayat pembelian'}
+            </p>
+            <p className="text-sm text-gray-400 mt-1">
+              {parentTab === 'unpaid'
+                ? 'Invoice akan muncul setelah dikirimkan oleh admin'
+                : 'Invoice yang sudah lunas akan tersimpan di sini'}
+            </p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-            {invoices.map((inv) => (
+            {parentInvoices.map((inv) => (
               <div key={inv._id} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
                 <div className="flex items-start justify-between mb-3">
                   <div>
@@ -361,8 +431,8 @@ export default function InvoicesPage() {
                 </div>
 
                 <div className="flex items-center gap-2 mb-4 flex-wrap">
-                  <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${PACKAGE_COLOR[inv.packageType]}`}>
-                    {PACKAGE_LABEL[inv.packageType]}
+                  <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-gray-100 text-gray-700">
+                    {inv.packageType}
                   </span>
                   <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${THERAPY_COLOR[inv.therapyType]}`}>
                     {THERAPY_LABEL[inv.therapyType] ?? inv.therapyType}
@@ -597,8 +667,8 @@ export default function InvoicesPage() {
                     {/* Paket */}
                     <td className="px-4 py-3.5 border-r border-gray-100 whitespace-nowrap overflow-hidden">
                       <div className="flex items-center gap-1">
-                        <span className={`shrink-0 text-[11px] font-semibold px-1.5 py-0.5 rounded whitespace-nowrap ${PACKAGE_COLOR[inv.packageType]}`}>
-                          {PACKAGE_LABEL[inv.packageType]}
+                        <span className="shrink-0 max-w-[70px] truncate text-[11px] font-semibold px-1.5 py-0.5 rounded whitespace-nowrap bg-gray-100 text-gray-700" title={inv.packageType}>
+                          {inv.packageType}
                         </span>
                         <span className={`shrink-0 text-[11px] font-semibold px-1.5 py-0.5 rounded whitespace-nowrap ${THERAPY_COLOR[inv.therapyType]}`}>
                           {THERAPY_LABEL[inv.therapyType] ?? inv.therapyType}
@@ -636,6 +706,8 @@ export default function InvoicesPage() {
                             Batal
                           </button>
                         </div>
+                      ) : inv.status === 'paid' ? (
+                        <p className="text-sm text-gray-700">{formatDate(inv.dueDate)}</p>
                       ) : (
                         <button
                           onClick={() => {
@@ -727,8 +799,9 @@ export default function InvoicesPage() {
                         </button>
                         <button
                           onClick={() => openEditModal(inv)}
-                          className="p-1.5 rounded text-gray-500 hover:text-teal-700 hover:bg-teal-50 transition-colors"
-                          title="Edit invoice"
+                          disabled={inv.status === 'paid'}
+                          className="p-1.5 rounded text-gray-500 hover:text-teal-700 hover:bg-teal-50 transition-colors disabled:opacity-30 disabled:hover:bg-transparent disabled:hover:text-gray-500"
+                          title={inv.status === 'paid' ? 'Invoice lunas tidak bisa diedit' : 'Edit invoice'}
                         >
                           <PencilIcon className="h-3.5 w-3.5" />
                         </button>
@@ -778,48 +851,45 @@ export default function InvoicesPage() {
             </div>
 
             <div className="px-5 py-4 space-y-3">
-              {editModal.status === 'paid' && (
-                <div className="rounded-lg bg-amber-50 border border-amber-200 px-3 py-2 text-xs text-amber-700">
-                  Invoice ini sudah lunas — nominal tidak bisa diubah. Batalkan status lunas dulu di halaman utama kalau perlu revisi nominal.
-                </div>
-              )}
               {editError && (
                 <div className="rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-xs text-red-700">
                   {editError}
                 </div>
               )}
               <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">Nama Paket</label>
-                <input
-                  type="text"
-                  value={editPackageType}
-                  onChange={(e) => setEditPackageType(e.target.value)}
-                  disabled={editModal.status === 'paid'}
-                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-gray-50 disabled:text-gray-400"
-                />
+                <label className="block text-xs font-medium text-gray-700 mb-1">Paket / Layanan</label>
+                <select
+                  value={editPackageId}
+                  onChange={(e) => setEditPackageId(e.target.value)}
+                  className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-teal-500"
+                >
+                  {!editModal.packageId && (
+                    <option value="">{editModal.packageType} (paket lama)</option>
+                  )}
+                  {packageOptions.map((p) => (
+                    <option key={p._id} value={p._id}>
+                      {p.name} · {THERAPY_LABEL[p.therapyType] ?? p.therapyType} · {p.sessions} sesi · {formatRupiah(p.price)}
+                      {!p.isActive ? ' (nonaktif)' : ''}
+                    </option>
+                  ))}
+                </select>
+                <p className="text-xs text-gray-400 mt-1">Harga dan jumlah sesi mengikuti paket yang dipilih.</p>
               </div>
               <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Jumlah Sesi</label>
-                  <input
-                    type="number"
-                    min={1}
-                    value={editSessions}
-                    onChange={(e) => setEditSessions(e.target.value === '' ? '' : parseInt(e.target.value) || '')}
-                    disabled={editModal.status === 'paid'}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-gray-50 disabled:text-gray-400"
-                  />
+                <div className="rounded-lg bg-gray-50 px-3 py-2">
+                  <p className="text-xs text-gray-500">Jumlah Sesi</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {selectedPackage ? selectedPackage.sessions : editModal.sessions} sesi
+                  </p>
                 </div>
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">Jumlah Tagihan (Rp)</label>
-                  <input
-                    type="number"
-                    min={0}
-                    value={editAmount}
-                    onChange={(e) => setEditAmount(e.target.value === '' ? '' : parseInt(e.target.value) || '')}
-                    disabled={editModal.status === 'paid'}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500 disabled:bg-gray-50 disabled:text-gray-400"
-                  />
+                <div className="rounded-lg bg-gray-50 px-3 py-2">
+                  <p className="text-xs text-gray-500">Jumlah Tagihan</p>
+                  <p className="text-sm font-semibold text-gray-900">
+                    {formatRupiah(selectedPackage ? selectedPackage.price - Math.min(editDiscount, selectedPackage.price) : editModal.amount)}
+                  </p>
+                  {editDiscount > 0 && (
+                    <p className="text-[11px] text-gray-400">sudah dipotong diskon {formatRupiah(editDiscount)}</p>
+                  )}
                 </div>
               </div>
               <div>

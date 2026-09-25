@@ -1376,12 +1376,18 @@ const PACKAGE_META: Record<string, { label: string; emoji: string; color: string
   diamond:  { label: "Diamond",  emoji: "💎", color: "bg-sky-50 border-sky-300 text-sky-800" },
 };
 
+// Packages are named by Super Admin now; anything outside the legacy three
+// gets a neutral card.
+const DEFAULT_PACKAGE_META = { emoji: "📦", color: "bg-teal-50 border-teal-300 text-teal-800" };
+
 interface ActivePackageInfo {
   packageType: string;
   therapyType: 'OT' | 'TW' | null;
   totalSessions: number;
+  /** Sisa sesi of this package (lib/utils/session-balance) — negative while unpaid. */
   balance: number;
   usedSessions: number;
+  isPaid: boolean;
   note: string;
   createdAt: string;
 }
@@ -1428,17 +1434,21 @@ function PackageSessionModal({
       .then((r) => r.json())
       .then((res) => {
         const transactions: any[] = res.data?.transactions ?? [];
-        const balance: number = res.data?.balance ?? 0;
+        // Newest therapy package. Used/remaining are that package's own
+        // numbers from the shared sisa-sesi helper — Child.tokenBalance spans
+        // every package, so "amount − tokenBalance" went negative wrongly.
         const activeTx = transactions.find(
-          (t) => t.type === "topup" && t.packageType
+          (t) => t.type === "topup" && t.packageType && t.therapyType !== "assessment"
         );
         if (activeTx) {
+          const used: number = activeTx.usedSessions ?? 0;
           setPackageInfo({
             packageType: activeTx.packageType,
             therapyType: activeTx.therapyType ?? null,
             totalSessions: activeTx.amount,
-            balance,
-            usedSessions: activeTx.amount - balance,
+            balance: activeTx.sessionBalance ?? activeTx.amount - used,
+            usedSessions: used,
+            isPaid: activeTx.isPaid ?? true,
             note: activeTx.note ?? "",
             createdAt: activeTx.createdAt ?? "",
           });
@@ -1469,7 +1479,9 @@ function PackageSessionModal({
       )
     : therapists;
 
-  const pkgMeta = packageInfo ? PACKAGE_META[packageInfo.packageType] : null;
+  const pkgMeta = packageInfo
+    ? PACKAGE_META[packageInfo.packageType] ?? { ...DEFAULT_PACKAGE_META, label: packageInfo.packageType }
+    : null;
 
   return (
     <Dialog open onOpenChange={(o) => !o && onClose()}>
@@ -1533,10 +1545,10 @@ function PackageSessionModal({
                 <div className={`rounded-lg border p-3 ${pkgMeta.color}`}>
                   <div className="flex items-center justify-between mb-1.5">
                     <span className="font-bold text-sm">
-                      {pkgMeta.emoji} Paket {pkgMeta.label}
+                      {pkgMeta.emoji} {pkgMeta.label}
                     </span>
                     <span className="text-xs font-medium px-2 py-0.5 rounded-full bg-white/60 border border-current">
-                      Aktif
+                      {packageInfo.isPaid ? "Aktif" : "Belum lunas"}
                     </span>
                   </div>
                   {packageInfo.therapyType && (
@@ -1557,9 +1569,16 @@ function PackageSessionModal({
                     </div>
                     <div className="rounded bg-white/50 px-2 py-1.5">
                       <p className="text-[10px] leading-tight opacity-70">Sisa</p>
-                      <p className="font-bold text-base leading-tight">{packageInfo.balance}</p>
+                      <p className={`font-bold text-base leading-tight ${packageInfo.balance < 0 ? "text-red-600" : ""}`}>
+                        {packageInfo.balance}
+                      </p>
                     </div>
                   </div>
+                  {!packageInfo.isPaid && (
+                    <p className="text-[10px] text-red-700 mt-2">
+                      Invoice paket ini belum lunas — sisa dihitung minus dari sesi yang sudah berjalan.
+                    </p>
+                  )}
                   {packageInfo.createdAt && (
                     <p className="text-[10px] opacity-60 mt-2">
                       Assigned:{" "}
@@ -1639,10 +1658,10 @@ function PackageSessionModal({
             <div className="rounded-lg bg-teal-50 border border-teal-200 p-3 text-xs text-teal-800">
               <p className="font-semibold mb-1">Ringkasan jadwal yang akan dibuat:</p>
               <p>
-                📅 Sesi 1/{packageInfo.balance} → {new Date(date + "T00:00:00Z").toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" })}
+                📅 Sesi 1/{packageInfo.totalSessions} → {new Date(date + "T00:00:00Z").toLocaleDateString("id-ID", { weekday: "long", day: "numeric", month: "long" })}
               </p>
               <p className="text-teal-600 mt-0.5">
-                🔁 Sesi 2/{packageInfo.balance} s/d {packageInfo.balance}/{packageInfo.balance} → otomatis setiap minggu (hari yang sama)
+                🔁 Sesi 2/{packageInfo.totalSessions} s/d {packageInfo.totalSessions}/{packageInfo.totalSessions} → otomatis setiap minggu (hari yang sama)
               </p>
             </div>
           )}

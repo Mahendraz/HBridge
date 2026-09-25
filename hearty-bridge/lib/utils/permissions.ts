@@ -86,6 +86,10 @@ export type Permission =
   | "users:manage_roles"
   | "users:reset_password"
 
+  // Account deletion (parent/child): admin requests, super_admin approves
+  | "accounts:request_deletion"
+  | "accounts:approve_deletion"
+
   // Financial permissions
   | "billing:view"
   | "billing:manage"
@@ -200,6 +204,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "bank_accounts:manage",
     "financial:view_all",
     "financial:view_proofs",
+    "accounts:request_deletion",
+    "accounts:approve_deletion",
   ],
 
   admin: [
@@ -266,6 +272,8 @@ export const ROLE_PERMISSIONS: Record<UserRole, Permission[]> = {
     "users:delete",
     "users:manage_roles",
     "users:reset_password",
+    // Parent/child account deletion goes through a Super Admin approval
+    "accounts:request_deletion",
 
     // Financial
     "billing:view",
@@ -622,6 +630,12 @@ export class PermissionChecker {
           href: "/dashboard/super-admin/financial",
           icon: "DollarSignIcon",
           permissions: ["financial:view_all"]
+        },
+        {
+          name: "Permintaan Hapus Akun",
+          href: "/dashboard/super-admin/deletion-requests",
+          icon: "ShieldCheckIcon",
+          permissions: ["accounts:approve_deletion"]
         },
         {
           name: "Analitik",

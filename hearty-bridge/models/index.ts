@@ -17,3 +17,4 @@ export { default as TherapistLeave, type ITherapistLeave, type ITherapistLeaveMo
 export { default as Announcement, type IAnnouncement, type IAnnouncementAttachment } from './Announcement';
 export { default as Notification, type INotification, type INotificationModel } from './Notification';
 export { default as BankAccountSettings, type IBankAccountSettings, type IBankAccountSettingsModel, type IBankAccount } from './BankAccountSettings';
+export { default as DeletionRequest, type IDeletionRequest, type IDeletionRequestModel } from './DeletionRequest';

@@ -2,7 +2,7 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface INotification extends Document {
   recipientId: mongoose.Types.ObjectId;
-  type: 'new_invoice' | 'new_comment' | 'new_report';
+  type: 'new_invoice' | 'new_comment' | 'new_report' | 'deletion_request';
   title: string;
   body: string;
   link: string;
@@ -16,7 +16,7 @@ export interface INotificationModel extends Model<INotification> {}
 const NotificationSchema = new Schema<INotification>(
   {
     recipientId: { type: Schema.Types.ObjectId, ref: 'User', required: true, index: true },
-    type: { type: String, enum: ['new_invoice', 'new_comment', 'new_report'], required: true },
+    type: { type: String, enum: ['new_invoice', 'new_comment', 'new_report', 'deletion_request'], required: true },
     title: { type: String, required: true, trim: true },
     body: { type: String, default: '', trim: true },
     link: { type: String, default: '' },

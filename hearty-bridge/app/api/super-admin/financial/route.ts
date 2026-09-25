@@ -3,47 +3,31 @@ import { withSuperAdminAuth } from '@/lib/middleware/auth';
 import { withErrorHandling, SuccessResponse } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
 import Invoice from '@/models/Invoice';
-import mongoose from 'mongoose';
+import { buildInvoiceQuery, effectiveInvoiceStatus } from '@/lib/utils/financial-query';
+
+const EXPORT_LIMIT = 5000;
 
 /**
  * GET /api/super-admin/financial
- * Super Admin only. All invoices across all parents with revenue summary.
- * Query: ?status=paid|unpaid|overdue, ?from=YYYY-MM-DD, ?to=YYYY-MM-DD, ?page=1, ?limit=20
+ * Super Admin only. All invoices across all parents with revenue summary —
+ * the payment history per child (SA-4).
+ * Query: see buildInvoiceQuery (status, from, to, program, childId, search),
+ * plus ?page=1, ?limit=20, or ?all=1 for every matching row (export, max 5000).
  */
 export const GET = withSuperAdminAuth(
-  withErrorHandling(async (req: NextRequest, user: any) => {
+  withErrorHandling(async (req: NextRequest) => {
     await connectToDatabase();
 
     const params = new URL(req.url).searchParams;
-    const status  = params.get('status') || '';
-    const from    = params.get('from') || '';
-    const to      = params.get('to') || '';
-    const page    = Math.max(1, parseInt(params.get('page') || '1', 10));
-    const limit   = Math.min(100, Math.max(1, parseInt(params.get('limit') || '20', 10)));
+    const all     = params.get('all') === '1';
+    const page    = all ? 1 : Math.max(1, parseInt(params.get('page') || '1', 10));
+    const limit   = all ? EXPORT_LIMIT : Math.min(100, Math.max(1, parseInt(params.get('limit') || '20', 10)));
     const skip    = (page - 1) * limit;
 
     const now = new Date();
-    const query: any = { isActive: { $ne: false } };
+    const query = await buildInvoiceQuery(params, now);
 
-    if (status === 'paid') {
-      query.status = 'paid';
-    } else if (status === 'unpaid') {
-      query.status = 'unpaid';
-      query.dueDate = { $gte: now };
-    } else if (status === 'overdue') {
-      query.$or = [
-        { status: 'overdue' },
-        { status: 'unpaid', dueDate: { $lt: now } },
-      ];
-    }
-
-    if (from || to) {
-      query.createdAt = {};
-      if (from) query.createdAt.$gte = new Date(from + 'T00:00:00Z');
-      if (to)   query.createdAt.$lte = new Date(to + 'T23:59:59Z');
-    }
-
-    const [invoices, total, summaryAgg] = await Promise.all([
+    const [invoices, total, summaryAgg, filteredAgg] = await Promise.all([
       Invoice.find(query)
         .sort({ createdAt: -1 })
         .skip(skip)
@@ -102,6 +86,17 @@ export const GET = withSuperAdminAuth(
           },
         },
       ]),
+      // Totals of just the rows matching the current filters (e.g. one child's history)
+      Invoice.aggregate([
+        { $match: query },
+        {
+          $group: {
+            _id: null,
+            paidAmount:   { $sum: { $cond: [{ $eq: ['$status', 'paid'] }, '$amount', 0] } },
+            unpaidAmount: { $sum: { $cond: [{ $ne: ['$status', 'paid'] }, '$amount', 0] } },
+          },
+        },
+      ]),
     ]);
 
     const summary = summaryAgg[0] ?? {
@@ -116,7 +111,7 @@ export const GET = withSuperAdminAuth(
 
     const enriched = (invoices as any[]).map((inv) => ({
       ...inv,
-      status: inv.status === 'unpaid' && new Date(inv.dueDate) < now ? 'overdue' : inv.status,
+      status: effectiveInvoiceStatus(inv.status, inv.dueDate, now),
     }));
 
     return SuccessResponse.ok({
@@ -124,6 +119,10 @@ export const GET = withSuperAdminAuth(
       total,
       page,
       limit,
+      filteredSummary: {
+        paidAmount:   filteredAgg[0]?.paidAmount ?? 0,
+        unpaidAmount: filteredAgg[0]?.unpaidAmount ?? 0,
+      },
       summary: {
         totalRevenue: summary.totalRevenue,
         totalPending: summary.totalPending,

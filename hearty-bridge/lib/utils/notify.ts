@@ -8,7 +8,7 @@ import mongoose from 'mongoose';
  */
 export async function notify(params: {
   recipientId: string | mongoose.Types.ObjectId;
-  type: 'new_invoice' | 'new_comment' | 'new_report';
+  type: 'new_invoice' | 'new_comment' | 'new_report' | 'deletion_request';
   title: string;
   body?: string;
   link?: string;

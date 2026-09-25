@@ -23,11 +23,17 @@ import {
   FileTextIcon,
   ArrowRightIcon,
   ImageIcon,
+  SearchIcon,
+  DownloadIcon,
+  XIcon,
 } from "lucide-react";
+import { toPaymentHistoryRows, paymentHistoryToCsv, paymentHistoryToSheet } from "@/lib/utils/payment-history-export";
+import { buildXlsx } from "@/lib/utils/xlsx-lite";
 
 interface InvoiceData {
   _id: string;
   invoiceNumber: string;
+  childId: string;
   childName: string;
   packageType: string;
   therapyType: string;
@@ -79,6 +85,19 @@ const STATUS_COLOR: Record<string, string> = {
 
 function formatRupiah(n: number) {
   return new Intl.NumberFormat("id-ID", { style: "currency", currency: "IDR", minimumFractionDigits: 0 }).format(n);
+}
+
+type ExportFormat = "xlsx" | "csv" | "pdf";
+
+function downloadBlob(blob: Blob, filename: string) {
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement("a");
+  a.href = url;
+  a.download = filename;
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+  URL.revokeObjectURL(url);
 }
 
 function formatDate(d: string) {
@@ -174,7 +193,16 @@ export default function SuperAdminFinancialPage() {
   const [invStatus, setInvStatus] = useState("");
   const [invFrom, setInvFrom] = useState("");
   const [invTo, setInvTo] = useState("");
+  const [invProgram, setInvProgram] = useState("");
+  const [invSearchInput, setInvSearchInput] = useState("");
+  const [invSearch, setInvSearch] = useState("");
+  // Payment history of one child (SA-4) — set by clicking a child's name
+  const [invChild, setInvChild] = useState<{ id: string; name: string } | null>(null);
+  const [filteredSummary, setFilteredSummary] = useState<{ paidAmount: number; unpaidAmount: number } | null>(null);
   const [invLoading, setInvLoading] = useState(true);
+  const [exportOpen, setExportOpen] = useState(false);
+  const [exporting, setExporting] = useState<ExportFormat | null>(null);
+  const [exportError, setExportError] = useState<string | null>(null);
 
   // Transactions
   const [transactions, setTransactions] = useState<Transaction[]>([]);
@@ -192,13 +220,24 @@ export default function SuperAdminFinancialPage() {
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
+  // Same filters for the table and every export format.
+  const invoiceFilterParams = useCallback(() => {
+    const params = new URLSearchParams();
+    if (invStatus)  params.set("status", invStatus);
+    if (invFrom)    params.set("from", invFrom);
+    if (invTo)      params.set("to", invTo);
+    if (invProgram) params.set("program", invProgram);
+    if (invSearch)  params.set("search", invSearch);
+    if (invChild)   params.set("childId", invChild.id);
+    return params;
+  }, [invStatus, invFrom, invTo, invProgram, invSearch, invChild]);
+
   const fetchInvoices = useCallback(async (page = 1) => {
     setInvLoading(true);
     try {
-      const params = new URLSearchParams({ page: String(page), limit: "20" });
-      if (invStatus) params.set("status", invStatus);
-      if (invFrom)   params.set("from", invFrom);
-      if (invTo)     params.set("to", invTo);
+      const params = invoiceFilterParams();
+      params.set("page", String(page));
+      params.set("limit", "20");
       const res = await fetch(`/api/super-admin/financial?${params}`, {
         headers: { Authorization: `Bearer ${token}` },
       });
@@ -207,11 +246,48 @@ export default function SuperAdminFinancialPage() {
         setInvoices(result.invoices);
         setInvTotal(result.total);
         setSummary(result.summary);
+        setFilteredSummary(result.filteredSummary ?? null);
         setInvPage(page);
       }
     } catch {}
     finally { setInvLoading(false); }
-  }, [invStatus, invFrom, invTo, token]);
+  }, [invoiceFilterParams, token]);
+
+  const handleExport = async (format: ExportFormat) => {
+    setExportOpen(false);
+    setExporting(format);
+    setExportError(null);
+    const stamp = new Date().toISOString().slice(0, 10);
+    const childPart = invChild ? `-${invChild.name.replace(/[^\w-]+/g, "_")}` : "";
+    const baseName = `Riwayat-Pembayaran${childPart}-${stamp}`;
+    try {
+      const params = invoiceFilterParams();
+      if (format === "pdf") {
+        const res = await fetch(`/api/super-admin/financial/export?${params}`, {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+        if (!res.ok) throw new Error();
+        downloadBlob(await res.blob(), `${baseName}.pdf`);
+        return;
+      }
+      params.set("all", "1");
+      const res = await fetch(`/api/super-admin/financial?${params}`, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      const result = await res.json();
+      if (!res.ok || !result.success) throw new Error();
+      const rows = toPaymentHistoryRows(result.invoices ?? []);
+      if (format === "csv") {
+        downloadBlob(new Blob([paymentHistoryToCsv(rows)], { type: "text/csv;charset=utf-8;" }), `${baseName}.csv`);
+      } else {
+        downloadBlob(buildXlsx(paymentHistoryToSheet(rows), "Riwayat Pembayaran"), `${baseName}.xlsx`);
+      }
+    } catch {
+      setExportError("Gagal membuat file export. Coba lagi.");
+    } finally {
+      setExporting(null);
+    }
+  };
 
   const fetchTransactions = useCallback(async (page = 1) => {
     setTxLoading(true);
@@ -233,7 +309,7 @@ export default function SuperAdminFinancialPage() {
     finally { setTxLoading(false); }
   }, [txType, txFrom, txTo, token]);
 
-  useEffect(() => { fetchInvoices(1); }, [invStatus, invFrom, invTo]);
+  useEffect(() => { fetchInvoices(1); }, [invStatus, invFrom, invTo, invProgram, invSearch, invChild]);
   useEffect(() => { if (activeTab === "transactions") fetchTransactions(1); }, [activeTab, txType, txFrom, txTo]);
 
   const openInvoiceDetail = async (inv: InvoiceData) => {
@@ -387,10 +463,94 @@ export default function SuperAdminFinancialPage() {
               <label className="block text-xs text-gray-500 mb-1">Sampai</label>
               <Input type="date" value={invTo} onChange={(e) => setInvTo(e.target.value)} className="text-sm" />
             </div>
-            <Button variant="outline" size="sm" onClick={() => { setInvStatus(""); setInvFrom(""); setInvTo(""); }}>
+            <div>
+              <label className="block text-xs text-gray-500 mb-1">Program</label>
+              <select
+                value={invProgram}
+                onChange={(e) => setInvProgram(e.target.value)}
+                className="text-sm border border-gray-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-500"
+              >
+                <option value="">Semua</option>
+                <option value="OT">OT</option>
+                <option value="TW">TW</option>
+                <option value="both">OT &amp; TW</option>
+                <option value="assessment">Asesmen</option>
+              </select>
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => {
+                setInvStatus(""); setInvFrom(""); setInvTo(""); setInvProgram("");
+                setInvSearchInput(""); setInvSearch(""); setInvChild(null);
+              }}
+            >
               Reset
             </Button>
+            <div className="relative ml-auto">
+              <Button size="sm" onClick={() => setExportOpen((o) => !o)} disabled={!!exporting}>
+                <DownloadIcon className="h-4 w-4 mr-1" />
+                {exporting ? "Menyiapkan..." : "Export"}
+              </Button>
+              {exportOpen && (
+                <div className="absolute right-0 mt-1 w-44 rounded-md border border-gray-200 bg-white shadow-lg z-20 py-1">
+                  <p className="px-3 py-1 text-[11px] text-gray-400">Pilih format</p>
+                  {([
+                    { format: "xlsx", label: "Excel (.xlsx)" },
+                    { format: "csv", label: "CSV (.csv)" },
+                    { format: "pdf", label: "PDF (.pdf)" },
+                  ] as const).map((o) => (
+                    <button
+                      key={o.format}
+                      onClick={() => handleExport(o.format)}
+                      className="w-full text-left px-3 py-1.5 text-sm text-gray-700 hover:bg-teal-50"
+                    >
+                      {o.label}
+                    </button>
+                  ))}
+                </div>
+              )}
+            </div>
           </div>
+
+          {/* Search by child / parent name */}
+          <form
+            className="flex gap-2 max-w-md"
+            onSubmit={(e) => { e.preventDefault(); setInvSearch(invSearchInput.trim()); }}
+          >
+            <div className="relative flex-1">
+              <SearchIcon className="absolute left-2.5 top-1/2 -translate-y-1/2 h-4 w-4 text-gray-400" />
+              <Input
+                value={invSearchInput}
+                onChange={(e) => setInvSearchInput(e.target.value)}
+                placeholder="Cari nama anak atau orang tua..."
+                className="pl-8 text-sm"
+              />
+            </div>
+            <Button type="submit" size="sm" variant="outline">Cari</Button>
+          </form>
+
+          {exportError && (
+            <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700">{exportError}</div>
+          )}
+
+          {/* Per-child payment history header */}
+          {invChild && (
+            <div className="flex flex-wrap items-center gap-3 rounded-lg border border-teal-200 bg-teal-50 px-4 py-3">
+              <div className="flex-1 min-w-0">
+                <p className="text-sm font-semibold text-teal-900">Riwayat pembayaran: {invChild.name}</p>
+                {filteredSummary && (
+                  <p className="text-xs text-teal-700 mt-0.5">
+                    Sudah dibayar {formatRupiah(filteredSummary.paidAmount)} · Belum dibayar {formatRupiah(filteredSummary.unpaidAmount)}
+                  </p>
+                )}
+              </div>
+              <Button size="sm" variant="outline" onClick={() => setInvChild(null)}>
+                <XIcon className="h-4 w-4 mr-1" />
+                Semua anak
+              </Button>
+            </div>
+          )}
 
           {invLoading ? (
             <FinancialTableSkeleton columns={7} />
@@ -416,7 +576,13 @@ export default function SuperAdminFinancialPage() {
                       <tr key={inv._id} className="hover:bg-gray-50 transition-colors">
                         <td className="px-4 py-3 font-mono text-xs text-gray-600">{inv.invoiceNumber}</td>
                         <td className="px-4 py-3">
-                          <p className="font-medium text-gray-900">{inv.childName}</p>
+                          <button
+                            onClick={() => setInvChild({ id: String(inv.childId), name: inv.childName })}
+                            className="font-medium text-gray-900 hover:text-teal-700 hover:underline text-left"
+                            title="Lihat riwayat pembayaran anak ini"
+                          >
+                            {inv.childName}
+                          </button>
                           {inv.parentId && (
                             <p className="text-xs text-gray-400">{(inv.parentId as any).name}</p>
                           )}

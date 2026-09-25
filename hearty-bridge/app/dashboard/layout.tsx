@@ -33,6 +33,7 @@ const ROUTE_PERMISSION_SOURCE: Array<{ prefix: string; permission: Permission }>
   { prefix: '/dashboard/super-admin/bank-accounts', permission: 'bank_accounts:manage' },
   { prefix: '/dashboard/super-admin/financial', permission: 'financial:view_all' },
   { prefix: '/dashboard/super-admin/analytics', permission: 'reports:system_analytics' },
+  { prefix: '/dashboard/super-admin/deletion-requests', permission: 'accounts:approve_deletion' },
   { prefix: '/dashboard/therapists', permission: 'therapists:view' },
 ];
 

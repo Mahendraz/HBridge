@@ -3,11 +3,14 @@ import { withSuperAdminAuth } from '@/lib/middleware/auth';
 import { withErrorHandling, SuccessResponse } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
 import TokenTransaction from '@/models/TokenTransaction';
+import { escapeRegex } from '@/lib/utils/financial-query';
+import mongoose from 'mongoose';
 
 /**
  * GET /api/super-admin/financial/transactions
  * Super Admin only. All token transactions across all children.
- * Query: ?type=topup|deduct, ?therapyType=OT|TW, ?from=YYYY-MM-DD, ?to=YYYY-MM-DD, ?page=1, ?limit=20
+ * Query: ?type=topup|deduct, ?therapyType=OT|TW, ?from=YYYY-MM-DD, ?to=YYYY-MM-DD,
+ *        ?childId=<id>, ?search=<child name>, ?page=1, ?limit=20
  */
 export const GET = withSuperAdminAuth(
   withErrorHandling(async (req: NextRequest, user: any) => {
@@ -18,6 +21,8 @@ export const GET = withSuperAdminAuth(
     const therapyType = params.get('therapyType') || '';
     const from        = params.get('from') || '';
     const to          = params.get('to') || '';
+    const childId     = params.get('childId') || '';
+    const search      = (params.get('search') || '').trim();
     const page        = Math.max(1, parseInt(params.get('page') || '1', 10));
     const limit       = Math.min(100, Math.max(1, parseInt(params.get('limit') || '20', 10)));
     const skip        = (page - 1) * limit;
@@ -26,6 +31,8 @@ export const GET = withSuperAdminAuth(
 
     if (type === 'topup' || type === 'deduct') query.type = type;
     if (therapyType === 'OT' || therapyType === 'TW') query.therapyType = therapyType;
+    if (childId && mongoose.isValidObjectId(childId)) query.childId = new mongoose.Types.ObjectId(childId);
+    if (search) query.childName = new RegExp(escapeRegex(search), 'i');
 
     if (from || to) {
       query.createdAt = {};

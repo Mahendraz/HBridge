@@ -34,10 +34,12 @@ import {
   PhoneIcon,
   MailIcon,
   UsersIcon,
-  KeyRoundIcon
+  KeyRoundIcon,
+  Trash2Icon
 } from "lucide-react";
 import Link from "next/link";
 import { ResetPasswordDialog, type ResetPasswordTarget } from "@/components/admin/reset-password-dialog";
+import { RequestDeletionDialog, usePendingDeletionIds, type DeletionTarget } from "@/components/admin/request-deletion-dialog";
 
 interface Patient {
   id: string;
@@ -93,7 +95,6 @@ const PROGRAM_BADGE: Record<string, string> = {
   both: 'bg-teal-100 text-teal-700',
 };
 
-
 export default function UnifiedPatientsPage() {
   const { user } = useAuth();
   const router = useRouter();
@@ -123,6 +124,13 @@ export default function UnifiedPatientsPage() {
 
   // Reset password state (admin & super admin)
   const [resetTarget, setResetTarget] = useState<ResetPasswordTarget | null>(null);
+
+  // Account deletion (ADM-3): Admin files a request, Super Admin deletes directly
+  const canRequestDeletion = permissions.hasPermission('accounts:request_deletion');
+  const canDeleteDirectly = permissions.hasPermission('accounts:approve_deletion');
+  const [deletionTarget, setDeletionTarget] = useState<DeletionTarget | null>(null);
+  const { pendingIds: pendingDeletionIds, refreshPending: refreshPendingDeletions } =
+    usePendingDeletionIds(canRequestDeletion);
 
   useEffect(() => {
     fetchPatients();
@@ -785,6 +793,26 @@ export default function UnifiedPatientsPage() {
                             <KeyRoundIcon className="h-4 w-4" />
                           </Button>
                         )}
+                        {canRequestDeletion && (
+                          pendingDeletionIds.has(parent._id) ? (
+                            <Badge variant="secondary" title="Menunggu persetujuan Super Admin">Menunggu hapus</Badge>
+                          ) : (
+                            <Button
+                              size="sm"
+                              variant="outline"
+                              className="text-red-600 border-red-200 hover:bg-red-50"
+                              onClick={() => setDeletionTarget({
+                                type: 'parent',
+                                id: parent._id,
+                                name: parent.name,
+                                childNames: patients.filter(p => p.parent?.id === parent._id).map(p => p.name),
+                              })}
+                              title={canDeleteDirectly ? "Hapus akun orang tua" : "Ajukan hapus akun orang tua"}
+                            >
+                              <Trash2Icon className="h-4 w-4" />
+                            </Button>
+                          )
+                        )}
                         {permissions.hasPermission('patients:edit') && (
                           <Button
                             size="sm"
@@ -861,6 +889,21 @@ export default function UnifiedPatientsPage() {
                                   <EyeIcon className="h-4 w-4" />
                                 </Button>
                               </Link>
+                              {canRequestDeletion && (
+                                pendingDeletionIds.has(child.id) ? (
+                                  <Badge variant="secondary" title="Menunggu persetujuan Super Admin">Menunggu hapus</Badge>
+                                ) : (
+                                  <Button
+                                    size="sm"
+                                    variant="outline"
+                                    className="text-red-600 border-red-200 hover:bg-red-50"
+                                    onClick={() => setDeletionTarget({ type: 'child', id: child.id, name: child.name })}
+                                    title={canDeleteDirectly ? "Hapus akun anak" : "Ajukan hapus akun anak"}
+                                  >
+                                    <Trash2Icon className="h-4 w-4" />
+                                  </Button>
+                                )
+                              )}
                             </div>
                           </div>
                         ))}
@@ -891,6 +934,21 @@ export default function UnifiedPatientsPage() {
 
       {/* Reset Password Dialog */}
       <ResetPasswordDialog target={resetTarget} onClose={() => setResetTarget(null)} />
+
+      {/* Delete / Request-delete Account Dialog */}
+      <RequestDeletionDialog
+        target={deletionTarget}
+        direct={canDeleteDirectly}
+        onClose={() => setDeletionTarget(null)}
+        onDone={() => {
+          if (canDeleteDirectly) {
+            fetchPatients(submittedSearch);
+            fetchAllParents();
+          } else {
+            refreshPendingDeletions();
+          }
+        }}
+      />
 
       {/* Create Patient Modal */}
       <Dialog open={showCreatePatientModal} onOpenChange={setShowCreatePatientModal}>

@@ -3,6 +3,7 @@ import connectToDatabase from '@/lib/db/mongodb';
 import User from '@/models/User';
 import { withAdminAuth } from '@/lib/middleware/auth';
 import { ErrorResponse, SuccessResponse } from '@/lib/utils/error-handler';
+import { deleteParentAccount } from '@/lib/utils/account-deletion';
 import { z } from 'zod';
 
 const updateUserSchema = z.object({
@@ -47,6 +48,11 @@ export const PATCH = withAdminAuth(async (request: NextRequest, user: any) => {
   if (isActive !== undefined) {
     if (targetUser._id.toString() === user.userId) {
       return ErrorResponse.badRequest('Tidak bisa menonaktifkan akun sendiri');
+    }
+    // Deactivating a parent is deleting their account (ADM-3): Super Admin
+    // only, via DELETE so the children go with it. Admin files a request.
+    if (targetUser.role === 'parent' && !isActive && user.role !== 'super_admin') {
+      return ErrorResponse.forbidden('Hapus akun orang tua harus lewat persetujuan Super Admin');
     }
     targetUser.isActive = isActive;
   }
@@ -95,6 +101,16 @@ export const DELETE = withAdminAuth(async (request: NextRequest, user: any) => {
 
   if (targetUser._id.toString() === user.userId) {
     return ErrorResponse.badRequest('Tidak bisa menghapus akun sendiri');
+  }
+
+  // Parent account deletion (ADM-3): Super Admin only, takes the children
+  // along. Admin has to go through /api/deletion-requests instead.
+  if (targetUser.role === 'parent') {
+    if (user.role !== 'super_admin') {
+      return ErrorResponse.forbidden('Hapus akun orang tua harus lewat persetujuan Super Admin');
+    }
+    const { childrenDeleted } = await deleteParentAccount(id);
+    return SuccessResponse.ok({ childrenDeleted }, 'Akun orang tua dihapus');
   }
 
   targetUser.isActive = false;

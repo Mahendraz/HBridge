@@ -449,7 +449,7 @@ async function parentStats(user: JWTPayload): Promise<NextResponse> {
     .lean();
 
   if (children.length === 0) {
-    return SuccessResponse.ok({ data: { role: 'parent', children: [], weeklyReports: [], upcomingSchedule: [], unseenInvoiceCount: 0, sessionBalances: [] } });
+    return SuccessResponse.ok({ data: { role: 'parent', children: [], weeklyReports: [], upcomingSchedule: [], unpaidInvoices: [], sessionBalances: [] } });
   }
 
   const childIds = children.map(c => c._id as mongoose.Types.ObjectId);
@@ -460,7 +460,7 @@ async function parentStats(user: JWTPayload): Promise<NextResponse> {
   endOfWindow.setDate(startOfToday.getDate() + UPCOMING_DAYS - 1);
   endOfWindow.setHours(23, 59, 59, 999);
 
-  const [balanceMap, appointments, weeklyReportsRaw, unseenInvoiceCount] = await Promise.all([
+  const [balanceMap, appointments, weeklyReportsRaw, unpaidInvoicesRaw] = await Promise.all([
     getSessionBalances(childIds),
     buildAppointments({ from: startOfToday, to: endOfWindow, childOids: childIds }),
     Report.find({
@@ -470,13 +470,28 @@ async function parentStats(user: JWTPayload): Promise<NextResponse> {
     }).sort({ createdAt: -1 })
       .select('childName title type status createdAt')
       .lean(),
-    Invoice.countDocuments({
+    // Unpaid invoices for the dashboard pop-up (ORT-7) — shown on every visit
+    // until paid, not just until seen.
+    Invoice.find({
       childId: { $in: childIds },
       isVisibleToParent: true,
-      seenByParentAt: null,
+      status: { $ne: 'paid' },
       isActive: { $ne: false },
-    }),
+    }).sort({ dueDate: 1 })
+      .select('invoiceNumber childName packageType amount dueDate status')
+      .lean(),
   ]);
+
+  const now = new Date();
+  const unpaidInvoices = (unpaidInvoicesRaw as any[]).map(inv => ({
+    id:            inv._id.toString(),
+    invoiceNumber: inv.invoiceNumber,
+    childName:     inv.childName,
+    packageType:   inv.packageType,
+    amount:        inv.amount,
+    dueDate:       inv.dueDate,
+    status:        inv.status === 'overdue' || new Date(inv.dueDate) < now ? 'overdue' : 'unpaid',
+  }));
 
   // Sisa Sesi Anda: one entry per child, broken down per program (OT / TW).
   // Negative remaining = sessions already run on a package not yet paid.
@@ -525,7 +540,7 @@ async function parentStats(user: JWTPayload): Promise<NextResponse> {
       children:        children.map(c => ({ childId: c._id.toString(), childName: c.name })),
       weeklyReports,
       upcomingSchedule,
-      unseenInvoiceCount,
+      unpaidInvoices,
       sessionBalances,
     },
   });

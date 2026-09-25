@@ -15,6 +15,7 @@ import Child from '@/models/Child';
 import WeeklySchedule from '@/models/WeeklySchedule';
 import mongoose from 'mongoose';
 import { getR2SignedUrl } from '@/lib/services/r2-storage';
+import { deleteChildAccount } from '@/lib/utils/account-deletion';
 import { getSessionBalances, getTherapistsByProgram, emptySessionBalance } from '@/lib/utils/session-balance';
 
 /**
@@ -263,7 +264,8 @@ export const PUT = withAnyAuth(
 
 /**
  * DELETE /api/children/[id]
- * Soft delete a child (parents only)
+ * Soft delete a child account (ADM-3). Super Admin only — Admin files a
+ * request via /api/deletion-requests. Session/invoice history is kept.
  */
 export const DELETE = withAnyAuth(
   withErrorHandling(async (request: NextRequest, user: any) => {
@@ -271,10 +273,9 @@ export const DELETE = withAnyAuth(
     const id = url.pathname.split('/').pop();
     logRequest('DELETE', `/api/children/${id}`, user);
 
-    // Only parents can delete their children
-    if (user.role !== 'parent') {
+    if (user.role !== 'super_admin') {
       return ErrorResponse.forbidden(
-        'Only parents can delete child profiles',
+        'Hapus akun anak harus lewat persetujuan Super Admin',
         'INSUFFICIENT_PERMISSIONS'
       );
     }
@@ -305,35 +306,11 @@ export const DELETE = withAnyAuth(
         );
       }
 
-      // Check if user owns this child
-      if (child.parentId.toString() !== user.userId) {
-        return ErrorResponse.forbidden(
-          'You can only delete your own child profiles',
-          'INSUFFICIENT_PERMISSIONS'
-        );
-      }
-
-      // Soft delete by setting isActive to false
-      const deletedChild = await Child.findByIdAndUpdate(
-        id,
-        { 
-          $set: { 
-            isActive: false,
-            therapistId: null // Remove therapist assignment when deleting
-          } 
-        },
-        { new: true }
-      );
-
-      if (!deletedChild) {
-        return ErrorResponse.notFound(
-          'Child not found after deletion',
-          'RESOURCE_NOT_FOUND'
-        );
-      }
+      // Soft delete + take the child off the schedule
+      await deleteChildAccount(id!);
 
       // Generate activity log
-      const activityLog = generateChildActivityLog('deleted', deletedChild, user);
+      const activityLog = generateChildActivityLog('deleted', child, user);
       console.log(activityLog);
 
       return SuccessResponse.ok(

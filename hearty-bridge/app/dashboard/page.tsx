@@ -26,6 +26,7 @@ import { NumberTicker } from "@/components/magicui/number-ticker";
 import { usePermissions } from "@/lib/utils/permissions";
 import type { UserRole } from "@/lib/types/auth";
 import { AnnouncementWall } from "@/components/dashboard/announcement-wall";
+import { UnpaidInvoicePopup, type UnpaidInvoiceSummary } from "@/components/dashboard/unpaid-invoice-popup";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -126,7 +127,7 @@ interface DashboardData {
   children?: ChildInfo[];
   weeklyReports?: WeeklyReport[];
   upcomingSchedule?: UpcomingScheduleItem[];
-  unseenInvoiceCount?: number;
+  unpaidInvoices?: UnpaidInvoiceSummary[];
   sessionBalances?: SessionBalance[];
 }
 
@@ -841,13 +842,16 @@ function TherapistMainContent({ data }: { data: DashboardData }) {
 function ParentMainContent({ data }: { data: DashboardData }) {
   const weeklyReports      = data.weeklyReports    ?? [];
   const upcomingSchedule   = data.upcomingSchedule ?? [];
-  const unseenInvoiceCount = data.unseenInvoiceCount ?? 0;
+  const unpaidInvoices     = data.unpaidInvoices   ?? [];
   const sessionBalances    = data.sessionBalances  ?? [];
 
   return (
     <div className="space-y-6">
-      {/* Notifikasi invoice belum dilihat */}
-      {unseenInvoiceCount > 0 && (
+      {/* Pop-up invoice belum lunas — muncul tiap buka dashboard, bisa ditutup */}
+      <UnpaidInvoicePopup invoices={unpaidInvoices} />
+
+      {/* Pengingat tetap setelah pop-up ditutup */}
+      {unpaidInvoices.length > 0 && (
         <Link href="/dashboard/invoices">
           <div className="flex items-center gap-3 p-4 rounded-2xl border border-amber-200 bg-amber-50 hover:bg-amber-100 transition-colors cursor-pointer">
             <div className="h-10 w-10 rounded-lg bg-amber-100 flex items-center justify-center flex-shrink-0">
@@ -855,11 +859,11 @@ function ParentMainContent({ data }: { data: DashboardData }) {
             </div>
             <div className="flex-1 min-w-0">
               <p className="text-sm font-semibold text-amber-900">
-                {unseenInvoiceCount} invoice baru belum dilihat
+                {unpaidInvoices.length} invoice belum lunas
               </p>
-              <p className="text-xs text-amber-700 mt-0.5">Klik untuk melihat detail invoice Anda</p>
+              <p className="text-xs text-amber-700 mt-0.5">Klik untuk melihat dan membayar invoice Anda</p>
             </div>
-            <Badge className="bg-amber-500 text-white flex-shrink-0">{unseenInvoiceCount}</Badge>
+            <Badge className="bg-amber-500 text-white flex-shrink-0">{unpaidInvoices.length}</Badge>
           </div>
         </Link>
       )}

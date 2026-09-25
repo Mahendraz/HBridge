@@ -6,6 +6,7 @@ import Invoice from '@/models/Invoice';
 import BankAccountSettings from '@/models/BankAccountSettings';
 import mongoose from 'mongoose';
 import { notify } from '@/lib/utils/notify';
+import { applyInvoicePackageChange } from '@/lib/utils/invoice-package';
 
 function getInvoiceId(req: NextRequest): string {
   const parts = new URL(req.url).pathname.split('/');
@@ -48,11 +49,15 @@ export const GET = withAnyAuth(
 /**
  * PATCH /api/invoices/[id]
  * Admin only.
- * Body: { dueDate?, status?, notes?, isVisibleToParent?, amount?, sessions?, packageType?, discountAmount? }
+ * Body: { dueDate?, status?, notes?, isVisibleToParent?, packageId? }
  *
- * Financial fields (amount/sessions/packageType/discountAmount) are blocked once
- * the invoice's *current* status is 'paid' — editing the amount on a receipt that's
- * already been paid would silently desync it from what was actually charged.
+ * The package is picked from the Package list (ADM-2): price and session count
+ * always follow it and can't be typed in. Changing it also updates the package
+ * TokenTransaction, Child.tokenBalance and the package's schedule — see
+ * applyInvoicePackageChange.
+ *
+ * A paid invoice is locked: only its status (to undo a mistaken "lunas") and
+ * visibility to the parent can still change.
  *
  * Uses $set via findByIdAndUpdate to avoid full-document Mongoose validation,
  * which would fail on older documents that predate required-field additions.
@@ -74,23 +79,17 @@ export const PATCH = withAdminAuth(
     if (!existing) return ErrorResponse.notFound('Invoice');
 
     const body = await req.json();
-    const {
-      dueDate: dueDateStr, status, notes, isVisibleToParent,
-      amount, sessions, packageType, discountAmount,
-    } = body as {
+    const { dueDate: dueDateStr, status, notes, isVisibleToParent, packageId } = body as {
       dueDate?: string;
       status?: 'unpaid' | 'paid' | 'overdue';
       notes?: string;
       isVisibleToParent?: boolean;
-      amount?: number;
-      sessions?: number;
-      packageType?: string;
-      discountAmount?: number;
+      packageId?: string;
     };
 
-    const editingFinancials = [amount, sessions, packageType, discountAmount].some((v) => v !== undefined);
-    if (editingFinancials && existing.status === 'paid') {
-      return ErrorResponse.badRequest('Invoice yang sudah lunas tidak bisa diubah nominalnya. Batalkan status lunas terlebih dahulu.');
+    const editingContent = [dueDateStr, notes, packageId].some((v) => v !== undefined);
+    if (editingContent && existing.status === 'paid') {
+      return ErrorResponse.badRequest('Invoice yang sudah lunas tidak bisa diedit.');
     }
 
     const update: Record<string, unknown> = {};
@@ -115,21 +114,19 @@ export const PATCH = withAdminAuth(
     if (notes !== undefined) update.notes = notes.trim();
     if (isVisibleToParent !== undefined) update.isVisibleToParent = isVisibleToParent;
 
-    if (amount !== undefined) {
-      if (typeof amount !== 'number' || amount < 0) return ErrorResponse.badRequest('Invalid amount');
-      update.amount = amount;
-    }
-    if (sessions !== undefined) {
-      if (typeof sessions !== 'number' || sessions < 1) return ErrorResponse.badRequest('Invalid sessions');
-      update.sessions = sessions;
-    }
-    if (packageType !== undefined) {
-      if (typeof packageType !== 'string' || !packageType.trim()) return ErrorResponse.badRequest('Invalid packageType');
-      update.packageType = packageType.trim();
-    }
-    if (discountAmount !== undefined) {
-      if (typeof discountAmount !== 'number' || discountAmount < 0) return ErrorResponse.badRequest('Invalid discountAmount');
-      update.discountAmount = discountAmount;
+    const currentPackageId = existing.packageId?.toString() ?? null;
+    if (packageId !== undefined && packageId !== currentPackageId) {
+      const change = await applyInvoicePackageChange(
+        {
+          childId: existing.childId,
+          packageTransactionId: existing.packageTransactionId,
+          therapyType: existing.therapyType,
+          discountAmount: existing.discountAmount,
+        },
+        packageId
+      );
+      if ('error' in change) return ErrorResponse.badRequest(change.error);
+      Object.assign(update, change.update);
     }
 
     console.log('[PATCH invoice]', id, 'update:', JSON.stringify(update));
