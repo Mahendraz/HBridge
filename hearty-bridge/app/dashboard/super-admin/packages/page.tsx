@@ -180,9 +180,9 @@ export default function SuperAdminPackagesPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
             <PackageIcon className="h-6 w-6 text-teal-600" />
             Kelola Paket Terapi
           </h1>
@@ -190,7 +190,7 @@ export default function SuperAdminPackagesPage() {
             Buat dan kelola paket yang bisa dipilih oleh admin untuk diberikan ke pasien.
           </p>
         </div>
-        <Button onClick={openCreate}>
+        <Button onClick={openCreate} className="w-full sm:w-auto shrink-0">
           <PlusIcon className="h-4 w-4 mr-2" />
           Tambah Paket
         </Button>
@@ -251,8 +251,8 @@ export default function SuperAdminPackagesPage() {
             <Card key={pkg._id} className={`relative ${!pkg.isActive ? "opacity-60" : ""}`}>
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <CardTitle className="text-base">{pkg.name}</CardTitle>
+                  <div className="min-w-0">
+                    <CardTitle className="text-base break-words">{pkg.name}</CardTitle>
                     <span className={`mt-1 inline-block text-xs px-2 py-0.5 rounded-full border ${THERAPY_COLOR[pkg.therapyType]}`}>
                       {THERAPY_LABEL[pkg.therapyType]}
                     </span>
@@ -263,7 +263,7 @@ export default function SuperAdminPackagesPage() {
                 </div>
               </CardHeader>
               <CardContent className="space-y-3">
-                <div className="flex gap-4 text-sm">
+                <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
                   <div>
                     <p className="text-xs text-gray-400 mb-0.5">Sesi</p>
                     <p className="font-semibold text-gray-900">{pkg.sessions} sesi</p>
@@ -358,7 +358,7 @@ export default function SuperAdminPackagesPage() {
               <label className="block text-xs font-medium text-gray-700 mb-1">Jenis Terapi *</label>
               {/* Paket OT-only/TW-only terpisah sudah digabung — hanya bisa dipilih lagi saat
                   mengedit paket lama yang masih bertipe itu, tidak untuk paket baru. */}
-              <div className={`grid gap-2 ${therapyTypeOptions.length === 4 ? "grid-cols-4" : "grid-cols-2"}`}>
+              <div className={`grid gap-2 ${therapyTypeOptions.length === 4 ? "grid-cols-2 sm:grid-cols-4" : "grid-cols-2"}`}>
                 {therapyTypeOptions.map((t) => (
                   <button
                     key={t}

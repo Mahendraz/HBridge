@@ -176,16 +176,16 @@ export function NotificationBell() {
 
       {isOpen && panelPos && (
         <div
-          className="fixed z-[60] w-64 max-h-96 overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg"
+          className="fixed z-[60] w-64 max-w-[calc(100vw-1rem)] max-h-[min(24rem,calc(100dvh-5rem))] overflow-y-auto rounded-xl border border-gray-200 bg-white shadow-lg"
           style={{ top: panelPos.top, left: panelPos.left }}
         >
-          <div className="flex items-center justify-between px-4 py-3 border-b border-gray-100">
+          <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-gray-100">
             <p className="text-sm font-semibold text-gray-900">Notifikasi</p>
             {unreadCount > 0 && (
               <button
                 type="button"
                 onClick={markAllRead}
-                className="text-xs text-teal-600 hover:text-teal-700 font-medium"
+                className="text-xs text-teal-600 hover:text-teal-700 font-medium whitespace-nowrap"
               >
                 Tandai semua dibaca
               </button>

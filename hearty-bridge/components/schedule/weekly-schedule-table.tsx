@@ -122,7 +122,7 @@ export function WeeklyScheduleTable({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center justify-between">
+        <CardTitle className="flex flex-wrap items-center justify-between gap-2">
           <span>Jadwal Mingguan</span>
           <div className="flex items-center space-x-2 text-sm text-gray-600">
             <ClockIcon className="h-4 w-4" />
@@ -132,17 +132,17 @@ export function WeeklyScheduleTable({
       </CardHeader>
       <CardContent>
         <div className="overflow-x-auto">
-          <table className="w-full border-collapse">
+          <table className="w-full min-w-[720px] border-collapse">
             <thead>
               <tr>
-                <th className="border border-gray-200 bg-gray-50 px-4 py-3 text-left">
+                <th className="border border-gray-200 bg-gray-50 px-2 sm:px-4 py-3 text-left">
                   <div className="flex items-center">
                     <ClockIcon className="h-4 w-4 mr-2 text-gray-600" />
                     <span className="font-medium text-gray-900">Waktu</span>
                   </div>
                 </th>
                 {days.map((day, index) => (
-                  <th key={day} className="border border-gray-200 bg-gray-50 px-4 py-3 text-center min-w-[160px]">
+                  <th key={day} className="border border-gray-200 bg-gray-50 px-2 sm:px-4 py-3 text-center min-w-[110px] sm:min-w-[160px]">
                     <div className="space-y-1">
                       <div className="font-medium text-gray-900">{day}</div>
                       <div className="text-xs text-gray-600">{formatDate(index)}</div>
@@ -154,8 +154,8 @@ export function WeeklyScheduleTable({
             <tbody>
               {timeSlots.map((timeSlot, timeIndex) => (
                 <tr key={timeSlot.time}>
-                  <td className="border border-gray-200 px-4 py-3 bg-gray-50">
-                    <div className="flex items-center">
+                  <td className="border border-gray-200 px-2 sm:px-4 py-3 bg-gray-50">
+                    <div className="flex items-center whitespace-nowrap">
                       <span className="font-medium text-gray-900">{timeSlot.time}</span>
                       <span className="text-xs text-gray-600 ml-2">- {(timeSlot.hour + 1).toString().padStart(2, '0')}:00</span>
                     </div>
@@ -185,7 +185,7 @@ export function WeeklyScheduleTable({
             <div className="w-4 h-4 border-2 border-dashed border-gray-200 rounded mr-2"></div>
             <span className="text-gray-600">Slot Tersedia</span>
           </div>
-          <div className="ml-auto text-xs text-gray-500">
+          <div className="w-full sm:w-auto sm:ml-auto text-xs text-gray-500">
             Klik slot untuk menambah/mengedit pasien
           </div>
         </div>

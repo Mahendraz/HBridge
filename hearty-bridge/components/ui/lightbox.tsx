@@ -121,14 +121,14 @@ export function Lightbox({
             href={current.url}
             target="_blank"
             rel="noreferrer"
-            className="text-white/60 hover:text-white transition-colors"
+            className="p-1 sm:p-0 text-white/60 hover:text-white transition-colors"
             title="Buka di tab baru"
           >
             <ExternalLinkIcon className="h-5 w-5" />
           </a>
           <button
             onClick={onClose}
-            className="text-white/60 hover:text-white transition-colors"
+            className="p-1 sm:p-0 text-white/60 hover:text-white transition-colors"
             title="Tutup (Esc)"
           >
             <XIcon className="h-6 w-6" />
@@ -174,8 +174,8 @@ export function Lightbox({
         </div>
 
         {/* Caption */}
-        <div className="flex items-center gap-2 text-center">
-          <p className="text-white/70 text-xs sm:text-sm truncate max-w-[80vw]">
+        <div className="flex items-center gap-2 text-center max-w-full min-w-0">
+          <p className="min-w-0 text-white/70 text-xs sm:text-sm truncate max-w-[80vw]">
             {current.fileName}
           </p>
           {!!current.size && current.size > 0 && (
@@ -191,7 +191,7 @@ export function Lightbox({
 
         {/* Dot strip (shows when multiple items) */}
         {items.length > 1 && (
-          <div className="flex gap-1.5 mt-1">
+          <div className="flex flex-wrap justify-center gap-1.5 mt-1 max-w-full">
             {items.map((item, i) => (
               <button
                 key={item.key}

@@ -31,9 +31,9 @@ export function DashboardLayout({
               {/* pt-16 clears the fixed mobile menu button (top-4 left-4 in
                   DashboardSidebar), which otherwise overlaps this heading's
                   top-left corner below the lg breakpoint. */}
-              <div className="px-6 pt-16 pb-6 lg:pt-6">
+              <div className="px-4 sm:px-6 pt-16 pb-6 lg:pt-6">
                 {title && (
-                  <h1 className="text-2xl font-bold text-gray-900 mb-2">
+                  <h1 className="text-xl sm:text-2xl font-bold text-gray-900 mb-2">
                     {title}
                   </h1>
                 )}
@@ -48,7 +48,7 @@ export function DashboardLayout({
 
           {/* Page content */}
           {/* pt-16 clears the fixed mobile menu button — see comment above. */}
-          <main className="px-6 pt-16 pb-6 lg:pt-6 w-full">
+          <main className="px-4 sm:px-6 pt-16 pb-6 lg:pt-6 w-full min-w-0">
             {children}
           </main>
         </div>

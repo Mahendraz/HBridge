@@ -380,11 +380,11 @@ export default function InvoicesPage() {
     return (
       <div className="space-y-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Invoice Saya</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Invoice Saya</h1>
           <p className="text-sm text-gray-500 mt-0.5">Rincian tagihan dan riwayat pembelian paket terapi anak Anda</p>
         </div>
 
-        <div className="flex gap-2 border-b border-gray-200">
+        <div className="flex gap-2 border-b border-gray-200 overflow-x-auto">
           {([
             { key: 'unpaid', label: 'Belum Lunas', count: unpaidInvoices.length },
             { key: 'history', label: 'Riwayat', count: paidInvoices.length },
@@ -392,7 +392,7 @@ export default function InvoicesPage() {
             <button
               key={t.key}
               onClick={() => setParentTab(t.key)}
-              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
+              className={`px-4 py-2 text-sm font-medium border-b-2 -mb-px whitespace-nowrap transition-colors ${
                 parentTab === t.key ? 'border-teal-600 text-teal-700' : 'border-transparent text-gray-500 hover:text-gray-700'
               }`}
             >
@@ -421,11 +421,11 @@ export default function InvoicesPage() {
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             {parentInvoices.map((inv) => (
-              <div key={inv._id} className="rounded-xl border border-gray-200 bg-white p-5 shadow-sm">
-                <div className="flex items-start justify-between mb-3">
-                  <div>
-                    <p className="text-xs text-gray-400 font-mono">{inv.invoiceNumber}</p>
-                    <p className="font-semibold text-gray-900 mt-0.5">{inv.childName}</p>
+              <div key={inv._id} className="rounded-xl border border-gray-200 bg-white p-4 sm:p-5 shadow-sm min-w-0">
+                <div className="flex items-start justify-between gap-2 mb-3">
+                  <div className="min-w-0">
+                    <p className="text-xs text-gray-400 font-mono break-all">{inv.invoiceNumber}</p>
+                    <p className="font-semibold text-gray-900 mt-0.5 break-words">{inv.childName}</p>
                   </div>
                   <StatusBadge status={inv.status} />
                 </div>
@@ -441,11 +441,11 @@ export default function InvoicesPage() {
                 </div>
 
                 <div className="rounded-lg bg-teal-50 px-4 py-3 mb-4 text-center">
-                  <p className="text-2xl font-bold text-teal-700">{formatRupiah(inv.amount)}</p>
+                  <p className="text-xl sm:text-2xl font-bold text-teal-700 break-words">{formatRupiah(inv.amount)}</p>
                   <p className="text-xs text-teal-600 mt-0.5">Total Tagihan</p>
                 </div>
 
-                <div className="flex items-center justify-between text-xs text-gray-500">
+                <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1 text-xs text-gray-500">
                   <span className="flex items-center gap-1">
                     <CalendarIcon className="h-3 w-3" />
                     Jatuh tempo:
@@ -470,7 +470,7 @@ export default function InvoicesPage() {
                 )}
 
                 {inv.notes && (
-                  <p className="text-xs text-gray-400 mt-2 italic">{inv.notes}</p>
+                  <p className="text-xs text-gray-400 mt-2 italic break-words">{inv.notes}</p>
                 )}
 
                 {/* Bank transfer details */}
@@ -482,7 +482,7 @@ export default function InvoicesPage() {
                     {bankAccounts.map((acc) => (
                       <div key={acc._id} className="rounded-lg bg-gray-50 border border-gray-100 px-3 py-2">
                         <p className="text-xs font-semibold text-gray-900">{acc.bankName}</p>
-                        <p className="text-xs text-gray-600 mt-0.5">{acc.accountNumber} a.n. {acc.accountHolderName}</p>
+                        <p className="text-xs text-gray-600 mt-0.5 break-words">{acc.accountNumber} a.n. {acc.accountHolderName}</p>
                         {acc.notes && <p className="text-xs text-gray-400 italic mt-0.5">{acc.notes}</p>}
                       </div>
                     ))}
@@ -499,7 +499,7 @@ export default function InvoicesPage() {
                         </p>
                         <p className="text-xs text-amber-600 mt-0.5">Dikirim {formatDate(inv.paymentSubmittedAt)}</p>
                         {inv.paymentMessage && (
-                          <p className="text-xs text-amber-500 italic mt-1">"{inv.paymentMessage}"</p>
+                          <p className="text-xs text-amber-500 italic mt-1 break-words">"{inv.paymentMessage}"</p>
                         )}
                       </div>
                     ) : expandedPaymentId === inv._id ? (
@@ -566,7 +566,7 @@ export default function InvoicesPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900">Kelola Invoicing</h1>
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Kelola Invoicing</h1>
         <p className="text-sm text-gray-500 mt-0.5">
           Atur tanggal pembayaran dan kirimkan invoice ke orang tua
         </p>
@@ -589,14 +589,14 @@ export default function InvoicesPage() {
 
       {/* Filters */}
       <div className="flex flex-wrap items-center gap-4">
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <FilterIcon className="h-4 w-4 text-gray-400" />
           <span className="text-sm font-medium text-gray-600">Status:</span>
           {(['all', 'unpaid', 'paid', 'overdue'] as const).map((s) => (
             <button
               key={s}
               onClick={() => setStatusFilter(s)}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+              className={`px-3 py-2 sm:py-1 rounded-full text-xs font-semibold transition-colors ${
                 statusFilter === s ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
@@ -604,13 +604,13 @@ export default function InvoicesPage() {
             </button>
           ))}
         </div>
-        <div className="flex items-center gap-2">
+        <div className="flex flex-wrap items-center gap-2">
           <span className="text-sm font-medium text-gray-600">Kirim ke orang tua:</span>
           {(['all', 'sent', 'unsent'] as const).map((v) => (
             <button
               key={v}
               onClick={() => setVisibilityFilter(v)}
-              className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+              className={`px-3 py-2 sm:py-1 rounded-full text-xs font-semibold transition-colors ${
                 visibilityFilter === v ? 'bg-teal-600 text-white' : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
               }`}
             >
@@ -752,12 +752,12 @@ export default function InvoicesPage() {
                       <button
                         onClick={() => handleToggleVisibility(inv)}
                         disabled={savingId === inv._id}
-                        className={`inline-flex items-center gap-1 px-2 py-1 rounded-full text-xs font-semibold transition-colors disabled:opacity-40 ${
+                        className={`inline-flex items-center gap-1 px-2.5 py-2 sm:px-2 sm:py-1 rounded-full text-xs font-semibold transition-colors disabled:opacity-40 ${
                           inv.isVisibleToParent
                             ? 'bg-teal-50 text-teal-700 hover:bg-teal-100'
                             : 'bg-gray-100 text-gray-500 hover:bg-gray-200'
                         }`}
-                        title={inv.isVisibleToParent ? 'Sudah terkirim ke orang tua — klik untuk sembunyikan' : 'Belum terkirim — klik untuk kirim ke orang tua'}
+                        title={inv.isVisibleToParent ? 'Sudah terkirim ke orang tua. Klik untuk sembunyikan.' : 'Belum terkirim. Klik untuk kirim ke orang tua.'}
                       >
                         {savingId === inv._id ? (
                           <span className="inline-block h-3 w-3 animate-spin rounded-full border-2 border-current border-t-transparent" />
@@ -834,7 +834,7 @@ export default function InvoicesPage() {
           onClick={() => !editSaving && setEditModal(null)}
         >
           <div
-            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md overflow-hidden"
+            className="relative bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto"
             onClick={(e) => e.stopPropagation()}
           >
             <div className="flex items-center justify-between px-5 py-4 border-b border-gray-100">
@@ -878,13 +878,13 @@ export default function InvoicesPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-lg bg-gray-50 px-3 py-2">
                   <p className="text-xs text-gray-500">Jumlah Sesi</p>
-                  <p className="text-sm font-semibold text-gray-900">
+                  <p className="text-sm font-semibold text-gray-900 break-words">
                     {selectedPackage ? selectedPackage.sessions : editModal.sessions} sesi
                   </p>
                 </div>
                 <div className="rounded-lg bg-gray-50 px-3 py-2">
                   <p className="text-xs text-gray-500">Jumlah Tagihan</p>
-                  <p className="text-sm font-semibold text-gray-900">
+                  <p className="text-sm font-semibold text-gray-900 break-words">
                     {formatRupiah(selectedPackage ? selectedPackage.price - Math.min(editDiscount, selectedPackage.price) : editModal.amount)}
                   </p>
                   {editDiscount > 0 && (
@@ -903,7 +903,7 @@ export default function InvoicesPage() {
               </div>
             </div>
 
-            <div className="px-5 py-3 border-t border-gray-100 flex justify-end gap-2">
+            <div className="px-5 py-3 border-t border-gray-100 flex flex-wrap justify-end gap-2">
               <button
                 onClick={() => setEditModal(null)}
                 disabled={editSaving}
@@ -975,7 +975,7 @@ export default function InvoicesPage() {
             </div>
 
             {/* Footer */}
-            <div className="px-5 py-3 border-t border-gray-100 flex justify-end gap-2">
+            <div className="px-5 py-3 border-t border-gray-100 flex flex-wrap justify-end gap-2">
               <a
                 href={proofModal.url}
                 target="_blank"

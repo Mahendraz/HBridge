@@ -601,8 +601,8 @@ export default function PatientDetailPage() {
   return (
     <div className="space-y-6">
       {/* Back + Header */}
-      <div className="flex items-start justify-between">
-        <div className="flex items-center gap-4">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-start sm:justify-between">
+        <div className="flex flex-wrap items-center gap-4 min-w-0">
           <Link href="/dashboard/patients">
             <Button variant="outline" size="sm">
               <ArrowLeftIcon className="h-4 w-4 mr-2" />
@@ -643,9 +643,9 @@ export default function PatientDetailPage() {
             />
           </div>
 
-          <div>
-            <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900">{child.name}</h1>
+          <div className="min-w-0">
+            <div className="flex flex-wrap items-center gap-x-3 gap-y-1">
+              <h1 className="text-xl sm:text-2xl font-bold text-gray-900 break-words">{child.name}</h1>
               <Badge variant={child.isActive ? "default" : "secondary"}>
                 {child.isActive ? "Aktif" : "Tidak Aktif"}
               </Badge>
@@ -669,7 +669,7 @@ export default function PatientDetailPage() {
           </div>
         </div>
         {permissions.hasPermission('patients:edit') && (
-          <Button size="sm" onClick={openEdit}>
+          <Button size="sm" onClick={openEdit} className="self-start">
             <PencilIcon className="h-4 w-4 mr-2" />
             Edit Data
           </Button>
@@ -793,8 +793,8 @@ export default function PatientDetailPage() {
           {/* Paket Terapi */}
           <Card>
             <CardHeader>
-              <div className="flex items-center justify-between">
-                <CardTitle className="flex items-center gap-2 text-base">
+              <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                <CardTitle className="flex flex-wrap items-center gap-2 text-base">
                   <PackageIcon className="h-5 w-5 text-teal-600" />
                   Paket Terapi
                   {packages.length > 0 && (
@@ -849,8 +849,8 @@ export default function PatientDetailPage() {
                       <div className="p-4 space-y-4">
                         {/* Paket info */}
                         <div className="flex items-center justify-between gap-3 rounded-lg bg-gray-50 border border-gray-100 px-3 py-2.5">
-                          <div>
-                            <p className="text-sm font-semibold text-gray-900">{pendingPackage.name}</p>
+                          <div className="min-w-0">
+                            <p className="text-sm font-semibold text-gray-900 break-words">{pendingPackage.name}</p>
                             <p className="text-xs text-gray-500 mt-0.5">
                               {pendingPackage.sessions} sesi &rarr; <span className="font-medium text-gray-700">{child?.name}</span>
                             </p>
@@ -898,7 +898,7 @@ export default function PatientDetailPage() {
                               value={discountValue}
                               onChange={(e) => setDiscountValue(e.target.value)}
                               placeholder={discountType === 'percent' ? 'Masukkan persen (0–100)' : 'Masukkan nominal'}
-                              className={`flex-1 text-sm px-3 py-2 outline-none bg-white placeholder:text-gray-300 ${
+                              className={`flex-1 min-w-0 w-full text-sm px-3 py-2 outline-none bg-white placeholder:text-gray-300 ${
                                 discountInvalid ? 'text-red-600' : 'text-gray-800'
                               }`}
                             />
@@ -1049,11 +1049,11 @@ export default function PatientDetailPage() {
                     return (
                       <div
                         key={pkg._id}
-                        className="flex items-center justify-between rounded-xl border border-gray-200 bg-white px-4 py-3 hover:border-teal-200 hover:bg-teal-50/30 transition-colors"
+                        className="flex items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-3 sm:px-4 py-3 hover:border-teal-200 hover:bg-teal-50/30 transition-colors"
                       >
-                        <div className="flex items-center gap-3">
+                        <div className="flex items-center gap-3 min-w-0">
                           <PackageIcon className="h-8 w-8 text-teal-400 shrink-0" />
-                          <div>
+                          <div className="min-w-0">
                             <div className="flex items-center gap-1.5 flex-wrap">
                               <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-teal-100 text-teal-800">
                                 {pkg.packageType || 'Paket'}
@@ -1090,9 +1090,9 @@ export default function PatientDetailPage() {
                               <span className="text-[10px] text-gray-400 font-mono">{inv.invoiceNumber}</span>
                               <button
                                 onClick={() => handleDownloadInvoicePdf(inv._id, inv.invoiceNumber)}
-                                className="inline-flex items-center gap-1 text-[10px] text-teal-600 hover:text-teal-800 font-medium"
+                                className="-my-2 inline-flex items-center gap-1 rounded-md py-2.5 text-xs font-medium text-teal-600 hover:text-teal-800"
                               >
-                                <DownloadIcon className="h-2.5 w-2.5" /> Unduh Invoice
+                                <DownloadIcon className="h-3 w-3" /> Unduh Invoice
                               </button>
                             </div>
                           ) : (
@@ -1179,7 +1179,7 @@ export default function PatientDetailPage() {
 
                         {/* Result display */}
                         {hasResult && (
-                          <div className="mt-2 pt-2 border-t border-indigo-100 grid grid-cols-2 gap-2">
+                          <div className="mt-2 pt-2 border-t border-indigo-100 grid grid-cols-1 sm:grid-cols-2 gap-2">
                             {(['OT', 'TW'] as const).map((type) => {
                               const r = a.result?.[type];
                               if (!r) return (
@@ -1229,10 +1229,10 @@ export default function PatientDetailPage() {
               {child.parent ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm">
-                      {child.parent.name.charAt(0).toUpperCase()}
+                    <div className="w-10 h-10 rounded-full bg-blue-100 flex items-center justify-center text-blue-700 font-bold text-sm shrink-0">
+                      {(child.parent.name ?? '?').charAt(0).toUpperCase()}
                     </div>
-                    <p className="font-semibold text-gray-900">{child.parent.name}</p>
+                    <p className="font-semibold text-gray-900 min-w-0 break-words">{child.parent.name}</p>
                   </div>
                   <div className="space-y-2 pt-1">
                     <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -1268,14 +1268,14 @@ export default function PatientDetailPage() {
                       <div className="flex items-start gap-2 text-sm text-gray-600">
                         <MapPinIcon className="h-4 w-4 text-gray-400 shrink-0 mt-0.5" />
                         {child.parent.address ? (
-                          <span className="flex-1">{child.parent.address}</span>
+                          <span className="flex-1 min-w-0 break-words">{child.parent.address}</span>
                         ) : (
                           <span className="flex-1 italic text-gray-400">Alamat belum diisi</span>
                         )}
                         {permissions.hasPermission('patients:edit') && (
                           <button
                             onClick={openAddressEdit}
-                            className="text-xs text-teal-600 hover:text-teal-700 font-medium shrink-0"
+                            className="-m-2 shrink-0 rounded-md p-2.5 text-xs font-medium text-teal-600 hover:bg-teal-50 hover:text-teal-700"
                           >
                             Edit
                           </button>
@@ -1320,10 +1320,10 @@ export default function PatientDetailPage() {
               {child.therapist ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold text-sm">
-                      {child.therapist.name.charAt(0).toUpperCase()}
+                    <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold text-sm shrink-0">
+                      {(child.therapist.name ?? '?').charAt(0).toUpperCase()}
                     </div>
-                    <p className="font-semibold text-gray-900">{child.therapist.name}</p>
+                    <p className="font-semibold text-gray-900 min-w-0 break-words">{child.therapist.name}</p>
                   </div>
                   <div className="space-y-2 pt-1">
                     <div className="flex items-center gap-2 text-sm text-gray-600">
@@ -1374,7 +1374,7 @@ export default function PatientDetailPage() {
 
               {(['OT', 'TW'] as const).map((type) => (
                 <div key={type} className="rounded-lg border border-gray-200 p-3 space-y-3">
-                  <div className="flex items-center justify-between">
+                  <div className="flex items-center justify-between gap-2">
                     <span className="font-semibold text-sm text-gray-800">
                       Asesmen {type === 'OT' ? 'Okupasi (OT)' : 'Wicara (TW)'}
                     </span>
@@ -1484,7 +1484,7 @@ export default function PatientDetailPage() {
             <p className="text-sm text-gray-500 -mt-2 mb-3">
               Geser dan resize kotak untuk memilih bagian yang akan dijadikan foto profil.
             </p>
-            <div className="flex justify-center bg-gray-100 rounded-xl overflow-hidden max-h-[420px]">
+            <div className="flex justify-center bg-gray-100 rounded-xl overflow-hidden max-h-[60vh] sm:max-h-[420px]">
               <ReactCrop
                 crop={crop}
                 onChange={(_, pct) => setCrop(pct)}
@@ -1527,7 +1527,7 @@ export default function PatientDetailPage() {
               <DialogTitle>Edit Data Anak</DialogTitle>
             </DialogHeader>
             <div className="space-y-4 mt-2">
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                 <div>
                   <label className="text-xs font-medium text-gray-700 mb-1 block">Nama</label>
                   <Input

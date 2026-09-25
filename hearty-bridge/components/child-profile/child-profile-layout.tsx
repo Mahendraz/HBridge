@@ -79,7 +79,7 @@ export function ChildProfileLayout({
       <Card>
         <CardHeader>
           <div className="flex items-start justify-between">
-            <div className="flex items-center space-x-4">
+            <div className="flex items-center space-x-4 min-w-0">
               <Avatar size="xl">
                 {child.profile?.avatar ? (
                   <AvatarImage src={child.profile.avatar} alt={child.name} />
@@ -90,9 +90,9 @@ export function ChildProfileLayout({
                 )}
               </Avatar>
               
-              <div>
-                <CardTitle className="text-2xl">{child.name}</CardTitle>
-                <div className="flex items-center space-x-4 text-sm text-gray-600 mt-2">
+              <div className="min-w-0">
+                <CardTitle className="text-xl sm:text-2xl break-words">{child.name}</CardTitle>
+                <div className="flex flex-wrap items-center gap-x-4 gap-y-1 text-sm text-gray-600 mt-2">
                   <div className="flex items-center space-x-1">
                     <CalendarIcon size={16} />
                     <span>{calculateAge(child.dateOfBirth)} tahun</span>

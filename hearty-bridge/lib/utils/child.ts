@@ -1,5 +1,22 @@
 import { IChild } from '@/models/Child';
 import { IUser } from '@/models/User';
+import mongoose from 'mongoose';
+
+/**
+ * True when a ref field was populated into a document. `typeof === 'object'`
+ * isn't enough: a raw ObjectId is an object too, and treating it as populated
+ * produced a parent/therapist with no name (crashed the child detail page).
+ */
+function isPopulated(ref: unknown): ref is { _id?: { toString(): string }; name?: string } {
+  return !!ref && typeof ref === 'object' && !(ref instanceof mongoose.Types.ObjectId) && 'name' in ref;
+}
+
+/** The id of a ref field, whether it holds an ObjectId or a populated document. */
+function refId(ref: unknown): string | undefined {
+  if (!ref) return undefined;
+  if (isPopulated(ref)) return ref._id?.toString();
+  return (ref as { toString(): string }).toString();
+}
 
 /**
  * Calculate age from date of birth
@@ -36,7 +53,7 @@ export function formatChildForResponse(child: IChild, includePrivateInfo: boolea
   };
 
   // Add populated parent info if available
-  if (child.parentId && typeof child.parentId === 'object') {
+  if (isPopulated(child.parentId)) {
     const parent = child.parentId as any;
     baseInfo.parent = {
       id: parent._id.toString(),
@@ -51,7 +68,7 @@ export function formatChildForResponse(child: IChild, includePrivateInfo: boolea
 
   // Add populated therapist info if available
   if (child.therapistId) {
-    if (typeof child.therapistId === 'object') {
+    if (isPopulated(child.therapistId)) {
       const therapist = child.therapistId as any;
       baseInfo.therapist = {
         id: therapist._id.toString(),
@@ -109,12 +126,12 @@ export function canAccessChild(
 ): boolean {
   // Parents can only access their own children
   if (user.role === 'parent') {
-    return child.parentId.toString() === user.userId;
+    return refId(child.parentId) === user.userId;
   }
 
   // Therapists can access children assigned to them
   if (user.role === 'therapist') {
-    return child.therapistId?.toString() === user.userId;
+    return refId(child.therapistId) === user.userId;
   }
 
   return false;
@@ -129,12 +146,12 @@ export function canModifyChild(
 ): boolean {
   // Only parents can modify their children's basic info
   if (user.role === 'parent') {
-    return child.parentId.toString() === user.userId;
+    return refId(child.parentId) === user.userId;
   }
 
   // Therapists can only modify medical notes and therapy-related info for assigned children
   if (user.role === 'therapist') {
-    return child.therapistId?.toString() === user.userId;
+    return refId(child.therapistId) === user.userId;
   }
 
   return false;
@@ -148,7 +165,7 @@ export function canAssignTherapist(
   child: IChild
 ): boolean {
   // Only parents can assign therapists to their children
-  return user.role === 'parent' && child.parentId.toString() === user.userId;
+  return user.role === 'parent' && refId(child.parentId) === user.userId;
 }
 
 /**

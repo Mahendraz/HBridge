@@ -610,9 +610,9 @@ export default function TherapistsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900">Manajemen Terapis</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Manajemen Terapis</h1>
           <p className="text-gray-600">Kelola terapis dan penugasan mereka</p>
         </div>
 
@@ -635,7 +635,7 @@ export default function TherapistsPage() {
       {/* Therapists Grid */}
       {filteredTherapists.length === 0 ? (
         <Card>
-          <CardContent className="p-12 text-center">
+          <CardContent className="p-6 sm:p-12 text-center">
             <UserIcon className="h-12 w-12 text-gray-400 mx-auto mb-4" />
             <h3 className="text-lg font-medium text-gray-900 mb-2">Tidak ada terapis ditemukan</h3>
             <p className="text-gray-600 mb-4">
@@ -657,7 +657,7 @@ export default function TherapistsPage() {
           </CardContent>
         </Card>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
           {filteredTherapists.map(therapist => (
             <TherapistCard
               key={therapist._id}
@@ -776,7 +776,7 @@ export default function TherapistsPage() {
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setShowEditModal(false)} disabled={isEditing}>
               Batal
             </Button>
@@ -796,7 +796,7 @@ export default function TherapistsPage() {
           <p className="text-sm text-gray-600 py-2">
             Nonaktifkan <span className="font-semibold">{confirmDeactivate?.name}</span>? Terapis tidak bisa login hingga diaktifkan kembali.
           </p>
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setConfirmDeactivate(null)} disabled={isDeactivating}>
               Batal
             </Button>
@@ -818,8 +818,8 @@ export default function TherapistsPage() {
       <Dialog open={!!leaveModalTherapist} onOpenChange={(open) => !open && setLeaveModalTherapist(null)}>
         <DialogContent size="md">
           <DialogHeader>
-            <DialogTitle className="flex items-center gap-2">
-              <CalendarOffIcon className="h-5 w-5 text-amber-500" />
+            <DialogTitle className="flex items-center gap-2 leading-snug sm:leading-none">
+              <CalendarOffIcon className="h-5 w-5 text-amber-500 shrink-0" />
               Status Terapis — {leaveModalTherapist?.name}
             </DialogTitle>
           </DialogHeader>
@@ -927,7 +927,7 @@ export default function TherapistsPage() {
                 </div>
                 {leaveForm.type !== 'active' && (<>
                 {/* Date range */}
-                <div className="grid grid-cols-2 gap-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
                   <div>
                     <label className="text-sm font-medium text-gray-700">Mulai *</label>
                     <input
@@ -964,7 +964,7 @@ export default function TherapistsPage() {
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setLeaveModalTherapist(null)} disabled={leaveSubmitting}>
               Tutup
             </Button>
@@ -1040,7 +1040,7 @@ export default function TherapistsPage() {
             </div>
           </div>
 
-          <DialogFooter>
+          <DialogFooter className="gap-2 sm:gap-0">
             <Button variant="outline" onClick={() => setShowCreateModal(false)} disabled={isCreating}>
               Batal
             </Button>
@@ -1060,7 +1060,7 @@ function TherapistsSkeleton() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-2">
           <Skeleton className="h-7 w-52" />
           <Skeleton className="h-4 w-64" />
@@ -1071,7 +1071,7 @@ function TherapistsSkeleton() {
       <Skeleton className="h-4 w-56" />
 
       {/* Therapist cards */}
-      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-6">
+      <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 sm:gap-6">
         {Array.from({ length: 6 }).map((_, i) => (
           <Card key={i}>
             <CardHeader className="pb-3">

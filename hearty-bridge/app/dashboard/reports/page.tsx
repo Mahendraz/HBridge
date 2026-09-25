@@ -326,9 +326,13 @@ function ReportDeepLink({ onOpen }: { onOpen: (report: Report) => void }) {
 function ReportViewDialog({
   report: initialReport,
   onClose,
+  onCommentsChanged,
 }: {
   report: Report;
   onClose: () => void;
+  /** Called after a comment/reply is posted or resolved, so the list and the
+   *  "Perlu dibalas" count refresh when the dialog closes. */
+  onCommentsChanged?: () => void;
 }) {
   const { user } = useAuth();
   const permissions = usePermissions(user?.role ?? "parent");
@@ -401,6 +405,7 @@ function ReportViewDialog({
       // Root comments are listed newest-first, so a new one goes on top;
       // replies are ordered oldest-first within their thread by repliesFor().
       if (data?.comment) setComments((prev) => [data.comment, ...prev]);
+      onCommentsChanged?.();
       if (parentCommentId) { setReplyingTo(null); setReplyText(''); }
       else setNewCommentText('');
     } catch (e) {
@@ -419,6 +424,7 @@ function ReportViewDialog({
     const data = await res.json().catch(() => null);
     if (res.ok && data?.comment) {
       setComments((prev) => prev.map((c) => c._id === commentId ? { ...c, ...data.comment } : c));
+      onCommentsChanged?.();
     }
   };
 
@@ -803,6 +809,11 @@ export default function ReportsPage() {
   const [statusFilter, setStatusFilter] = useState("all");
   const [activeTab, setActiveTab] = useState("all");
   const [viewingReport, setViewingReport] = useState<Report | null>(null);
+  const commentedWhileOpen = React.useRef(false);
+  // "Perlu dibalas": reports with comments not yet marked Selesai (staff only).
+  const canSeeNeedsReply = permissions.hasPermission("reports:resolve_comment");
+  const [needsReply, setNeedsReply] = useState(false);
+  const [needsReplyCount, setNeedsReplyCount] = useState(0);
   const [showPatientPicker, setShowPatientPicker] = useState(false);
   const [viewMode, setViewMode] = useState<'grid' | 'list'>('list');
 
@@ -839,21 +850,36 @@ export default function ReportsPage() {
     );
   }
 
+  const fetchNeedsReplyCount = async () => {
+    if (!canSeeNeedsReply) return;
+    try {
+      const res = await fetch("/api/reports/comments/unresolved-count", {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+      if (!res.ok) return;
+      const result = await res.json();
+      setNeedsReplyCount(result?.data?.count ?? result?.count ?? 0);
+    } catch {
+      // best-effort badge
+    }
+  };
+
   useEffect(() => {
-    fetchReports();
+    fetchReports(needsReply);
+    fetchNeedsReplyCount();
   // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [needsReply]);
 
   useEffect(() => {
     filterReports();
   // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [reports, searchTerm, typeFilter, statusFilter, activeTab]);
 
-  const fetchReports = async () => {
+  const fetchReports = async (onlyNeedsReply = false) => {
     try {
       setLoading(true);
       setFetchError(null);
-      const res = await fetch("/api/reports", {
+      const res = await fetch(onlyNeedsReply ? "/api/reports?needsReply=1" : "/api/reports", {
         headers: {
           Authorization: `Bearer ${token}`,
           "Content-Type": "application/json",
@@ -900,7 +926,7 @@ export default function ReportsPage() {
         method: "DELETE",
         headers: { Authorization: `Bearer ${token}` },
       });
-      if (res.ok) fetchReports();
+      if (res.ok) fetchReports(needsReply);
     } catch {
       // ignore
     }
@@ -1015,18 +1041,18 @@ export default function ReportsPage() {
 
         {/* Aksi */}
         <div className={`${COL.actions} flex items-center justify-end gap-0.5 opacity-0 group-hover:opacity-100 transition-opacity`}>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => setViewingReport(report)} title="Lihat detail">
+          <Button variant="ghost" size="sm" className="h-9 w-9 p-0 sm:h-7 sm:w-7" onClick={() => setViewingReport(report)} title="Lihat detail">
             <EyeIcon className="h-3.5 w-3.5" />
           </Button>
           <PermissionGuard userRole={user?.role || "parent"} permissions={["reports:create", "reports:view_all"]}>
-            <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => router.push(`/dashboard/reports/${report._id}/edit`)} title="Edit">
+            <Button variant="ghost" size="sm" className="h-9 w-9 p-0 sm:h-7 sm:w-7" onClick={() => router.push(`/dashboard/reports/${report._id}/edit`)} title="Edit">
               <EditIcon className="h-3.5 w-3.5" />
             </Button>
-            <Button variant="ghost" size="sm" className="h-7 w-7 p-0 text-red-400 hover:text-red-600 hover:bg-red-50" onClick={() => handleDelete(report._id)} title="Hapus">
+            <Button variant="ghost" size="sm" className="h-9 w-9 p-0 sm:h-7 sm:w-7 text-red-400 hover:text-red-600 hover:bg-red-50" onClick={() => handleDelete(report._id)} title="Hapus">
               <TrashIcon className="h-3.5 w-3.5" />
             </Button>
           </PermissionGuard>
-          <Button variant="ghost" size="sm" className="h-7 w-7 p-0" onClick={() => handleDownloadPdf(report._id, report.childName)} title="Unduh Laporan Harian (PDF)">
+          <Button variant="ghost" size="sm" className="h-9 w-9 p-0 sm:h-7 sm:w-7" onClick={() => handleDownloadPdf(report._id, report.childName)} title="Unduh Laporan Harian (PDF)">
             <DownloadIcon className="h-3.5 w-3.5" />
           </Button>
         </div>
@@ -1060,7 +1086,7 @@ export default function ReportsPage() {
                     size="sm"
                     onClick={() => setViewingReport(report)}
                     title="Lihat detail"
-                    className="h-7 w-7 p-0"
+                    className="h-9 w-9 p-0 sm:h-7 sm:w-7"
                   >
                     <EyeIcon className="h-3.5 w-3.5" />
                   </Button>
@@ -1069,7 +1095,7 @@ export default function ReportsPage() {
                     size="sm"
                     onClick={() => router.push(`/dashboard/reports/${report._id}/edit`)}
                     title="Edit"
-                    className="h-7 w-7 p-0"
+                    className="h-9 w-9 p-0 sm:h-7 sm:w-7"
                   >
                     <EditIcon className="h-3.5 w-3.5" />
                   </Button>
@@ -1077,7 +1103,7 @@ export default function ReportsPage() {
                     variant="ghost"
                     size="sm"
                     onClick={() => handleDelete(report._id)}
-                    className="h-7 w-7 p-0 text-red-400 hover:text-red-600 hover:bg-red-50"
+                    className="h-9 w-9 p-0 sm:h-7 sm:w-7 text-red-400 hover:text-red-600 hover:bg-red-50"
                     title="Hapus"
                   >
                     <TrashIcon className="h-3.5 w-3.5" />
@@ -1132,7 +1158,7 @@ export default function ReportsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 text-xs px-3"
+                  className="h-9 text-xs px-3 sm:h-7"
                   onClick={() => setViewingReport(report)}
                 >
                   <EyeIcon className="h-3.5 w-3.5 mr-1" />
@@ -1141,7 +1167,7 @@ export default function ReportsPage() {
                 <Button
                   variant="outline"
                   size="sm"
-                  className="h-7 text-xs px-3"
+                  className="h-9 text-xs px-3 sm:h-7"
                   onClick={() => handleDownloadPdf(report._id, report.childName)}
                 >
                   <DownloadIcon className="h-3.5 w-3.5 mr-1" />
@@ -1167,7 +1193,7 @@ export default function ReportsPage() {
           <FileTextIcon className="h-12 w-12 text-red-400 mx-auto mb-3" />
           <p className="font-semibold text-gray-900 mb-1">Gagal memuat data</p>
           <p className="text-sm text-red-600 mb-4">{fetchError}</p>
-          <Button variant="outline" onClick={fetchReports}>
+          <Button variant="outline" onClick={() => fetchReports(needsReply)}>
             Coba Lagi
           </Button>
         </div>
@@ -1243,6 +1269,19 @@ export default function ReportsPage() {
     const showDraft = draftHook.hasDraft && draftHook.draft && !draftHook.draft.editingId &&
       (activeTab === "all" || activeTab === "draft");
 
+    if (filteredReports.length === 0 && needsReply) {
+      return (
+        <div className="text-center py-12">
+          <CheckCircle2Icon className="h-12 w-12 text-teal-500 mx-auto mb-4" aria-hidden="true" />
+          <h3 className="text-lg font-medium text-gray-900 mb-2">Semua komentar sudah dibalas</h3>
+          <p className="text-gray-600 mb-4">Laporan dengan komentar baru akan muncul di sini.</p>
+          <Button variant="outline" onClick={() => setNeedsReply(false)}>
+            Tampilkan semua laporan
+          </Button>
+        </div>
+      );
+    }
+
     if (filteredReports.length === 0 && !showDraft) {
       return (
         <div className="text-center py-12">
@@ -1299,7 +1338,7 @@ export default function ReportsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900">Laporan &amp; Analitik</h1>
           <p className="text-gray-600">Pantau kemajuan dan buat laporan komprehensif</p>
@@ -1332,7 +1371,7 @@ export default function ReportsPage() {
                 className="pl-10"
               />
             </div>
-            <div className="flex gap-2">
+            <div className="flex flex-wrap gap-2">
               <Select
                 value={typeFilter}
                 onValueChange={setTypeFilter}
@@ -1352,25 +1391,63 @@ export default function ReportsPage() {
                   { value: "completed", label: "Selesai" },
                 ]}
               />
+              {canSeeNeedsReply && (
+                <button
+                  type="button"
+                  onClick={() => setNeedsReply((v) => !v)}
+                  aria-pressed={needsReply}
+                  className={`inline-flex h-10 shrink-0 items-center gap-2 rounded-md border px-3 text-sm font-medium transition-[background-color,border-color,transform] duration-150 active:scale-[0.98] focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600 focus-visible:ring-offset-2 ${
+                    needsReply
+                      ? "border-teal-600 bg-teal-50 text-teal-800"
+                      : "border-gray-300 bg-white text-gray-700 hover:bg-gray-50"
+                  }`}
+                >
+                  <MessageCircleIcon className="h-4 w-4 shrink-0 text-teal-600" aria-hidden="true" />
+                  Perlu dibalas
+                  {needsReplyCount > 0 && (
+                    <span
+                      className={`min-w-5 rounded-full px-1.5 py-0.5 text-center text-xs font-semibold leading-none tabular-nums ${
+                        needsReply ? "bg-teal-600 text-white" : "bg-amber-500 text-white"
+                      }`}
+                    >
+                      <span className="sr-only">, </span>
+                      {needsReplyCount > 99 ? "99+" : needsReplyCount}
+                    </span>
+                  )}
+                </button>
+              )}
               {/* View toggle */}
               <div className="flex items-center gap-0.5 border border-gray-200 rounded-lg p-0.5 shrink-0">
                 <button
                   onClick={() => setViewMode('grid')}
                   title="Grid view"
-                  className={`p-1.5 rounded-md transition-colors ${viewMode === 'grid' ? 'bg-teal-50 text-teal-700' : 'text-gray-400 hover:text-gray-600'}`}
+                  className={`inline-flex h-9 w-9 items-center justify-center rounded-md transition-colors sm:h-7 sm:w-7 ${viewMode === 'grid' ? 'bg-teal-50 text-teal-700' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                   <LayoutGridIcon className="h-4 w-4" />
                 </button>
                 <button
                   onClick={() => setViewMode('list')}
                   title="List view"
-                  className={`p-1.5 rounded-md transition-colors ${viewMode === 'list' ? 'bg-teal-50 text-teal-700' : 'text-gray-400 hover:text-gray-600'}`}
+                  className={`inline-flex h-9 w-9 items-center justify-center rounded-md transition-colors sm:h-7 sm:w-7 ${viewMode === 'list' ? 'bg-teal-50 text-teal-700' : 'text-gray-400 hover:text-gray-600'}`}
                 >
                   <ListIcon className="h-4 w-4" />
                 </button>
               </div>
             </div>
           </div>
+
+          {needsReply && (
+            <div className="mb-4 flex flex-wrap items-center justify-between gap-x-3 gap-y-1 rounded-md border border-teal-100 bg-teal-50/60 px-3 py-2 text-sm text-teal-900">
+              <span>Komentar yang belum ditandai Selesai, terbaru di atas.</span>
+              <button
+                type="button"
+                onClick={() => setNeedsReply(false)}
+                className="-mx-2 rounded-md px-2 py-1.5 font-medium text-teal-700 hover:bg-teal-100/70 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-600"
+              >
+                Tampilkan semua
+              </button>
+            </div>
+          )}
 
           <Tabs value={activeTab} onValueChange={setActiveTab}>
             <TabsList className="grid w-full grid-cols-3">
@@ -1408,8 +1485,17 @@ export default function ReportsPage() {
       {viewingReport && (
         <ReportViewDialog
           report={viewingReport}
+          onCommentsChanged={() => { commentedWhileOpen.current = true; }}
           onClose={() => {
             setViewingReport(null);
+            // Comments changed: refresh the count, and the list when it's the
+            // "Perlu dibalas" view (a resolved report drops out of it). Done on
+            // close, not while open, so the list doesn't reshuffle behind it.
+            if (commentedWhileOpen.current) {
+              commentedWhileOpen.current = false;
+              fetchNeedsReplyCount();
+              if (needsReply) fetchReports(true);
+            }
             // Drop ?reportId so clicking the same notification again re-opens it
             if (new URLSearchParams(window.location.search).has("reportId")) {
               router.replace("/dashboard/reports");
@@ -1427,7 +1513,7 @@ function ReportsSkeleton() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-2">
           <Skeleton className="h-7 w-56" />
           <Skeleton className="h-4 w-72" />

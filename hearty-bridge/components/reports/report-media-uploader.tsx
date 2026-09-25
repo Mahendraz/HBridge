@@ -507,7 +507,7 @@ export function ReportMediaField({
                   )}
                   {item.status === "error" && (
                     <div className="flex items-center justify-between gap-1">
-                      <p className="text-[10px] text-red-600 truncate" title={item.error}>
+                      <p className="min-w-0 text-[10px] text-red-600 truncate" title={item.error}>
                         {item.error}
                       </p>
                       <button
@@ -523,7 +523,7 @@ export function ReportMediaField({
 
                 <button
                   type="button"
-                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600"
+                  className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-1 sm:p-0.5 hover:bg-red-600"
                   onClick={() => remove(item)}
                   title="Hapus"
                 >
@@ -555,13 +555,13 @@ export function ReportMediaField({
           type="button"
           disabled={disabled}
           onClick={() => fileInputRef.current?.click()}
-          className={`w-full border-2 border-dashed rounded-lg py-3 flex items-center justify-center gap-2 text-sm transition-colors disabled:opacity-50 ${
+          className={`w-full border-2 border-dashed rounded-lg px-3 py-3 flex items-center justify-center gap-2 text-sm text-center transition-colors disabled:opacity-50 ${
             dragging
               ? "border-teal-500 text-teal-700 bg-teal-50"
               : "border-gray-300 text-gray-500 hover:border-teal-400 hover:text-teal-600 hover:bg-teal-50"
           }`}
         >
-          <UploadIcon className="h-4 w-4" />
+          <UploadIcon className="h-4 w-4 shrink-0" />
           {dragging ? "Lepaskan file di sini" : "Pilih atau seret foto/video ke sini (maks. 100 MB per file)"}
         </button>
       </div>

@@ -143,25 +143,25 @@ export function PatientAssignmentModal({
                       </Avatar>
                       
                       <div className="flex-1 min-w-0">
-                        <div className="flex items-center justify-between">
+                        <div className="flex items-center justify-between gap-2">
                           <h3 className="font-medium text-gray-900 truncate">
                             {patient.name}
                           </h3>
                           {patient.dateOfBirth && (
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-gray-500 flex-shrink-0">
                               {calculateAge(patient.dateOfBirth)} tahun
                             </span>
                           )}
                         </div>
                         
-                        <div className="flex items-center gap-4 mt-1">
+                        <div className="flex flex-wrap items-center gap-x-4 gap-y-1 mt-1">
                           {patient.diagnosis && (
                             <Badge variant="secondary" className="text-xs">
                               {patient.diagnosis}
                             </Badge>
                           )}
                           {patient.parentName && (
-                            <span className="text-xs text-gray-500">
+                            <span className="text-xs text-gray-500 break-words">
                               Ortu: {patient.parentName}
                             </span>
                           )}
@@ -184,7 +184,7 @@ export function PatientAssignmentModal({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Jenis Terapi
                 </label>
-                <div className="grid grid-cols-2 gap-2">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   {sessionTypes.map((type) => (
                     <Button
                       key={type}
@@ -204,7 +204,7 @@ export function PatientAssignmentModal({
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Lokasi Sesi
                 </label>
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <Button
                     variant={selectedLocation === 'in-person' ? "default" : "outline"}
                     size="sm"
@@ -229,16 +229,16 @@ export function PatientAssignmentModal({
               {/* Selected Patient Summary */}
               <Card className="bg-teal-50">
                 <CardContent className="p-3">
-                  <div className="flex items-center justify-between">
-                    <div>
-                      <p className="font-medium text-teal-800">
+                  <div className="flex items-center justify-between gap-3">
+                    <div className="min-w-0">
+                      <p className="font-medium text-teal-800 break-words">
                         {selectedPatient.name}
                       </p>
                       <p className="text-sm text-teal-700">
                         {selectedSessionType} • {selectedLocation === 'in-person' ? 'Tatap Muka' : 'Online'}
                       </p>
                     </div>
-                    <div className="text-right">
+                    <div className="text-right flex-shrink-0">
                       <div className="flex items-center text-sm text-teal-700">
                         <ClockIcon className="h-4 w-4 mr-1" />
                         {selectedTime}
@@ -255,7 +255,7 @@ export function PatientAssignmentModal({
         </div>
 
         {/* Actions */}
-        <div className="flex justify-end gap-2 pt-4 border-t border-gray-200">
+        <div className="flex flex-col-reverse sm:flex-row sm:justify-end gap-2 pt-4 border-t border-gray-200">
           <Button variant="outline" onClick={() => onOpenChange(false)}>
             Batal
           </Button>

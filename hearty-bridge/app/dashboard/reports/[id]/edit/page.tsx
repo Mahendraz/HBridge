@@ -308,20 +308,20 @@ export default function EditReportPage() {
         >
           <ArrowLeftIcon className="h-5 w-5" />
         </button>
-        <div>
+        <div className="min-w-0">
           <p className="text-xs text-gray-500">
             Laporan /{" "}
             <span className="font-medium text-gray-700">Edit Laporan</span>
           </p>
-          <h1 className="text-2xl font-bold text-gray-900">Edit Laporan</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Edit Laporan</h1>
         </div>
       </div>
 
       {/* Draft banner */}
       {showDraftBanner && draftHook.draft && (
         <div className="bg-yellow-50 border border-yellow-300 rounded-lg px-4 py-3 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-          <div className="flex items-center gap-2 text-sm text-yellow-800">
-            <AlertCircleIcon className="h-4 w-4 flex-shrink-0" />
+          <div className="flex items-start sm:items-center gap-2 text-sm text-yellow-800">
+            <AlertCircleIcon className="h-4 w-4 flex-shrink-0 mt-0.5 sm:mt-0" />
             <span>
               Ada perubahan lokal yang belum tersimpan{" "}
               <span className="font-semibold">
@@ -330,7 +330,7 @@ export default function EditReportPage() {
               . Lanjutkan dari draf lokal?
             </span>
           </div>
-          <div className="flex gap-2 flex-shrink-0">
+          <div className="flex flex-wrap gap-2 flex-shrink-0">
             <button
               onClick={applyLocalDraft}
               className="text-xs font-medium px-3 py-1.5 bg-yellow-600 text-white rounded hover:bg-yellow-700 transition-colors"
@@ -348,7 +348,7 @@ export default function EditReportPage() {
       )}
 
       <Card>
-        <CardContent className="p-6 space-y-5">
+        <CardContent className="p-4 sm:p-6 space-y-5">
           {/* Pasien – prominent */}
           <div>
             <label className="text-sm font-semibold text-gray-800 mb-1.5 block">
@@ -443,7 +443,7 @@ export default function EditReportPage() {
           )}
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3 pt-4 border-t border-gray-200">
             <Button variant="outline" onClick={handleBack} disabled={isSaving}>
               Batal
             </Button>

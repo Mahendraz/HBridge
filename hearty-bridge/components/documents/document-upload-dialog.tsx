@@ -179,7 +179,7 @@ export function DocumentUploadDialog({
             <label className="block text-sm font-medium mb-2">Pilih File *</label>
             {!selectedFile ? (
               <div
-                className="border-2 border-dashed border-gray-300 rounded-lg p-6 text-center cursor-pointer hover:border-gray-400 transition-colors"
+                className="border-2 border-dashed border-gray-300 rounded-lg p-4 sm:p-6 text-center cursor-pointer hover:border-gray-400 transition-colors"
                 onClick={() => fileInputRef.current?.click()}
               >
                 <UploadIcon size={32} className="mx-auto text-gray-400 mb-2" />
@@ -189,13 +189,13 @@ export function DocumentUploadDialog({
                 </p>
               </div>
             ) : (
-              <div className="border border-gray-300 rounded-lg p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center space-x-3">
-                    <span className="text-2xl">{getFileIcon(selectedFile.type)}</span>
-                    <div>
-                      <p className="font-medium">{selectedFile.name}</p>
-                      <p className="text-sm text-gray-500">
+              <div className="border border-gray-300 rounded-lg p-3 sm:p-4">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center space-x-3 min-w-0">
+                    <span className="text-2xl shrink-0">{getFileIcon(selectedFile.type)}</span>
+                    <div className="min-w-0">
+                      <p className="font-medium break-all">{selectedFile.name}</p>
+                      <p className="text-sm text-gray-500 break-all">
                         {formatFileSize(selectedFile.size)} • {selectedFile.type}
                       </p>
                     </div>
@@ -387,8 +387,8 @@ export function DocumentUploadDialog({
           {selectedFile && (
             <div className="bg-teal-50 border border-teal-200 rounded-lg p-3">
               <div className="flex items-center gap-2 text-sm text-teal-800">
-                <FileIcon size={16} />
-                <span>Siap diunggah: {selectedFile.name}</span>
+                <FileIcon size={16} className="shrink-0" />
+                <span className="min-w-0 break-all">Siap diunggah: {selectedFile.name}</span>
               </div>
             </div>
           )}
@@ -452,7 +452,7 @@ export function DocumentViewDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="full">
         <DialogHeader>
-          <DialogTitle>{document.title}</DialogTitle>
+          <DialogTitle className="break-words">{document.title}</DialogTitle>
         </DialogHeader>
 
         <div className="space-y-4">

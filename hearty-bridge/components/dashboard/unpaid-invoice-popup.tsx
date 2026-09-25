@@ -68,18 +68,18 @@ export function UnpaidInvoicePopup({ invoices }: { invoices: UnpaidInvoiceSummar
                 <p className="text-sm font-bold text-teal-700 shrink-0">{formatRupiah(inv.amount)}</p>
               </div>
               <p className={`text-xs mt-1 flex items-center gap-1 ${inv.status === "overdue" ? "text-red-600 font-medium" : "text-gray-500"}`}>
-                <CalendarIcon className="h-3 w-3" />
+                <CalendarIcon className="h-3 w-3 flex-shrink-0" />
                 {inv.status === "overdue" ? "Lewat jatuh tempo" : "Jatuh tempo"} {formatDate(inv.dueDate)}
               </p>
             </div>
           ))}
         </div>
 
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-0">
           <Button variant="outline" onClick={() => setOpen(false)}>
             Tutup
           </Button>
-          <Link href="/dashboard/invoices">
+          <Link href="/dashboard/invoices" className="w-full sm:w-auto">
             <Button className="w-full bg-teal-600 hover:bg-teal-700 text-white">Lihat &amp; Bayar</Button>
           </Link>
         </DialogFooter>

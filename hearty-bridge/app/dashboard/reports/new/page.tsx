@@ -313,44 +313,45 @@ export default function NewReportPage() {
       <div className="flex items-center gap-3">
         <button
           onClick={handleBack}
-          className="text-gray-500 hover:text-gray-800 transition-colors"
+          className="-m-2 rounded-md p-2.5 text-gray-500 transition-colors hover:bg-gray-100 hover:text-gray-800"
           title="Kembali"
+          aria-label="Kembali"
         >
           <ArrowLeftIcon className="h-5 w-5" />
         </button>
-        <div>
+        <div className="min-w-0">
           <p className="text-xs text-gray-500">
             Laporan /{" "}
             <span className="font-medium text-gray-700">Buat Laporan Baru</span>
           </p>
-          <h1 className="text-2xl font-bold text-gray-900">Buat Laporan Baru</h1>
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Buat Laporan Baru</h1>
         </div>
       </div>
 
       {/* Patient header – shown when a patient was selected from the picker */}
       {urlChildId && urlChildName && (
-        <div className="flex items-center gap-4 bg-teal-50 border border-teal-200 rounded-xl px-5 py-4">
-          <div className="h-14 w-14 rounded-full bg-teal-600 flex items-center justify-center text-white text-lg font-bold flex-shrink-0">
+        <div className="flex items-center gap-3 sm:gap-4 bg-teal-50 border border-teal-200 rounded-xl px-4 py-3 sm:px-5 sm:py-4">
+          <div className="h-11 w-11 sm:h-14 sm:w-14 rounded-full bg-teal-600 flex items-center justify-center text-white text-base sm:text-lg font-bold flex-shrink-0">
             {getInitials(urlChildName)}
           </div>
           <div className="flex-1 min-w-0">
             <p className="text-xs font-medium text-teal-600 uppercase tracking-wide mb-0.5">
               Pasien
             </p>
-            <p className="text-xl font-bold text-gray-900 truncate">{urlChildName}</p>
+            <p className="text-lg sm:text-xl font-bold text-gray-900 truncate">{urlChildName}</p>
             <div className="flex flex-wrap gap-x-4 gap-y-0.5 mt-1">
               {urlDiagnosis && (
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 break-words">
                   <span className="font-medium">Diagnosis:</span> {urlDiagnosis}
                 </p>
               )}
               {urlTherapistName && (
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 break-words">
                   <span className="font-medium">Terapis:</span> {urlTherapistName}
                 </p>
               )}
               {urlSessionDate && (
-                <p className="text-sm text-gray-600">
+                <p className="text-sm text-gray-600 break-words">
                   <span className="font-medium">Sesi:</span>{" "}
                   {formatDisplayDate(urlSessionDate)}
                   {urlSessionHour ? ` — jam ${urlSessionHour}:00` : ""}
@@ -372,7 +373,7 @@ export default function NewReportPage() {
       )}
 
       <Card>
-        <CardContent className="p-6 space-y-5">
+        <CardContent className="p-4 sm:p-6 space-y-5">
           {/* Nama Anak – shown when NOT pre-selected from URL picker; prominent */}
           {!urlChildId && (
             <div>
@@ -510,7 +511,7 @@ export default function NewReportPage() {
           )}
 
           {/* Actions */}
-          <div className="flex justify-end gap-3 pt-4 border-t border-gray-200">
+          <div className="flex flex-col-reverse gap-2 sm:flex-row sm:justify-end sm:gap-3 pt-4 border-t border-gray-200">
             <Button variant="outline" onClick={handleBack} disabled={isSaving}>
               Batal
             </Button>

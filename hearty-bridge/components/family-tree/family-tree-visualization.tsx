@@ -277,9 +277,9 @@ export function FamilyTreeVisualization({
       {/* Header */}
       <Card>
         <CardHeader>
-          <div className="flex items-center justify-between">
-            <div>
-              <CardTitle className="flex items-center gap-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="min-w-0">
+              <CardTitle className="flex items-center gap-2 break-words">
                 <UsersIcon size={24} />
                 {family.familyName} Family Tree
               </CardTitle>
@@ -301,8 +301,8 @@ export function FamilyTreeVisualization({
       {/* Controls */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <div className="flex flex-wrap items-center gap-2">
               <Button variant="outline" size="sm" onClick={handleZoomIn}>
                 <ZoomInIcon size={16} />
               </Button>
@@ -317,7 +317,7 @@ export function FamilyTreeVisualization({
               </span>
             </div>
             
-            <div className="flex items-center gap-4 text-sm text-gray-600">
+            <div className="flex flex-wrap items-center gap-x-4 gap-y-2 text-sm text-gray-600">
               <div className="flex items-center gap-1">
                 <div className="w-3 h-3 bg-teal-200 rounded-full"></div>
                 <span>Parents</span>
@@ -343,7 +343,7 @@ export function FamilyTreeVisualization({
         <CardContent className="p-0">
           <div 
             ref={containerRef}
-            className="relative w-full h-[600px] overflow-hidden bg-gray-50"
+            className="relative w-full h-[400px] sm:h-[600px] overflow-hidden bg-gray-50"
           >
             <svg
               ref={svgRef}
@@ -486,7 +486,7 @@ export function FamilyTreeVisualization({
       {/* Legend */}
       <Card>
         <CardContent className="p-4">
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-4 text-sm">
             <div className="flex items-center gap-2">
               <UserIcon size={16} className="text-gray-500" />
               <span>Click to view details</span>
@@ -645,7 +645,7 @@ function MemberDialog({
                     </AvatarFallback>
                   )}
                 </Avatar>
-                <h3 className="text-xl font-semibold">{member.name}</h3>
+                <h3 className="text-xl font-semibold break-words">{member.name}</h3>
                 <Badge className={`mt-2 ${getRelationshipColor(member.relationship)}`}>
                   {member.relationship}
                 </Badge>
@@ -663,7 +663,7 @@ function MemberDialog({
               {member.notes && (
                 <div>
                   <span className="font-medium">Notes:</span>
-                  <p className="mt-1 text-gray-700">{member.notes}</p>
+                  <p className="mt-1 text-gray-700 break-words">{member.notes}</p>
                 </div>
               )}
             </div>

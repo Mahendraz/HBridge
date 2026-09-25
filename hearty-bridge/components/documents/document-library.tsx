@@ -337,11 +337,11 @@ export function DocumentLibrary({
           </div>
 
           {/* Filter controls */}
-          <div className="flex flex-wrap items-center gap-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             <select
               value={selectedType}
               onChange={(e) => setSelectedType(e.target.value as typeof selectedType)}
-              className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+              className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md text-sm"
             >
               <option value="all">Semua Jenis</option>
               <option value="medical">Medis</option>
@@ -354,7 +354,7 @@ export function DocumentLibrary({
               <select
                 value={selectedChild}
                 onChange={(e) => setSelectedChild(e.target.value)}
-                className="px-3 py-2 border border-gray-300 rounded-md text-sm"
+                className="w-full sm:w-auto px-3 py-2 border border-gray-300 rounded-md text-sm"
               >
                 <option value="all">Semua Anak</option>
                 {children.map(child => (
@@ -412,7 +412,7 @@ export function DocumentLibrary({
 
           {/* Active filters */}
           {selectedTags.length > 0 && (
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
               <span className="text-sm text-gray-600">Filter tag aktif:</span>
               {selectedTags.map(tag => (
                 <Badge key={tag} variant="secondary" className="flex items-center gap-1">
@@ -433,7 +433,7 @@ export function DocumentLibrary({
       {/* Sort Controls */}
       <Card>
         <CardContent className="p-4">
-          <div className="flex items-center gap-4">
+          <div className="flex flex-wrap items-center gap-2 sm:gap-4">
             <span className="text-sm font-medium">Urutkan:</span>
             {(["title", "uploadedAt", "expiryDate", "type", "size"] as const).map(field => (
               <Button
@@ -456,7 +456,7 @@ export function DocumentLibrary({
       {/* Documents Grid */}
       {filteredAndSortedDocuments.length === 0 ? (
         <Card>
-          <CardContent className="p-12 text-center">
+          <CardContent className="p-6 sm:p-12 text-center">
             <FileIcon size={48} className="mx-auto text-gray-400 mb-4" />
             <h4 className="text-lg font-medium text-gray-600 mb-2">
               {documents.length === 0 ? "Belum ada dokumen" : "Dokumen tidak ditemukan"}
@@ -500,12 +500,12 @@ export function DocumentLibrary({
                   </div>
                 </div>
 
-                <h4 className="font-semibold text-sm mb-2 line-clamp-2">{document.title}</h4>
+                <h4 className="font-semibold text-sm mb-2 line-clamp-2 break-words">{document.title}</h4>
 
                 <div className="space-y-2 text-xs text-gray-600 mb-4">
                   <div className="flex items-center gap-2">
                     <UserIcon size={12} />
-                    <span>{document.uploaderName}</span>
+                    <span className="min-w-0 truncate">{document.uploaderName}</span>
                   </div>
                   
                   <div className="flex items-center gap-2">

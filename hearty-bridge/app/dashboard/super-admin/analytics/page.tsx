@@ -230,9 +230,9 @@ export default function PatientAnalyticsPage() {
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between flex-wrap gap-3">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between sm:flex-wrap">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
             <TrendingUpIcon className="h-6 w-6 text-teal-600" />
             Tren Pasien
           </h1>
@@ -243,7 +243,7 @@ export default function PatientAnalyticsPage() {
         <select
           value={months}
           onChange={(e) => setMonths(parseInt(e.target.value))}
-          className="border border-gray-200 rounded-md px-3 py-2 text-sm"
+          className="w-full sm:w-auto border border-gray-200 rounded-md px-3 py-2 text-sm"
         >
           <option value={6}>6 bulan terakhir</option>
           <option value={12}>12 bulan terakhir</option>
@@ -257,7 +257,7 @@ export default function PatientAnalyticsPage() {
             <div className="p-2 bg-teal-100 rounded-lg">
               <UsersIcon className="h-5 w-5 text-teal-600" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs text-gray-500">Pasien Aktif Saat Ini</p>
               <p className="text-lg font-bold text-gray-900">{latest?.activePatientsCumulative ?? "—"}</p>
             </div>
@@ -268,7 +268,7 @@ export default function PatientAnalyticsPage() {
             <div className="p-2 bg-green-100 rounded-lg">
               <TrendingUpIcon className="h-5 w-5 text-green-600" />
             </div>
-            <div>
+            <div className="min-w-0">
               <p className="text-xs text-gray-500">Pasien Baru ({months} Bulan Terakhir)</p>
               <p className="text-lg font-bold text-gray-900">{totalNew}</p>
             </div>
@@ -315,7 +315,7 @@ export default function PatientAnalyticsPage() {
       {canViewFinancial && (
         <>
           <div className="pt-2">
-            <h2 className="text-xl font-bold text-gray-900 flex items-center gap-2">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 flex items-center gap-2">
               <WalletIcon className="h-5 w-5 text-teal-600" />
               Progres Keuangan Bulanan
             </h2>
@@ -345,7 +345,7 @@ export default function PatientAnalyticsPage() {
                   <div className="p-2 bg-green-100 rounded-lg">
                     <WalletIcon className="h-5 w-5 text-green-600" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs text-gray-500">Pendapatan ({months} Bulan Terakhir)</p>
                     <p className="text-lg font-bold text-gray-900">
                       {formatRupiahCompact(financialData.reduce((sum, p) => sum + p.revenue, 0))}
@@ -358,7 +358,7 @@ export default function PatientAnalyticsPage() {
                   <div className="p-2 bg-teal-100 rounded-lg">
                     <ReceiptIcon className="h-5 w-5 text-teal-600" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs text-gray-500">Ditagihkan Bulan Ini</p>
                     <p className="text-lg font-bold text-gray-900">
                       {formatRupiahCompact(financialData[financialData.length - 1]?.invoiced ?? 0)}
@@ -371,7 +371,7 @@ export default function PatientAnalyticsPage() {
                   <div className="p-2 bg-amber-100 rounded-lg">
                     <ClockIcon className="h-5 w-5 text-amber-600" />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs text-gray-500">Belum Tertagih ({outstanding?.count ?? 0} invoice)</p>
                     <p className="text-lg font-bold text-gray-900">
                       {formatRupiahCompact(outstanding?.total ?? 0)}
@@ -394,7 +394,8 @@ export default function PatientAnalyticsPage() {
               ) : financialData.length === 0 ? (
                 <div className="py-10 text-center text-sm text-gray-400">Belum ada data keuangan.</div>
               ) : (
-                <div style={{ width: "100%", height: 360 }}>
+                <div className="w-full overflow-x-auto">
+                <div style={{ width: "100%", height: 360 }} className="min-w-[480px]">
                   <ResponsiveContainer>
                     <ComposedChart
                       data={financialData.map((p) => ({ ...p, label: formatMonth(p.month) }))}
@@ -429,6 +430,7 @@ export default function PatientAnalyticsPage() {
                       />
                     </ComposedChart>
                   </ResponsiveContainer>
+                </div>
                 </div>
               )}
             </CardContent>

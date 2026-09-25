@@ -219,7 +219,7 @@ export function MediaGallery({
           </div>
           
           {selectedTags.length > 0 && (
-            <div className="flex items-center gap-2 mt-3">
+            <div className="flex flex-wrap items-center gap-2 mt-3">
               <span className="text-sm text-gray-600">Active filters:</span>
               {selectedTags.map(tag => (
                 <Badge key={tag} variant="secondary" className="flex items-center gap-1">
@@ -248,7 +248,7 @@ export function MediaGallery({
       {/* Media Grid */}
       {filteredMedia.length === 0 ? (
         <Card>
-          <CardContent className="p-12 text-center">
+          <CardContent className="p-6 sm:p-12 text-center">
             {type === "photos" ? <ImageIcon size={48} className="mx-auto text-gray-400 mb-4" /> :
              type === "videos" ? <VideoIcon size={48} className="mx-auto text-gray-400 mb-4" /> :
              <ImageIcon size={48} className="mx-auto text-gray-400 mb-4" />}
@@ -482,9 +482,9 @@ function MediaViewerDialog({
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent size="full">
         <div className="space-y-4">
-          <div className="flex items-center justify-between">
-            <DialogTitle>{media.originalName}</DialogTitle>
-            <div className="flex items-center space-x-2">
+          <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+            <DialogTitle className="min-w-0 break-all">{media.originalName}</DialogTitle>
+            <div className="flex flex-wrap items-center gap-2">
               <Button variant="outline" size="sm">
                 <DownloadIcon size={16} className="mr-2" />
                 Unduh
@@ -496,7 +496,7 @@ function MediaViewerDialog({
             </div>
           </div>
           
-          <div className="flex justify-center bg-gray-50 rounded-lg p-4">
+          <div className="flex justify-center bg-gray-50 rounded-lg p-2 sm:p-4">
             {media.mimeType.startsWith("image/") ? (
               <img
                 src={media.url}
@@ -527,7 +527,7 @@ function MediaViewerDialog({
             <div>
               <strong>Diunggah:</strong> {new Date(media.uploadedAt).toLocaleString()}
             </div>
-            <div>
+            <div className="break-all">
               <strong>Jenis:</strong> {media.mimeType}
             </div>
             <div>
@@ -538,7 +538,7 @@ function MediaViewerDialog({
           {media.description && (
             <div>
               <strong>Deskripsi:</strong>
-              <p className="mt-1 text-gray-600">{media.description}</p>
+              <p className="mt-1 text-gray-600 break-words">{media.description}</p>
             </div>
           )}
           

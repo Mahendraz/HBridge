@@ -94,10 +94,10 @@ function ResetPasswordBody({ target, onClose }: { target: ResetPasswordTarget; o
     <>
       <DialogHeader>
         <DialogTitle className="flex items-center gap-2">
-          <KeyRoundIcon className="h-5 w-5 text-teal-600" />
+          <KeyRoundIcon className="h-5 w-5 text-teal-600 shrink-0" />
           Reset Password
         </DialogTitle>
-        <DialogDescription>
+        <DialogDescription className="break-words">
           {issued
             ? `Password baru untuk ${target.name} sudah aktif.`
             : `Atur password sementara untuk ${target.name}${target.email ? ` (${target.email})` : ""}.`}
@@ -111,10 +111,10 @@ function ResetPasswordBody({ target, onClose }: { target: ResetPasswordTarget; o
               Password sementara — catat sekarang, tidak bisa dilihat lagi setelah dialog ini ditutup.
             </p>
             <div className="flex items-center gap-2">
-              <code className="flex-1 font-mono text-base bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 break-all">
+              <code className="flex-1 min-w-0 font-mono text-base bg-gray-50 border border-gray-200 rounded-lg px-3 py-2.5 break-all">
                 {issued}
               </code>
-              <Button variant="outline" size="sm" onClick={handleCopy} title="Salin">
+              <Button variant="outline" size="sm" className="shrink-0" onClick={handleCopy} title="Salin">
                 {copied ? (
                   <CheckIcon className="h-4 w-4 text-green-600" />
                 ) : (
@@ -147,7 +147,7 @@ function ResetPasswordBody({ target, onClose }: { target: ResetPasswordTarget; o
             autoComplete="new-password"
           />
 
-          <div className="flex gap-2">
+          <div className="flex flex-wrap gap-2">
             <Button
               type="button"
               variant="outline"
@@ -200,7 +200,7 @@ function ResetPasswordBody({ target, onClose }: { target: ResetPasswordTarget; o
         </div>
       )}
 
-      <DialogFooter>
+      <DialogFooter className="gap-2 sm:gap-0">
         {issued ? (
           <Button onClick={onClose}>Selesai</Button>
         ) : (

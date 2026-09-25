@@ -189,7 +189,7 @@ export function AnnouncementWall() {
   return (
     <div className="relative rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
       <BorderBeam size={140} duration={7} colorFrom="#f59e0b" colorTo="#f43f5e" />
-      <div className="p-6 border-b border-gray-100 flex items-center justify-between gap-3">
+      <div className="p-4 sm:p-6 border-b border-gray-100 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="flex items-center gap-3">
           <div className="h-9 w-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
             <MegaphoneIcon className="h-5 w-5 text-amber-600" />
@@ -200,14 +200,14 @@ export function AnnouncementWall() {
           </div>
         </div>
         {canManage && (
-          <Button size="sm" onClick={openCreate}>
+          <Button size="sm" onClick={openCreate} className="self-start sm:self-auto">
             <PlusIcon className="h-4 w-4 mr-1.5" />
             Buat Pengumuman
           </Button>
         )}
       </div>
 
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         {loading ? (
           <div className="text-center py-8">
             <div className="animate-spin rounded-full h-6 w-6 border-b-2 border-teal-600 mx-auto" />
@@ -223,8 +223,8 @@ export function AnnouncementWall() {
               <div key={a._id} className="rounded-xl border border-gray-100 bg-gray-50/50 p-4">
                 <div className="flex items-start justify-between gap-3">
                   <div className="min-w-0 flex-1">
-                    <p className="text-sm font-semibold text-gray-900">{a.title}</p>
-                    <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{a.content}</p>
+                    <p className="text-sm font-semibold text-gray-900 break-words">{a.title}</p>
+                    <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap break-words">{a.content}</p>
                     {a.attachments?.length > 0 && (
                       <div className="mt-3 flex flex-wrap gap-2">
                         {a.attachments.map((att, i) => {
@@ -235,9 +235,9 @@ export function AnnouncementWall() {
                                 href={att.url}
                                 target="_blank"
                                 rel="noopener noreferrer"
-                                className="inline-flex items-center gap-1.5 text-xs font-medium text-teal-600 hover:text-teal-800 bg-teal-50 border border-teal-200 rounded-lg px-2.5 py-1.5"
+                                className="inline-flex max-w-full items-center gap-1.5 break-all text-xs font-medium text-teal-600 hover:text-teal-800 bg-teal-50 border border-teal-200 rounded-lg px-2.5 py-1.5"
                               >
-                                <FileTextIcon className="h-3.5 w-3.5" />
+                                <FileTextIcon className="h-3.5 w-3.5 flex-shrink-0" />
                                 {att.fileName}
                               </a>
                             );
@@ -251,14 +251,14 @@ export function AnnouncementWall() {
                               key={i}
                               type="button"
                               onClick={open}
-                              className="rounded-lg overflow-hidden border border-gray-200 hover:border-teal-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 transition-colors"
+                              className="max-w-full rounded-lg overflow-hidden border border-gray-200 hover:border-teal-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 transition-colors"
                               title="Klik untuk memperbesar"
                             >
                               {/* eslint-disable-next-line @next/next/no-img-element -- signed R2 URL, not a static/optimizable asset */}
                               <img
                                 src={att.url}
                                 alt={att.fileName}
-                                className="max-h-64 object-cover cursor-zoom-in"
+                                className="max-h-64 max-w-full object-cover cursor-zoom-in"
                               />
                             </button>
                           ) : (
@@ -266,7 +266,7 @@ export function AnnouncementWall() {
                               key={i}
                               type="button"
                               onClick={open}
-                              className="relative w-56 h-32 rounded-lg overflow-hidden border border-gray-200 bg-gray-900/90 hover:border-teal-400 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 transition-colors"
+                              className="relative w-56 max-w-full h-32 rounded-lg overflow-hidden border border-gray-200 bg-gray-900/90 hover:border-teal-400 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 transition-colors"
                               title="Putar video"
                             >
                               <span className="h-11 w-11 rounded-full bg-white/90 flex items-center justify-center shadow">
@@ -294,14 +294,14 @@ export function AnnouncementWall() {
                     <div className="flex gap-1.5 flex-shrink-0">
                       <button
                         onClick={() => openEdit(a)}
-                        className="h-7 w-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-teal-600 hover:bg-teal-50 transition-colors"
+                        className="h-9 w-9 sm:h-7 sm:w-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-teal-600 hover:bg-teal-50 transition-colors"
                         title="Edit"
                       >
                         <PencilIcon className="h-3.5 w-3.5" />
                       </button>
                       <button
                         onClick={() => handleDelete(a)}
-                        className="h-7 w-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
+                        className="h-9 w-9 sm:h-7 sm:w-7 flex items-center justify-center rounded-lg text-gray-400 hover:text-red-600 hover:bg-red-50 transition-colors"
                         title="Hapus"
                       >
                         <Trash2Icon className="h-3.5 w-3.5" />

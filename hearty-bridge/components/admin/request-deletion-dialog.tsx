@@ -77,12 +77,12 @@ function RequestDeletionBody({ target, direct, onClose, onDone }: Omit<RequestDe
       <>
         <DialogHeader>
           <DialogTitle>Permintaan terkirim</DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="break-words">
             Permintaan hapus akun {label} <strong>{target.name}</strong> sudah dikirim. Akun baru terhapus
             setelah Super Admin menyetujuinya.
           </DialogDescription>
         </DialogHeader>
-        <DialogFooter>
+        <DialogFooter className="gap-2 sm:gap-0">
           <Button onClick={onClose}>Tutup</Button>
         </DialogFooter>
       </>
@@ -92,11 +92,11 @@ function RequestDeletionBody({ target, direct, onClose, onDone }: Omit<RequestDe
   return (
     <>
       <DialogHeader>
-        <DialogTitle className="flex items-center gap-2">
-          <Trash2Icon className="h-5 w-5 text-red-600" />
+        <DialogTitle className="flex items-center gap-2 leading-snug sm:leading-none">
+          <Trash2Icon className="h-5 w-5 text-red-600 shrink-0" />
           {direct ? `Hapus akun ${label}` : `Ajukan hapus akun ${label}`}
         </DialogTitle>
-        <DialogDescription>
+        <DialogDescription className="break-words">
           {direct
             ? <>Akun <strong>{target.name}</strong> akan dihapus sekarang.</>
             : <>Permintaan hapus akun <strong>{target.name}</strong> akan dikirim ke Super Admin untuk disetujui.</>}
@@ -113,7 +113,7 @@ function RequestDeletionBody({ target, direct, onClose, onDone }: Omit<RequestDe
         </div>
 
         {target.type === "parent" && (
-          <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-red-700">
+          <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-red-700 break-words">
             {target.childNames && target.childNames.length > 0 ? (
               <>Akun anak ikut terhapus: <strong>{target.childNames.join(", ")}</strong></>
             ) : (
@@ -137,11 +137,11 @@ function RequestDeletionBody({ target, direct, onClose, onDone }: Omit<RequestDe
         )}
 
         {error && (
-          <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-red-600">{error}</div>
+          <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-red-600 break-words">{error}</div>
         )}
       </div>
 
-      <DialogFooter>
+      <DialogFooter className="gap-2 sm:gap-0">
         <Button variant="outline" onClick={onClose} disabled={submitting}>
           Batal
         </Button>

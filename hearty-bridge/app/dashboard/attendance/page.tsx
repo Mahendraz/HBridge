@@ -308,7 +308,7 @@ function ChildAttendanceSection() {
             </div>
           ) : (
             <div className="overflow-x-auto -mx-4 sm:mx-0">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[520px] text-sm">
                 <thead>
                   <tr className="text-left text-xs text-gray-500 uppercase border-b border-gray-100">
                     <th className="px-4 py-2 font-medium">Nama Anak</th>
@@ -569,9 +569,9 @@ export default function AttendancePage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
             <ClipboardCheckIcon className="h-6 w-6 text-teal-600" />
             Absensi
           </h1>
@@ -602,7 +602,7 @@ export default function AttendancePage() {
       </div>
 
       {/* Tabs — staff clock-in/out vs. per-session child attendance (distinct domains) */}
-      <div className="flex items-center gap-1 border-b border-gray-200">
+      <div className="flex items-center gap-1 border-b border-gray-200 whitespace-nowrap">
         <button
           onClick={() => setActiveTab("staff")}
           className={`flex items-center gap-1.5 px-3 py-2 text-sm font-medium border-b-2 -mb-px transition-colors ${
@@ -662,7 +662,7 @@ export default function AttendancePage() {
                     <strong>{formatCheckInTime(myTodayRecord.checkInAt)}</strong>{" "}
                     WIB
                   </p>
-                  <div className="mt-1 flex items-center gap-2">
+                  <div className="mt-1 flex flex-wrap items-center gap-2">
                     <StatusBadge status={myTodayRecord.status} />
                     {myTodayRecord.isWithinLocation ? (
                       <span className="text-xs text-gray-500 flex items-center gap-1">
@@ -829,7 +829,7 @@ export default function AttendancePage() {
                 </p>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="w-full min-w-[560px] text-sm">
                     <thead className="bg-gray-50 border-b">
                       <tr>
                         <th className="text-left px-4 py-3 font-medium text-gray-600">
@@ -968,7 +968,7 @@ export default function AttendancePage() {
                       </tbody>
                     </table>
                   </div>
-                  <div className="px-4 py-2 border-t flex items-center gap-4 text-xs text-gray-500">
+                  <div className="px-4 py-2 border-t flex flex-wrap items-center gap-x-4 gap-y-1 text-xs text-gray-500">
                     <span className="flex items-center gap-1"><CheckCircleIcon className="h-3 w-3 text-green-600" /> Tepat Waktu</span>
                     <span className="flex items-center gap-1"><ClockIcon className="h-3 w-3 text-yellow-500" /> Terlambat</span>
                     <span className="flex items-center gap-1"><XCircleIcon className="h-3 w-3 text-red-500" /> Tidak Hadir</span>
@@ -1026,7 +1026,7 @@ export default function AttendancePage() {
                 <div className="px-4 py-8 text-center text-sm text-gray-400">Tidak ada data untuk periode ini.</div>
               ) : (
                 <div className="overflow-x-auto">
-                  <table className="w-full text-sm">
+                  <table className="w-full min-w-[600px] text-sm">
                     <thead className="bg-gray-50 border-b">
                       <tr>
                         <th className="text-left px-4 py-3 font-medium text-gray-600 whitespace-nowrap">Nama</th>
@@ -1075,7 +1075,7 @@ export default function AttendancePage() {
           </CardHeader>
           <CardContent className="p-0">
             <div className="overflow-x-auto">
-              <table className="w-full text-sm">
+              <table className="w-full min-w-[480px] text-sm">
                 <thead className="bg-gray-50 border-b">
                   <tr>
                     <th className="text-left px-4 py-3 font-medium text-gray-600">

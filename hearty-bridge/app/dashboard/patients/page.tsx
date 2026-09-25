@@ -459,13 +459,13 @@ export default function UnifiedPatientsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h1 className="text-3xl font-bold text-gray-900">{getPageTitle()}</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">{getPageTitle()}</h1>
           <p className="text-gray-600">{getPageDescription()}</p>
         </div>
 
-        <div className="flex gap-2">
+        <div className="flex flex-wrap gap-2">
           {permissions.hasPermission('users:create') && (
             <Button variant="outline" onClick={() => setShowCreateParentModal(true)}>
               <UserPlusIcon className="h-4 w-4 mr-2" />
@@ -609,9 +609,9 @@ export default function UnifiedPatientsPage() {
           filteredPatients.map((child) => (
             <Card key={child.id} className="overflow-hidden">
               <CardHeader className="bg-linear-to-r from-green-50 to-teal-50">
-                <div className="flex justify-between items-start">
+                <div className="flex justify-between items-start gap-2">
                   <div
-                    className="flex items-center space-x-4 cursor-pointer group"
+                    className="flex items-center space-x-4 cursor-pointer group min-w-0"
                     onClick={() => router.push(`/dashboard/patients/${child.id}`)}
                     title="Lihat detail profil"
                   >
@@ -621,14 +621,14 @@ export default function UnifiedPatientsPage() {
                         <img src={child.photoUrl} alt={child.name} className="absolute inset-0 w-full h-full object-cover" onError={(e) => { (e.currentTarget as HTMLImageElement).style.display = 'none'; }} />
                       )}
                     </div>
-                    <div>
-                      <CardTitle className="text-xl text-gray-900 group-hover:text-teal-700 group-hover:underline">{child.name}</CardTitle>
-                      <CardDescription className="flex items-center space-x-4">
+                    <div className="min-w-0">
+                      <CardTitle className="text-xl text-gray-900 group-hover:text-teal-700 group-hover:underline break-words">{child.name}</CardTitle>
+                      <CardDescription className="flex flex-wrap items-center gap-x-4 gap-y-1">
                         <span>{calculateAge(child.birthDate || "")} tahun ({child.gender})</span>
                         <span>•</span>
                         <span>Lahir: {new Date(child.birthDate || "").toLocaleDateString('id-ID')}</span>
                       </CardDescription>
-                      <div className="flex items-center gap-2 mt-2">
+                      <div className="flex flex-wrap items-center gap-2 mt-2">
                         <Badge variant="outline">
                           {child.diagnosis}
                         </Badge>
@@ -655,17 +655,17 @@ export default function UnifiedPatientsPage() {
                 </div>
               </CardHeader>
 
-              <CardContent className="p-6 space-y-6">
+              <CardContent className="p-4 sm:p-6 space-y-6">
                 {/* Assigned Therapist */}
-                <div className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                  <div className="flex items-center space-x-3">
+                <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between p-4 bg-gray-50 rounded-lg">
+                  <div className="flex items-center space-x-3 min-w-0">
                     <UserIcon className="h-5 w-5 text-gray-600" />
                     <div>
                       <p className="font-medium text-gray-900">Terapis yang Ditugaskan</p>
                       {(child.therapistsByProgram ?? []).length > 0 ? (
                         <div className="mt-1 space-y-1">
                           {(child.therapistsByProgram ?? []).map((p) => (
-                            <p key={p.therapyType} className="text-sm text-gray-600 flex items-center gap-2">
+                            <p key={p.therapyType} className="text-sm text-gray-600 flex flex-wrap items-center gap-2">
                               <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${PROGRAM_BADGE[p.therapyType] ?? 'bg-gray-100 text-gray-700'}`}>
                                 {p.label}
                               </span>
@@ -768,20 +768,20 @@ export default function UnifiedPatientsPage() {
               return (
                 <Card key={parent._id}>
                   <CardHeader className="pb-3">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center space-x-3">
-                        <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold">
+                    <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+                      <div className="flex items-center space-x-3 min-w-0">
+                        <div className="w-10 h-10 rounded-full bg-teal-100 flex items-center justify-center text-teal-700 font-bold shrink-0">
                           {parent.name.charAt(0).toUpperCase()}
                         </div>
-                        <div>
-                          <h3 className="font-semibold text-gray-900">{parent.name}</h3>
-                          <div className="flex items-center gap-3 text-xs text-gray-500 mt-0.5">
-                            <span><MailIcon className="inline h-3 w-3 mr-1" />{parent.email}</span>
+                        <div className="min-w-0">
+                          <h3 className="font-semibold text-gray-900 break-words">{parent.name}</h3>
+                          <div className="flex flex-wrap items-center gap-x-3 gap-y-0.5 text-xs text-gray-500 mt-0.5">
+                            <span className="break-all"><MailIcon className="inline h-3 w-3 mr-1" />{parent.email}</span>
                             {parent.phone && <span><PhoneIcon className="inline h-3 w-3 mr-1" />{parent.phone}</span>}
                           </div>
                         </div>
                       </div>
-                      <div className="flex items-center gap-2 shrink-0">
+                      <div className="flex flex-wrap items-center gap-2 shrink-0">
                         {permissions.hasPermission('users:reset_password') && (
                           <Button
                             size="sm"
@@ -836,7 +836,7 @@ export default function UnifiedPatientsPage() {
                     ) : (
                       <div className="space-y-2">
                         {children.map(child => (
-                          <div key={child.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                          <div key={child.id} className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between p-3 bg-gray-50 rounded-lg">
                             <div
                               className="flex items-center space-x-3 cursor-pointer group flex-1 min-w-0"
                               onClick={() => router.push(`/dashboard/patients/${child.id}`)}
@@ -855,7 +855,7 @@ export default function UnifiedPatientsPage() {
                                 </p>
                               </div>
                             </div>
-                            <div className="flex items-center gap-2">
+                            <div className="flex flex-wrap items-center gap-2">
                               <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${
                                 child.sessionProgress
                                   ? 'bg-teal-100 text-teal-800'
@@ -1103,10 +1103,10 @@ function PatientsSkeleton() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex justify-between items-center">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-2">
           <Skeleton className="h-8 w-48" />
-          <Skeleton className="h-4 w-64" />
+          <Skeleton className="h-4 w-full max-w-64 sm:w-64" />
         </div>
         <Skeleton className="h-10 w-36 rounded-md" />
       </div>

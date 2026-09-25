@@ -232,12 +232,12 @@ export default function UnifiedDashboard() {
       {/* Welcome */}
       <div className="relative rounded-2xl border border-gray-200 bg-white overflow-hidden shadow-sm">
         <BorderBeam size={150} duration={6} colorFrom="#14b8a6" colorTo="#22c55e" />
-        <div className="p-6 flex items-center space-x-4">
+        <div className="p-4 sm:p-6 flex items-center space-x-4">
           <div className="w-12 h-12 bg-teal-100 rounded-full flex items-center justify-center flex-shrink-0">
             <HeartIcon className="h-6 w-6 text-teal-600" />
           </div>
-          <div>
-            <h1 className={role === "parent" ? "text-2xl md:text-3xl font-bold text-gray-900" : "text-xl font-bold text-gray-900"}>
+          <div className="min-w-0">
+            <h1 className={role === "parent" ? "text-2xl md:text-3xl font-bold text-gray-900 break-words" : "text-lg sm:text-xl font-bold text-gray-900 break-words"}>
               {role === "parent" ? "Halo Parent!" : `Selamat datang kembali, ${user?.name?.split(" ")[0]}!`}
             </h1>
             <p className="text-gray-500 text-sm mt-0.5">
@@ -294,10 +294,10 @@ function DashboardSkeleton() {
   return (
     <div className="space-y-6">
       {/* Welcome */}
-      <div className="rounded-2xl border border-gray-200 bg-white p-6 flex items-center space-x-4">
+      <div className="rounded-2xl border border-gray-200 bg-white p-4 sm:p-6 flex items-center space-x-4">
         <Skeleton className="w-12 h-12 rounded-full flex-shrink-0" />
         <div className="space-y-2">
-          <Skeleton className="h-6 w-64" />
+          <Skeleton className="h-6 w-48 sm:w-64" />
           <Skeleton className="h-4 w-40" />
         </div>
       </div>
@@ -380,7 +380,7 @@ function TherapistBirthdayWidget({ birthdays }: { birthdays: TherapistBirthdayIt
           return (
             <div
               key={b.therapistId}
-              className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl border max-w-full ${
                 isToday ? "bg-amber-100 border-amber-300 shadow-sm" : "bg-white border-amber-100"
               }`}
             >
@@ -413,7 +413,7 @@ function BirthdayCard({ item }: { item: BirthdayItem }) {
 
   return (
     <div
-      className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${
+      className={`flex items-center gap-3 px-4 py-3 rounded-xl border max-w-full ${
         isToday
           ? "bg-rose-100 border-rose-300 shadow-sm"
           : "bg-white border-rose-100"
@@ -599,7 +599,7 @@ function AdminMainContent({ data, role }: { data: DashboardData; role: string })
       {/* Jadwal Hari Ini */}
       <div className="relative rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <BorderBeam size={120} duration={9} colorFrom="#14b8a6" colorTo="#22c55e" />
-        <div className="p-6 border-b border-gray-100">
+        <div className="p-4 sm:p-6 border-b border-gray-100">
           <h2 className="text-base font-semibold text-gray-900">Jadwal Hari Ini</h2>
           <p className="text-sm text-gray-500 mt-0.5">
             {appointments.length} sesi terjadwal hari ini
@@ -607,7 +607,7 @@ function AdminMainContent({ data, role }: { data: DashboardData; role: string })
         </div>
         <div className="overflow-x-auto">
           {appointments.length > 0 ? (
-            <table className="w-full text-sm">
+            <table className="w-full min-w-[640px] text-sm">
               <thead>
                 <tr className="border-b border-gray-100 bg-gray-50/50">
                   <th className="text-left py-3 px-6 font-medium text-gray-500 text-xs uppercase tracking-wide">Pasien</th>
@@ -668,11 +668,11 @@ function RecentActivityWidget({ activities }: { activities: ActivityItem[] }) {
   return (
     <div className="relative rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
       <BorderBeam size={120} duration={11} colorFrom="#14b8a6" colorTo="#8b5cf6" />
-      <div className="p-6 border-b border-gray-100">
+      <div className="p-4 sm:p-6 border-b border-gray-100">
         <h2 className="text-base font-semibold text-gray-900">Aktivitas Terbaru</h2>
         <p className="text-sm text-gray-500 mt-0.5">Semua aktivitas sistem terkini</p>
       </div>
-      <div className="p-6">
+      <div className="p-4 sm:p-6">
         <div className="space-y-2">
           {activities.map(a => (
             <div key={a.id} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50/50 hover:bg-gray-50 transition-colors">
@@ -709,22 +709,22 @@ function TherapistMainContent({ data }: { data: DashboardData }) {
       {/* Jadwal Hari Ini */}
       <div className="relative rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <BorderBeam size={120} duration={9} colorFrom="#14b8a6" colorTo="#22c55e" />
-        <div className="p-6 border-b border-gray-100">
+        <div className="p-4 sm:p-6 border-b border-gray-100">
           <h2 className="text-base font-semibold text-gray-900">Jadwal Hari Ini</h2>
           <p className="text-sm text-gray-500 mt-0.5">{todaySlots.length} pasien hari ini</p>
         </div>
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {todaySlots.length > 0 ? (
             <div className="space-y-3">
               {todaySlots.map((slot, i) => (
-                <div key={i} className={`flex items-center justify-between p-3 rounded-xl border ${i === 0 ? "bg-teal-50 border-teal-100" : "bg-gray-50 border-gray-100"}`}>
-                  <div>
-                    <p className={`text-sm font-semibold ${i === 0 ? "text-teal-900" : "text-gray-900"}`}>{slot.patientName}</p>
+                <div key={i} className={`flex items-center justify-between gap-3 p-3 rounded-xl border ${i === 0 ? "bg-teal-50 border-teal-100" : "bg-gray-50 border-gray-100"}`}>
+                  <div className="min-w-0">
+                    <p className={`text-sm font-semibold break-words ${i === 0 ? "text-teal-900" : "text-gray-900"}`}>{slot.patientName}</p>
                     <p className={`text-xs ${i === 0 ? "text-teal-700" : "text-gray-500"}`}>
                       {slot.therapyType} · Pertemuan {slot.sessionNumber ?? "?"}/{slot.totalSessions || "?"}
                     </p>
                   </div>
-                  <p className={`text-sm font-medium ${i === 0 ? "text-teal-800" : "text-gray-700"}`}>{slotTime(slot.hour)}</p>
+                  <p className={`text-sm font-medium flex-shrink-0 ${i === 0 ? "text-teal-800" : "text-gray-700"}`}>{slotTime(slot.hour)}</p>
                 </div>
               ))}
             </div>
@@ -740,11 +740,11 @@ function TherapistMainContent({ data }: { data: DashboardData }) {
       {/* Jadwal Minggu Ini */}
       <div className="relative rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <BorderBeam size={120} duration={12} colorFrom="#14b8a6" colorTo="#8b5cf6" />
-        <div className="p-6 border-b border-gray-100">
+        <div className="p-4 sm:p-6 border-b border-gray-100">
           <h2 className="text-base font-semibold text-gray-900">Jadwal Minggu Ini</h2>
           <p className="text-sm text-gray-500 mt-0.5">Semua sesi minggu ini per hari</p>
         </div>
-        <div className="p-6 space-y-4 max-h-[500px] overflow-y-auto">
+        <div className="p-4 sm:p-6 space-y-4 max-h-[500px] overflow-y-auto">
           {DAY_ORDER.filter(day => (weeklySlots[day]?.length ?? 0) > 0).map(day => (
             <div key={day}>
               <h3 className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">{DAY_LABELS[day]}</h3>
@@ -782,16 +782,16 @@ function TherapistMainContent({ data }: { data: DashboardData }) {
     {missingReports.length > 0 && (
       <div className="relative rounded-2xl border border-amber-200 bg-white shadow-sm overflow-hidden">
         <BorderBeam size={120} duration={10} colorFrom="#f59e0b" colorTo="#ef4444" />
-        <div className="p-6 border-b border-amber-100 flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <AlertCircleIcon className="h-5 w-5 text-amber-500" />
+        <div className="p-4 sm:p-6 border-b border-amber-100 flex items-center justify-between gap-3">
+          <div className="flex items-center gap-2 min-w-0">
+            <AlertCircleIcon className="h-5 w-5 text-amber-500 flex-shrink-0" />
             <h2 className="text-base font-semibold text-gray-900">Laporan Belum Dibuat Minggu Ini</h2>
           </div>
-          <span className="text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-0.5">
+          <span className="flex-shrink-0 whitespace-nowrap text-xs font-medium text-amber-600 bg-amber-50 border border-amber-200 rounded-full px-2.5 py-0.5">
             {missingReports.length} sesi
           </span>
         </div>
-        <div className="p-6 space-y-2">
+        <div className="p-4 sm:p-6 space-y-2">
           {visibleMissing.map((p, idx) => {
             const dateLabel = new Date(p.slotDate + "T00:00:00").toLocaleDateString("id-ID", {
               weekday: "long", day: "numeric", month: "short", year: "numeric",
@@ -815,7 +815,7 @@ function TherapistMainContent({ data }: { data: DashboardData }) {
                 </div>
                 <Link
                   href={`/dashboard/reports/new?childId=${p.childId}&childName=${encodeURIComponent(p.childName)}&sessionDate=${p.slotDate}`}
-                  className="flex-shrink-0 text-xs font-medium text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg px-3 py-1.5 transition-colors"
+                  className="flex-shrink-0 text-xs font-medium text-indigo-600 hover:text-indigo-800 bg-indigo-50 hover:bg-indigo-100 border border-indigo-200 rounded-lg px-3 py-2 transition-colors"
                 >
                   + Buat
                 </Link>
@@ -872,11 +872,11 @@ function ParentMainContent({ data }: { data: DashboardData }) {
       {sessionBalances.length > 0 && (
         <div className="relative rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
           <BorderBeam size={120} duration={10} colorFrom="#22c55e" colorTo="#14b8a6" />
-          <div className="p-6 border-b border-gray-100">
+          <div className="p-4 sm:p-6 border-b border-gray-100">
             <h2 className="text-base font-semibold text-gray-900">Sisa Sesi Anda</h2>
             <p className="text-sm text-gray-500 mt-0.5">Sisa sesi terapi per anak dan per program</p>
           </div>
-          <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="p-4 sm:p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
             {sessionBalances.map((b) => (
               <div key={b.childId} className="rounded-xl border border-gray-100 bg-gray-50 px-5 py-4">
                 <p className="text-sm font-semibold text-gray-900 truncate">{b.childName}</p>
@@ -908,7 +908,7 @@ function ParentMainContent({ data }: { data: DashboardData }) {
             ))}
           </div>
           {sessionBalances.some((b) => b.programs?.some((p) => p.remaining < 0)) && (
-            <p className="px-6 pb-5 -mt-2 text-xs text-gray-500">
+            <p className="px-4 sm:px-6 pb-5 -mt-2 text-xs text-gray-500">
               Angka minus berarti sesi sudah berjalan tetapi paketnya belum dibayar.
             </p>
           )}
@@ -918,11 +918,11 @@ function ParentMainContent({ data }: { data: DashboardData }) {
       {/* Laporan minggu ini */}
       <div className="relative rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <BorderBeam size={120} duration={10} colorFrom="#14b8a6" colorTo="#8b5cf6" />
-        <div className="p-6 border-b border-gray-100">
+        <div className="p-4 sm:p-6 border-b border-gray-100">
           <h2 className="text-base font-semibold text-gray-900">Laporan Minggu Ini</h2>
           <p className="text-sm text-gray-500 mt-0.5">Laporan terapi yang diterbitkan minggu ini</p>
         </div>
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {weeklyReports.length > 0 ? (
             <div className="space-y-2">
               {weeklyReports.map((r) => (
@@ -963,16 +963,16 @@ function ParentMainContent({ data }: { data: DashboardData }) {
       {/* Jadwal mendatang */}
       <div className="relative rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
         <BorderBeam size={120} duration={10} colorFrom="#14b8a6" colorTo="#22c55e" />
-        <div className="p-6 border-b border-gray-100">
+        <div className="p-4 sm:p-6 border-b border-gray-100">
           <h2 className="text-base font-semibold text-gray-900">Jadwal Hari Ini &amp; Mendatang</h2>
           <p className="text-sm text-gray-500 mt-0.5">Jadwal terapi anak-anak Anda</p>
         </div>
-        <div className="p-6">
+        <div className="p-4 sm:p-6">
           {upcomingSchedule.length > 0 ? (
             <div className="space-y-3">
               {upcomingSchedule.map((apt, i) => (
-                <div key={i} className={`flex items-center justify-between p-4 rounded-xl border ${i === 0 ? "bg-teal-50 border-teal-100" : "bg-gray-50 border-gray-100"}`}>
-                  <div>
+                <div key={i} className={`flex items-center justify-between gap-3 p-3 sm:p-4 rounded-xl border ${i === 0 ? "bg-teal-50 border-teal-100" : "bg-gray-50 border-gray-100"}`}>
+                  <div className="min-w-0">
                     <p className={`text-sm font-semibold ${i === 0 ? "text-teal-900" : "text-gray-900"}`}>
                       {apt.childName}
                     </p>
@@ -985,7 +985,7 @@ function ParentMainContent({ data }: { data: DashboardData }) {
                       </p>
                     )}
                   </div>
-                  <div className="text-right">
+                  <div className="text-right flex-shrink-0">
                     <p className={`text-sm font-semibold ${i === 0 ? "text-teal-800" : "text-gray-700"}`}>
                       {DAY_LABELS[apt.day] ?? apt.day}
                     </p>

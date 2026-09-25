@@ -125,13 +125,13 @@ export default function SessionReportModal({
         <div className="space-y-4 py-1">
           {/* Session info (readonly) */}
           <div className="rounded-lg bg-teal-50 border border-teal-100 px-4 py-3 text-sm space-y-1">
-            <div className="flex justify-between">
-              <span className="text-gray-500">Pasien</span>
-              <span className="font-medium text-gray-800">{slot.patientName}</span>
+            <div className="flex justify-between gap-3">
+              <span className="text-gray-500 flex-shrink-0">Pasien</span>
+              <span className="font-medium text-gray-800 text-right break-words min-w-0">{slot.patientName}</span>
             </div>
-            <div className="flex justify-between">
-              <span className="text-gray-500">Tanggal Sesi</span>
-              <span className="font-medium text-gray-800">
+            <div className="flex justify-between gap-3">
+              <span className="text-gray-500 flex-shrink-0">Tanggal Sesi</span>
+              <span className="font-medium text-gray-800 text-right">
                 {DAY_ID[slot.day]}, {formatDisplayDate(sessionDate)}
               </span>
             </div>

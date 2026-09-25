@@ -217,7 +217,7 @@ export function MilestoneTracker({
       {/* Milestones List */}
       {filteredMilestones.length === 0 ? (
         <Card>
-          <CardContent className="p-12 text-center">
+          <CardContent className="p-6 sm:p-12 text-center">
             <CheckCircleIcon size={48} className="mx-auto text-gray-400 mb-4" />
             <h4 className="text-lg font-medium text-gray-600 mb-2">No Milestones Found</h4>
             <p className="text-gray-500 mb-4">
@@ -242,15 +242,15 @@ export function MilestoneTracker({
 
             return (
               <Card key={milestone._id} className={`${isLate ? "border-red-200 bg-red-50" : ""}`}>
-                <CardContent className="p-6">
-                  <div className="flex items-start justify-between">
-                    <div className="flex-1">
-                      <div className="flex items-center gap-3 mb-3">
+                <CardContent className="p-4 sm:p-6">
+                  <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-0">
+                    <div className="flex-1 min-w-0">
+                      <div className="flex flex-wrap items-center gap-3 mb-3">
                         <StatusIcon 
                           size={20} 
                           className={statusColors[milestone.status]}
                         />
-                        <h4 className="font-semibold text-lg">{milestone.title}</h4>
+                        <h4 className="font-semibold text-lg break-words min-w-0">{milestone.title}</h4>
                         <Badge className={categoryColors[milestone.category]}>
                           {milestone.category}
                         </Badge>
@@ -259,10 +259,10 @@ export function MilestoneTracker({
                         )}
                       </div>
 
-                      <p className="text-gray-700 mb-4">{milestone.description}</p>
+                      <p className="text-gray-700 mb-4 break-words">{milestone.description}</p>
 
                       <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm">
-                        <div className="flex items-center gap-2">
+                        <div className="flex flex-wrap items-center gap-2">
                           <CalendarIcon size={16} className="text-gray-500" />
                           <span>Target: {formatDate(milestone.targetDate)}</span>
                           {daysUntilTarget !== null && milestone.status !== "achieved" && (
@@ -288,7 +288,7 @@ export function MilestoneTracker({
                             <FileTextIcon size={16} className="text-gray-500" />
                             <span className="font-medium text-sm">Notes</span>
                           </div>
-                          <p className="text-sm text-gray-700">{milestone.notes}</p>
+                          <p className="text-sm text-gray-700 break-words">{milestone.notes}</p>
                         </div>
                       )}
 
@@ -305,7 +305,7 @@ export function MilestoneTracker({
                       )}
                     </div>
 
-                    <div className="flex flex-col gap-2 ml-4">
+                    <div className="flex flex-row items-center sm:flex-col sm:items-stretch gap-2 sm:ml-4">
                       {canEdit && (
                         <>
                           <select

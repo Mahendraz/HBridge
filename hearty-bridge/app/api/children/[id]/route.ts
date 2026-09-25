@@ -49,7 +49,11 @@ export const GET = withAnyAuth(
 
       // Populate based on user role
       if (user.role === 'parent') {
-        childQuery = childQuery.populate('therapistId', 'name email profile.specialization profile.clinic');
+        // Parents get their own contact details too (the "Orang Tua" card, incl.
+        // editing their address). Access is checked against the child below.
+        childQuery = childQuery
+          .populate('parentId', 'name email phone profile.address')
+          .populate('therapistId', 'name email profile.specialization profile.clinic');
       } else {
         // Admin and therapist both get full populate
         childQuery = childQuery

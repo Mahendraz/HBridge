@@ -67,10 +67,40 @@ export const GET = withAnyAuth(
       query.therapistId = new mongoose.Types.ObjectId(user.userId);
     }
 
-    const [reports, total] = await Promise.all([
-      Report.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
-      Report.countDocuments(query),
-    ]);
+    // ?needsReply=1 (staff only): reports with root comments not yet marked
+    // "Selesai", newest comment first. Driven by the comments index, so the
+    // default list below stays a plain createdAt sort.
+    const needsReply = url.searchParams.get('needsReply') === '1' && user.role !== 'parent';
+
+    type LeanReport = { _id: mongoose.Types.ObjectId };
+    let reports: unknown[];
+    let total: number;
+    if (needsReply) {
+      const commentMatch: Record<string, unknown> = { isResolved: false, isActive: true, parentCommentId: null };
+      if (user.role === 'therapist') commentMatch.therapistId = new mongoose.Types.ObjectId(user.userId);
+      const latestByReport = await ReportComment.aggregate<{ _id: mongoose.Types.ObjectId; lastCommentAt: Date }>([
+        { $match: commentMatch },
+        { $group: { _id: '$reportId', lastCommentAt: { $max: '$createdAt' } } },
+      ]);
+      const lastCommentAt = new Map(latestByReport.map((r) => [r._id.toString(), r.lastCommentAt]));
+      const matched = await Report.find({ ...query, _id: { $in: latestByReport.map((r) => r._id) } })
+        .lean<LeanReport[]>();
+      matched.sort(
+        (a, b) =>
+          new Date(lastCommentAt.get(b._id.toString()) ?? 0).getTime() -
+          new Date(lastCommentAt.get(a._id.toString()) ?? 0).getTime()
+      );
+      total = matched.length;
+      reports = matched.slice(skip, skip + limit).map((r) => ({
+        ...r,
+        lastCommentAt: lastCommentAt.get(r._id.toString()) ?? null,
+      }));
+    } else {
+      [reports, total] = await Promise.all([
+        Report.find(query).sort({ createdAt: -1 }).skip(skip).limit(limit).lean(),
+        Report.countDocuments(query),
+      ]);
+    }
 
     const reportsWithUrls = await injectSignedUrls(reports);
 

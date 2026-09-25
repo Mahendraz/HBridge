@@ -127,9 +127,13 @@ export const GET = withAnyAuth(
           .select('patientId therapistId')
           .lean();
 
+        // WeeklySchedule.therapistId is a free String field and some older slots
+        // hold a name (e.g. "Ibu melly") instead of a User id — skip those, or
+        // the User lookup below throws a CastError and the whole list 500s.
         const childToTherapist: Record<string, string> = {};
         for (const slot of slots as any[]) {
-          childToTherapist[slot.patientId.toString()] = slot.therapistId.toString();
+          const tid = slot.therapistId?.toString() ?? '';
+          if (/^[0-9a-f]{24}$/i.test(tid)) childToTherapist[slot.patientId.toString()] = tid;
         }
 
         if (Object.keys(childToTherapist).length > 0) {

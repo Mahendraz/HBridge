@@ -162,9 +162,9 @@ export default function SuperAdminBankAccountsPage() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
             <LandmarkIcon className="h-6 w-6 text-teal-600" />
             Rekening Bank
           </h1>
@@ -172,7 +172,7 @@ export default function SuperAdminBankAccountsPage() {
             Kelola rekening tujuan transfer yang ditampilkan pada invoice untuk orang tua.
           </p>
         </div>
-        <Button onClick={openCreate} disabled={saving}>
+        <Button onClick={openCreate} disabled={saving} className="w-full sm:w-auto shrink-0">
           <PlusIcon className="h-4 w-4 mr-2" />
           Tambah Rekening
         </Button>
@@ -223,7 +223,7 @@ export default function SuperAdminBankAccountsPage() {
             <Card key={acc._id ?? index} className={`relative ${!acc.isActive ? "opacity-60" : ""}`}>
               <CardHeader className="pb-2">
                 <div className="flex items-start justify-between gap-2">
-                  <CardTitle className="text-base">{acc.bankName}</CardTitle>
+                  <CardTitle className="text-base min-w-0 break-words">{acc.bankName}</CardTitle>
                   <Badge variant={acc.isActive ? "default" : "secondary"} className="shrink-0">
                     {acc.isActive ? "Aktif" : "Nonaktif"}
                   </Badge>
@@ -232,11 +232,11 @@ export default function SuperAdminBankAccountsPage() {
               <CardContent className="space-y-3">
                 <div>
                   <p className="text-xs text-gray-400 mb-0.5">Nomor Rekening</p>
-                  <p className="font-semibold text-gray-900">{acc.accountNumber}</p>
+                  <p className="font-semibold text-gray-900 break-all">{acc.accountNumber}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 mb-0.5">Atas Nama</p>
-                  <p className="font-medium text-gray-700">{acc.accountHolderName}</p>
+                  <p className="font-medium text-gray-700 break-words">{acc.accountHolderName}</p>
                 </div>
                 {acc.notes && (
                   <p className="text-xs text-gray-500 line-clamp-2">{acc.notes}</p>

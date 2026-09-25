@@ -150,10 +150,10 @@ function ScheduleSkeleton() {
   return (
     <div className="space-y-4">
       {/* Page header */}
-      <div className="flex items-center justify-between">
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
         <div className="space-y-2">
           <Skeleton className="h-7 w-48" />
-          <Skeleton className="h-4 w-64" />
+          <Skeleton className="h-4 w-64 max-w-full" />
         </div>
         <Skeleton className="h-10 w-32 rounded-md" />
       </div>
@@ -584,12 +584,13 @@ function WeekNavButton({
         setIsOver(false);
         onDropSlot(direction);
       } : undefined}
-      className={`p-1.5 rounded transition-colors flex items-center gap-1 ${
+      aria-label={label}
+      className={`inline-flex min-h-10 min-w-10 items-center justify-center gap-1 rounded-md px-2 transition-colors ${
         isOver
           ? "bg-teal-100 text-teal-700 ring-2 ring-teal-400"
           : "hover:bg-gray-100 text-gray-500 hover:text-gray-700"
       }`}
-      title={onDropSlot ? `${label} — lepas jadwal di sini untuk memindahkannya ke ${label.toLowerCase()}` : label}
+      title={onDropSlot ? `${label}. Lepas jadwal di sini untuk memindahkannya ke ${label.toLowerCase()}.` : label}
     >
       {direction > 0 && isOver && <span className="text-xs font-medium whitespace-nowrap">Pindah ke {label.toLowerCase()}</span>}
       <Icon className="h-4 w-4" />
@@ -930,7 +931,7 @@ function SlotModal({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent size="md">
         <DialogHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <DialogTitle className="flex items-center gap-2">
               {activeTab === 'assessment' && (
                 <ClipboardListIcon className="h-4 w-4 text-indigo-600" />
@@ -1179,7 +1180,7 @@ function SlotModal({
           {!isHeroBridge && (
             <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 space-y-2">
               <p className="text-xs font-semibold text-gray-600">Perubahan berlaku mulai:</p>
-              <div className="flex gap-6">
+              <div className="flex flex-wrap gap-x-6 gap-y-2">
                 <label className="flex items-center gap-2 text-sm cursor-pointer">
                   <input
                     type="radio"
@@ -1327,7 +1328,7 @@ function SlotModal({
 
         {/* Footer buttons */}
         {activeTab === 'slot' ? (
-          <div className="flex justify-between mt-4 pt-4 border-t border-gray-100">
+          <div className="flex flex-wrap justify-between gap-2 mt-4 pt-4 border-t border-gray-100">
             <div className="flex gap-2">
               {slot._id && onDelete && (
                 <Button
@@ -1340,7 +1341,7 @@ function SlotModal({
                 </Button>
               )}
             </div>
-            <div className="flex gap-2">
+            <div className="flex gap-2 ml-auto">
               <Button variant="outline" onClick={onClose} disabled={saving}>
                 Batal
               </Button>
@@ -1350,7 +1351,7 @@ function SlotModal({
             </div>
           </div>
         ) : (
-          <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-gray-100">
+          <div className="flex flex-wrap justify-end gap-2 mt-4 pt-4 border-t border-gray-100">
             <Button variant="outline" onClick={onClose} disabled={saving}>
               Batal
             </Button>
@@ -1419,7 +1420,7 @@ function ExtraSessionModal({
     <Dialog open onOpenChange={(o) => !o && onClose()}>
       <DialogContent size="md">
         <DialogHeader>
-          <div className="flex items-center justify-between">
+          <div className="flex items-center justify-between gap-2">
             <DialogTitle>Tambah Sesi Susulan</DialogTitle>
             <button onClick={onClose} className="text-gray-400 hover:text-gray-600 transition-colors">
               <XIcon className="h-5 w-5" />
@@ -1514,7 +1515,7 @@ function ExtraSessionModal({
           </div>
         </div>
 
-        <div className="flex justify-end gap-2 mt-4 pt-4 border-t border-gray-100">
+        <div className="flex flex-wrap justify-end gap-2 mt-4 pt-4 border-t border-gray-100">
           <Button variant="outline" onClick={onClose} disabled={saving}>
             Batal
           </Button>
@@ -2183,7 +2184,7 @@ export default function SchedulesPage() {
         ))}
         {permissions.hasPermission("schedules:manage_all") && (
           <button
-            className="w-full flex-1 min-h-7 flex items-center justify-center text-gray-300 hover:text-teal-500 hover:bg-teal-50 rounded border border-dashed border-gray-200 hover:border-teal-300 transition-colors"
+            className="w-full flex-1 min-h-9 md:min-h-7 flex items-center justify-center text-gray-300 hover:text-teal-500 hover:bg-teal-50 rounded border border-dashed border-gray-200 hover:border-teal-300 transition-colors"
             onClick={() => openNewSlot(day, hour)}
             title={`Tambah slot ${DAY_LABELS[day as Day]} ${String(hour).padStart(2, "0")}:00`}
           >
@@ -2218,9 +2219,9 @@ export default function SchedulesPage() {
   return (
     <div className="space-y-4">
       {/* Page header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900">Jadwal Mingguan</h1>
+      <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
+        <div className="min-w-0">
+          <h1 className="text-xl sm:text-2xl font-bold text-gray-900">Jadwal Mingguan</h1>
           <p className="text-gray-600 text-sm mt-0.5">
             {(user?.role === "admin" || user?.role === "super_admin") && "Template jadwal terapi — berlaku setiap minggu"}
             {user?.role === "therapist" && "Jadwal sesi terapi Anda setiap minggu"}
@@ -2228,7 +2229,7 @@ export default function SchedulesPage() {
           </p>
         </div>
         {permissions.hasPermission("schedules:manage_all") && (
-          <div className="flex items-center gap-2">
+          <div className="flex flex-wrap items-center gap-2">
             {(user?.role === "admin" || user?.role === "super_admin") && (
               <Button variant="outline" onClick={() => setShowExtraSessionModal(true)}>
                 <PlusIcon className="h-4 w-4 mr-2" />
@@ -2250,7 +2251,7 @@ export default function SchedulesPage() {
           onClick={() => setWeekStart((ws) => addWeeks(ws, -1))}
           onDropSlot={canManageSchedule ? handleWeekNavDrop : undefined}
         />
-        <span className="flex-1 text-center text-sm font-medium text-gray-700">
+        <span className="flex-1 min-w-0 text-center text-sm font-medium text-gray-700">
           {formatWeekRange(weekStart)}
         </span>
         <WeekNavButton
@@ -2263,7 +2264,7 @@ export default function SchedulesPage() {
             variant="outline"
             size="sm"
             onClick={() => setWeekStart(getCurrentMondayStr())}
-            className="ml-2 text-xs h-7 px-3"
+            className="ml-1 sm:ml-2 shrink-0 text-xs h-7 px-2 sm:px-3"
           >
             Minggu Ini
           </Button>
@@ -2311,7 +2312,7 @@ export default function SchedulesPage() {
           <select
             value={therapistFilter}
             onChange={(e) => setTherapistFilter(e.target.value)}
-            className="border border-gray-200 rounded-md px-2.5 py-1.5 text-sm text-gray-700"
+            className="w-full sm:w-auto max-w-full border border-gray-200 rounded-md px-2.5 py-1.5 text-sm text-gray-700"
           >
             <option value="">Semua Terapis</option>
             {allTherapists.map((t) => (
@@ -2368,7 +2369,7 @@ export default function SchedulesPage() {
 
       {dragError && (
         <div className="flex items-center justify-between gap-2 bg-red-50 border border-red-200 text-red-700 text-sm rounded-lg px-3 py-2">
-          <span>{dragError}</span>
+          <span className="min-w-0 break-words">{dragError}</span>
           <button onClick={() => setDragError(null)} className="text-red-400 hover:text-red-600 shrink-0">
             <XIcon className="h-3.5 w-3.5" />
           </button>
@@ -2541,7 +2542,7 @@ export default function SchedulesPage() {
         <Dialog open onOpenChange={(o) => { if (!o) setAssessmentDetail(null); }}>
           <DialogContent size="sm">
             <DialogHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <DialogTitle className="flex items-center gap-2">
                   <ClipboardListIcon className="h-4 w-4 text-indigo-600" />
                   Detail Asesmen
@@ -2553,7 +2554,7 @@ export default function SchedulesPage() {
             </DialogHeader>
             <div className="mt-4 space-y-4">
               <div className="rounded-lg bg-indigo-50 border border-indigo-100 p-3 text-sm">
-                <p className="font-semibold text-indigo-800">
+                <p className="font-semibold text-indigo-800 break-words">
                   {typeof assessmentDetail.childId === 'object' ? assessmentDetail.childId.name : '—'}
                 </p>
                 <p className="text-indigo-600 text-xs mt-0.5">
@@ -2584,7 +2585,7 @@ export default function SchedulesPage() {
                     <select
                       value={editAssessorId}
                       onChange={(e) => setEditAssessorId(e.target.value)}
-                      className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
+                      className="flex-1 min-w-0 border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     >
                       <option value="">Belum ditentukan</option>
                       {pickerTherapists.map((t) => (
@@ -2690,7 +2691,7 @@ export default function SchedulesPage() {
         <Dialog open onOpenChange={(o) => { if (!o) { setRescheduleSlot(null); setRescheduleDate(""); setRescheduleError(null); } }}>
           <DialogContent size="sm">
             <DialogHeader>
-              <div className="flex items-center justify-between">
+              <div className="flex items-center justify-between gap-2">
                 <DialogTitle>Kelola Sesi</DialogTitle>
                 <button onClick={() => { setRescheduleSlot(null); setRescheduleDate(""); }} className="text-gray-400 hover:text-gray-600"><XIcon className="h-4 w-4" /></button>
               </div>
@@ -2698,7 +2699,7 @@ export default function SchedulesPage() {
             <div className="mt-4 space-y-4">
               <div className="rounded-lg bg-teal-50 border border-teal-100 p-3 text-sm">
                 <div className="flex items-center justify-between gap-2">
-                  <p className="font-semibold text-teal-800">{rescheduleSlot.patientName}</p>
+                  <p className="font-semibold text-teal-800 min-w-0 break-words">{rescheduleSlot.patientName}</p>
                   {rescheduleSlot.therapyType && (
                     <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-teal-600 text-white leading-none">
                       {rescheduleSlot.therapyType}
@@ -2764,7 +2765,7 @@ export default function SchedulesPage() {
                     className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
                   />
                 </div>
-                <div className="flex justify-end gap-2">
+                <div className="flex flex-wrap justify-end gap-2">
                   <Button variant="outline" onClick={() => { setRescheduleSlot(null); setRescheduleDate(""); }} disabled={rescheduleLoading || markStatusLoading}>Batal</Button>
                   <Button onClick={handleReschedule} disabled={!rescheduleDate || rescheduleLoading || markStatusLoading}>
                     {rescheduleLoading ? "Menyimpan..." : "Pindahkan Sesi"}
@@ -2794,7 +2795,7 @@ export default function SchedulesPage() {
               <div className="mt-3 space-y-4">
                 <div className="rounded-lg bg-teal-50 border border-teal-100 p-3 text-sm">
                   <div className="flex items-center justify-between gap-2">
-                    <p className="font-semibold text-teal-800">{slot.patientName}</p>
+                    <p className="font-semibold text-teal-800 min-w-0 break-words">{slot.patientName}</p>
                     {slot.therapyType && (
                       <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-teal-600 text-white leading-none">
                         {slot.therapyType}

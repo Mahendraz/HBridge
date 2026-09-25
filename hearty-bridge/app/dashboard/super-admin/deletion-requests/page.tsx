@@ -141,7 +141,7 @@ export default function DeletionRequestsPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
           <ShieldCheckIcon className="h-6 w-6 text-teal-600" />
           Permintaan Hapus Akun
         </h1>
@@ -208,23 +208,23 @@ export default function DeletionRequestsPage() {
                         ) : (
                           <BabyIcon className="h-4 w-4 text-gray-500" />
                         )}
-                        <span className="font-semibold text-gray-900">{r.targetName}</span>
+                        <span className="font-semibold text-gray-900 break-words min-w-0">{r.targetName}</span>
                         <Badge variant="outline">{r.targetType === "parent" ? "Orang tua" : "Anak"}</Badge>
                         <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${status.className}`}>
                           {status.text}
                         </span>
                       </div>
                       {r.targetType === "parent" && r.relatedChildNames.length > 0 && (
-                        <p className="text-sm text-red-700">
+                        <p className="text-sm text-red-700 break-words">
                           Akun anak ikut terhapus: {r.relatedChildNames.join(", ")}
                         </p>
                       )}
-                      {r.reason && <p className="text-sm text-gray-700">Alasan: {r.reason}</p>}
-                      <p className="text-xs text-gray-500">
+                      {r.reason && <p className="text-sm text-gray-700 break-words">Alasan: {r.reason}</p>}
+                      <p className="text-xs text-gray-500 break-words">
                         Diajukan oleh {r.requestedByName} · {formatDateTime(r.createdAt)}
                       </p>
                       {r.status !== "pending" && (
-                        <p className="text-xs text-gray-500">
+                        <p className="text-xs text-gray-500 break-words">
                           {r.status === "approved" ? "Disetujui" : "Ditolak"} oleh {r.reviewedByName || "-"} ·{" "}
                           {formatDateTime(r.reviewedAt)}
                           {r.reviewNote && <> · Catatan: {r.reviewNote}</>}
@@ -232,7 +232,7 @@ export default function DeletionRequestsPage() {
                       )}
                     </div>
                     {r.status === "pending" && (
-                      <div className="flex gap-2 shrink-0">
+                      <div className="flex flex-wrap gap-2 shrink-0">
                         <Button size="sm" variant="outline" onClick={() => openReview(r, "reject")}>
                           <XIcon className="h-4 w-4 mr-1" />
                           Tolak
@@ -276,7 +276,7 @@ export default function DeletionRequestsPage() {
                 {review.action === "approve" && (
                   <div className="rounded-md bg-amber-50 border border-amber-200 px-3 py-2 text-amber-800 flex gap-2">
                     <AlertTriangleIcon className="h-4 w-4 shrink-0 mt-0.5" />
-                    <div className="space-y-1">
+                    <div className="space-y-1 min-w-0 break-words">
                       <p>Akun tidak bisa login lagi dan hilang dari daftar pasien aktif. Jadwal ke depan dibatalkan.</p>
                       {review.request.targetType === "parent" && review.request.relatedChildNames.length > 0 && (
                         <p>Akun anak ikut terhapus: <strong>{review.request.relatedChildNames.join(", ")}</strong></p>
@@ -299,7 +299,7 @@ export default function DeletionRequestsPage() {
                   <div className="rounded-md bg-red-50 border border-red-200 px-3 py-2 text-red-600">{reviewError}</div>
                 )}
               </div>
-              <DialogFooter>
+              <DialogFooter className="gap-2 sm:gap-0">
                 <Button variant="outline" onClick={() => setReview(null)} disabled={submitting}>
                   Batal
                 </Button>

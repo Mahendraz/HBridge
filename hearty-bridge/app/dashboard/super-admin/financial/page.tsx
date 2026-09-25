@@ -146,7 +146,7 @@ function FinancialSkeleton() {
         <Skeleton className="h-4 w-72" />
       </div>
 
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
         {Array.from({ length: 4 }).map((_, i) => (
           <Card key={i}>
             <CardContent className="pt-5">
@@ -349,7 +349,7 @@ export default function SuperAdminFinancialPage() {
     <div className="space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 flex items-center gap-2">
+        <h1 className="text-xl sm:text-2xl font-bold text-gray-900 flex items-center gap-2">
           <DollarSignIcon className="h-6 w-6 text-teal-600" />
           Laporan Keuangan
         </h1>
@@ -360,16 +360,16 @@ export default function SuperAdminFinancialPage() {
 
       {/* Summary Cards */}
       {summary && (
-        <div className="grid grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
           <Card>
             <CardContent className="pt-5">
               <div className="flex items-center gap-3">
                 <div className="p-2 bg-green-100 rounded-lg">
                   <TrendingUpIcon className="h-5 w-5 text-green-600" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-gray-500">Total Pendapatan</p>
-                  <p className="text-lg font-bold text-gray-900">{formatRupiah(summary.totalRevenue)}</p>
+                  <p className="text-lg font-bold text-gray-900 break-words">{formatRupiah(summary.totalRevenue)}</p>
                   <p className="text-xs text-gray-400">{summary.countPaid} invoice lunas</p>
                 </div>
               </div>
@@ -381,9 +381,9 @@ export default function SuperAdminFinancialPage() {
                 <div className="p-2 bg-yellow-100 rounded-lg">
                   <ClockIcon className="h-5 w-5 text-yellow-600" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-gray-500">Menunggu Bayar</p>
-                  <p className="text-lg font-bold text-gray-900">{formatRupiah(summary.totalPending)}</p>
+                  <p className="text-lg font-bold text-gray-900 break-words">{formatRupiah(summary.totalPending)}</p>
                   <p className="text-xs text-gray-400">{summary.countUnpaid} invoice</p>
                 </div>
               </div>
@@ -395,9 +395,9 @@ export default function SuperAdminFinancialPage() {
                 <div className="p-2 bg-red-100 rounded-lg">
                   <AlertCircleIcon className="h-5 w-5 text-red-600" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-gray-500">Jatuh Tempo</p>
-                  <p className="text-lg font-bold text-gray-900">{formatRupiah(summary.totalOverdue)}</p>
+                  <p className="text-lg font-bold text-gray-900 break-words">{formatRupiah(summary.totalOverdue)}</p>
                   <p className="text-xs text-gray-400">{summary.countOverdue} invoice</p>
                 </div>
               </div>
@@ -409,7 +409,7 @@ export default function SuperAdminFinancialPage() {
                 <div className="p-2 bg-teal-100 rounded-lg">
                   <FileTextIcon className="h-5 w-5 text-teal-600" />
                 </div>
-                <div>
+                <div className="min-w-0">
                   <p className="text-xs text-gray-500">Total Invoice</p>
                   <p className="text-lg font-bold text-gray-900">{summary.totalCount}</p>
                   <p className="text-xs text-gray-400">Semua periode</p>
@@ -421,12 +421,12 @@ export default function SuperAdminFinancialPage() {
       )}
 
       {/* Tabs */}
-      <div className="flex gap-1 border-b border-gray-200">
+      <div className="flex gap-1 border-b border-gray-200 overflow-x-auto">
         {(["invoices", "transactions"] as const).map((tab) => (
           <button
             key={tab}
             onClick={() => setActiveTab(tab)}
-            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors ${
+            className={`px-4 py-2 text-sm font-medium border-b-2 transition-colors whitespace-nowrap ${
               activeTab === tab
                 ? "border-teal-600 text-teal-700"
                 : "border-transparent text-gray-500 hover:text-gray-700"
@@ -441,13 +441,13 @@ export default function SuperAdminFinancialPage() {
       {activeTab === "invoices" && (
         <div className="space-y-4">
           {/* Filters */}
-          <div className="flex flex-wrap gap-3 items-end">
+          <div className="grid grid-cols-2 gap-3 items-end sm:flex sm:flex-wrap">
             <div>
               <label className="block text-xs text-gray-500 mb-1">Status</label>
               <select
                 value={invStatus}
                 onChange={(e) => setInvStatus(e.target.value)}
-                className="text-sm border border-gray-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full sm:w-auto text-sm border border-gray-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="">Semua</option>
                 <option value="paid">Lunas</option>
@@ -468,7 +468,7 @@ export default function SuperAdminFinancialPage() {
               <select
                 value={invProgram}
                 onChange={(e) => setInvProgram(e.target.value)}
-                className="text-sm border border-gray-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full sm:w-auto text-sm border border-gray-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="">Semua</option>
                 <option value="OT">OT</option>
@@ -487,7 +487,7 @@ export default function SuperAdminFinancialPage() {
             >
               Reset
             </Button>
-            <div className="relative ml-auto">
+            <div className="relative ml-auto justify-self-end">
               <Button size="sm" onClick={() => setExportOpen((o) => !o)} disabled={!!exporting}>
                 <DownloadIcon className="h-4 w-4 mr-1" />
                 {exporting ? "Menyiapkan..." : "Export"}
@@ -559,7 +559,7 @@ export default function SuperAdminFinancialPage() {
           ) : (
             <>
               <div className="overflow-x-auto rounded-lg border border-gray-200">
-                <table className="w-full text-sm">
+                <table className="w-full min-w-[720px] text-sm">
                   <thead className="bg-gray-50 text-xs uppercase text-gray-500">
                     <tr>
                       <th className="px-4 py-3 text-left">No. Invoice</th>
@@ -603,7 +603,8 @@ export default function SuperAdminFinancialPage() {
                         <td className="px-4 py-3 text-center">
                           <button
                             onClick={() => openInvoiceDetail(inv)}
-                            className="text-teal-600 hover:text-teal-800 p-1"
+                            className="-m-1.5 inline-flex rounded-md p-2.5 text-teal-600 hover:bg-teal-50 hover:text-teal-800"
+                            aria-label={`Buka invoice ${inv.invoiceNumber}`}
                           >
                             <ArrowRightIcon className="h-4 w-4" />
                           </button>
@@ -616,7 +617,7 @@ export default function SuperAdminFinancialPage() {
 
               {/* Pagination */}
               {invPages > 1 && (
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm">
                   <p className="text-gray-500">Total {invTotal} invoice</p>
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" disabled={invPage <= 1} onClick={() => fetchInvoices(invPage - 1)}>
@@ -638,13 +639,13 @@ export default function SuperAdminFinancialPage() {
       {activeTab === "transactions" && (
         <div className="space-y-4">
           {/* Filters */}
-          <div className="flex flex-wrap gap-3 items-end">
+          <div className="grid grid-cols-2 gap-3 items-end sm:flex sm:flex-wrap">
             <div>
               <label className="block text-xs text-gray-500 mb-1">Tipe</label>
               <select
                 value={txType}
                 onChange={(e) => setTxType(e.target.value)}
-                className="text-sm border border-gray-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-500"
+                className="w-full sm:w-auto text-sm border border-gray-300 rounded-md px-2 py-1.5 focus:outline-none focus:ring-2 focus:ring-teal-500"
               >
                 <option value="">Semua</option>
                 <option value="topup">Topup</option>
@@ -671,7 +672,7 @@ export default function SuperAdminFinancialPage() {
           ) : (
             <>
               <div className="overflow-x-auto rounded-lg border border-gray-200">
-                <table className="w-full text-sm">
+                <table className="w-full min-w-[720px] text-sm">
                   <thead className="bg-gray-50 text-xs uppercase text-gray-500">
                     <tr>
                       <th className="px-4 py-3 text-left">Tanggal</th>
@@ -714,7 +715,7 @@ export default function SuperAdminFinancialPage() {
 
               {/* Pagination */}
               {txPages > 1 && (
-                <div className="flex items-center justify-between text-sm">
+                <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm">
                   <p className="text-gray-500">Total {txTotal} transaksi</p>
                   <div className="flex gap-2">
                     <Button size="sm" variant="outline" disabled={txPage <= 1} onClick={() => fetchTransactions(txPage - 1)}>
@@ -743,7 +744,7 @@ export default function SuperAdminFinancialPage() {
               <div className="grid grid-cols-2 gap-3 text-sm">
                 <div>
                   <p className="text-xs text-gray-400 mb-0.5">No. Invoice</p>
-                  <p className="font-mono font-medium">{selectedInvoice.invoiceNumber}</p>
+                  <p className="font-mono font-medium break-all">{selectedInvoice.invoiceNumber}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 mb-0.5">Status</p>
@@ -753,12 +754,12 @@ export default function SuperAdminFinancialPage() {
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 mb-0.5">Anak</p>
-                  <p className="font-medium">{selectedInvoice.childName}</p>
+                  <p className="font-medium break-words">{selectedInvoice.childName}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 mb-0.5">Parent</p>
                   <p className="font-medium">{(selectedInvoice.parentId as any)?.name || "-"}</p>
-                  <p className="text-xs text-gray-400">{(selectedInvoice.parentId as any)?.email}</p>
+                  <p className="text-xs text-gray-400 break-all">{(selectedInvoice.parentId as any)?.email}</p>
                 </div>
                 <div>
                   <p className="text-xs text-gray-400 mb-0.5">Paket</p>
@@ -792,14 +793,14 @@ export default function SuperAdminFinancialPage() {
               {selectedInvoice.notes && (
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Catatan</p>
-                  <p className="text-sm text-gray-700 bg-gray-50 rounded p-2">{selectedInvoice.notes}</p>
+                  <p className="text-sm text-gray-700 bg-gray-50 rounded p-2 break-words">{selectedInvoice.notes}</p>
                 </div>
               )}
 
               {selectedInvoice.paymentMessage && (
                 <div>
                   <p className="text-xs text-gray-400 mb-1">Pesan Pembayaran dari Parent</p>
-                  <p className="text-sm text-gray-700 bg-blue-50 rounded p-2">{selectedInvoice.paymentMessage}</p>
+                  <p className="text-sm text-gray-700 bg-blue-50 rounded p-2 break-words">{selectedInvoice.paymentMessage}</p>
                 </div>
               )}
 
@@ -817,7 +818,7 @@ export default function SuperAdminFinancialPage() {
                       <img
                         src={proofUrl}
                         alt="Bukti bayar"
-                        className="max-h-48 rounded-lg border border-gray-200 object-contain cursor-pointer hover:opacity-90"
+                        className="max-h-48 max-w-full rounded-lg border border-gray-200 object-contain cursor-pointer hover:opacity-90"
                       />
                     </a>
                   ) : (
