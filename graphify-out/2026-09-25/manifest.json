@@ -18,28 +18,28 @@
     "semantic_hash": "7cca15e099ca59092d2c61b0a58b19cf"
   },
   "hearty-bridge/app/api/admin/users/[id]/route.ts": {
-    "mtime": 1787969989.9155438,
-    "seen": 1789120314.0147676,
-    "ast_hash": "297cc85c53b6e57994400635d1b13185",
-    "semantic_hash": "297cc85c53b6e57994400635d1b13185"
+    "mtime": 1790273101.629552,
+    "seen": 1790304922.6607842,
+    "ast_hash": "798946d3b432fe151ae415122b18d0d7",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/api/admin/users/route.ts": {
-    "mtime": 1787997726.5239124,
-    "seen": 1789120314.014769,
-    "ast_hash": "0c0d2042ef8d8d363eaeb4fa38279897",
-    "semantic_hash": "0c0d2042ef8d8d363eaeb4fa38279897"
+    "mtime": 1790273500.74096,
+    "seen": 1790304922.6607842,
+    "ast_hash": "d12b8c6a1b793352106f6d886cf5006d",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/api/announcements/[id]/route.ts": {
-    "mtime": 1787851668.844708,
-    "seen": 1789120314.0147705,
-    "ast_hash": "49e22967ed00f7cc6e1e4b89c5160aa8",
-    "semantic_hash": "49e22967ed00f7cc6e1e4b89c5160aa8"
+    "mtime": 1790273641.5762963,
+    "seen": 1790304922.6607842,
+    "ast_hash": "aa4d80c7fd6ea12a153d20aa7077669a",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/api/announcements/route.ts": {
-    "mtime": 1787851668.844708,
-    "seen": 1789120314.0147717,
-    "ast_hash": "fb2466288c3312b28bddcf221adc54d2",
-    "semantic_hash": "fb2466288c3312b28bddcf221adc54d2"
+    "mtime": 1790273631.5407546,
+    "seen": 1790304922.6607842,
+    "ast_hash": "67b00b6e5069a32dc9184fc57af8650e",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/api/assessments/[id]/route.ts": {
     "mtime": 1787851668.8457143,
@@ -120,28 +120,28 @@
     "semantic_hash": "89b19957de944b86ce087abf6c32d504"
   },
   "hearty-bridge/app/api/children/[id]/route.ts": {
-    "mtime": 1787969978.6638587,
-    "seen": 1789120314.0147862,
-    "ast_hash": "11745e76ecb3997028ed25e7064cbe78",
-    "semantic_hash": "11745e76ecb3997028ed25e7064cbe78"
+    "mtime": 1790273117.0469131,
+    "seen": 1790304922.6607842,
+    "ast_hash": "27fb19b87b10930b4097221e9fcee2c3",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/api/children/[id]/sessions/route.ts": {
-    "mtime": 1787970786.273609,
-    "seen": 1789120314.014787,
-    "ast_hash": "eeacb1d6bca310d50a7d187931daf922",
-    "semantic_hash": "eeacb1d6bca310d50a7d187931daf922"
+    "mtime": 1790272928.1557822,
+    "seen": 1790304922.6607842,
+    "ast_hash": "1946ed1f74995fc453cba0f42fc055cb",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/api/children/[id]/tokens/route.ts": {
-    "mtime": 1787951289.8243005,
-    "seen": 1789120314.0147886,
-    "ast_hash": "baba40a4b8ed19af621a51def28d2900",
-    "semantic_hash": "baba40a4b8ed19af621a51def28d2900"
+    "mtime": 1790272889.450742,
+    "seen": 1790304922.6607842,
+    "ast_hash": "c6b2f50e79e15997c50af127bf39a3b3",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/api/children/route.ts": {
-    "mtime": 1787972292.7891395,
-    "seen": 1789120314.0147896,
-    "ast_hash": "41d5ee056baf04c3048b1137ef0bada9",
-    "semantic_hash": "41d5ee056baf04c3048b1137ef0bada9"
+    "mtime": 1790272902.5470486,
+    "seen": 1790304922.6607842,
+    "ast_hash": "73adf48444474aafceab02ac682ed7e3",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/api/conversations/[id]/messages/route.ts": {
     "mtime": 1787851668.858995,
@@ -156,16 +156,16 @@
     "semantic_hash": "a91a8988a1349c0b9dda340fc3a718ce"
   },
   "hearty-bridge/app/api/dashboard/birthdays/route.ts": {
-    "mtime": 1787851668.8609996,
-    "seen": 1789120314.0147927,
-    "ast_hash": "21e94f2f6daa9458cbf08b723bed8b24",
-    "semantic_hash": "21e94f2f6daa9458cbf08b723bed8b24"
+    "mtime": 1790273503.635626,
+    "seen": 1790304922.6607842,
+    "ast_hash": "9fc3fdb539fe18eceec06ca10793304b",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/api/dashboard/stats/route.ts": {
-    "mtime": 1788199061.434667,
-    "seen": 1789120314.0147936,
-    "ast_hash": "e067371d0b93c551b6c22da212d89846",
-    "semantic_hash": "e067371d0b93c551b6c22da212d89846"
+    "mtime": 1790273657.935827,
+    "seen": 1790304922.6607842,
+    "ast_hash": "bbbeb0cc9c0200b955c4398fc4f34b46",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/api/health/route.ts": {
     "mtime": 1787851668.8629975,
@@ -186,10 +186,10 @@
     "semantic_hash": "2d84d0bda36149b4c973b23c1ed7d934"
   },
   "hearty-bridge/app/api/invoices/[id]/route.ts": {
-    "mtime": 1788064990.409875,
-    "seen": 1789120314.014798,
-    "ast_hash": "372c0a4a8b06241f888dbef62258b23f",
-    "semantic_hash": "372c0a4a8b06241f888dbef62258b23f"
+    "mtime": 1790273520.7723324,
+    "seen": 1790304922.6607842,
+    "ast_hash": "9fa15f4b6acfc3dc86ee2869c66f1899",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/api/invoices/route.ts": {
     "mtime": 1788064990.4108744,
@@ -216,16 +216,16 @@
     "semantic_hash": "06c50c934a0fc4cb2d7ad85567e3ebf2"
   },
   "hearty-bridge/app/api/reports/[id]/comments/route.ts": {
-    "mtime": 1787947407.1649275,
-    "seen": 1789120314.0148027,
-    "ast_hash": "8a2b634ac4d95014859440acaec86d2f",
-    "semantic_hash": "8a2b634ac4d95014859440acaec86d2f"
+    "mtime": 1790273872.2895553,
+    "seen": 1790304922.6607842,
+    "ast_hash": "5dac250b0c7959eb9bdf7b522233a1dd",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/api/reports/[id]/media/route.ts": {
-    "mtime": 1787984786.206276,
-    "seen": 1789120314.0148036,
-    "ast_hash": "e573ed4b209685c204672555187feb45",
-    "semantic_hash": "e573ed4b209685c204672555187feb45"
+    "mtime": 1790273199.1447272,
+    "seen": 1790304922.6607842,
+    "ast_hash": "1ddd7c9be9780450c5773d5b8ad3a33a",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/api/reports/[id]/pdf/route.ts": {
     "mtime": 1787948627.6418111,
@@ -264,10 +264,10 @@
     "semantic_hash": "04b8eee89b5929bf8320c1754aa22d45"
   },
   "hearty-bridge/app/api/sessions/[id]/route.ts": {
-    "mtime": 1788171483.7264318,
-    "seen": 1789120314.0148108,
-    "ast_hash": "93250e0d544b30d030bb78afd32919b7",
-    "semantic_hash": "93250e0d544b30d030bb78afd32919b7"
+    "mtime": 1790273182.8521914,
+    "seen": 1790304922.6607842,
+    "ast_hash": "0c61b2397aee9cd504af29c5513d362d",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/api/super-admin/analytics/financial-trend/route.ts": {
     "mtime": 1788030877.5702324,
@@ -288,16 +288,16 @@
     "semantic_hash": "bbf8f961e850122370e075023b0b956b"
   },
   "hearty-bridge/app/api/super-admin/financial/route.ts": {
-    "mtime": 1787954844.792641,
-    "seen": 1789120314.0148146,
-    "ast_hash": "9b3104d8f26a6e91b1d84ebdf46e9789",
-    "semantic_hash": "9b3104d8f26a6e91b1d84ebdf46e9789"
+    "mtime": 1790273730.3784206,
+    "seen": 1790304922.6607842,
+    "ast_hash": "ec39c2625a61bef7a226ca8ac6d9750e",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/api/super-admin/financial/transactions/route.ts": {
-    "mtime": 1787851668.8758984,
-    "seen": 1789120314.0148156,
-    "ast_hash": "00838b6dbcc84f7f15f320f95d7d7464",
-    "semantic_hash": "00838b6dbcc84f7f15f320f95d7d7464"
+    "mtime": 1790273742.4896705,
+    "seen": 1790304922.6607842,
+    "ast_hash": "671f945b3301ba704aef540fe61a447b",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/api/super-admin/packages/[id]/route.ts": {
     "mtime": 1787946223.693331,
@@ -312,28 +312,28 @@
     "semantic_hash": "86f2b1a4461269d5a7b7791bbfacbe6c"
   },
   "hearty-bridge/app/api/therapist-leaves/[id]/route.ts": {
-    "mtime": 1787851668.8783906,
-    "seen": 1789120314.0148187,
-    "ast_hash": "fcebfcc381f76c6ea722c675ab8d72ff",
-    "semantic_hash": "fcebfcc381f76c6ea722c675ab8d72ff"
+    "mtime": 1790273066.1700077,
+    "seen": 1790304922.6607842,
+    "ast_hash": "2ccd1ef32580058a352dfb6e1c9210df",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/api/therapist-leaves/route.ts": {
-    "mtime": 1787851668.879393,
-    "seen": 1789120314.0148196,
-    "ast_hash": "7a00d6a8fd2eeb5045f05a055fa8db38",
-    "semantic_hash": "7a00d6a8fd2eeb5045f05a055fa8db38"
+    "mtime": 1790273504.7342358,
+    "seen": 1790304922.6607842,
+    "ast_hash": "4bf7ee8f356d2627900bfbbc8c731f9f",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/api/therapists/route.ts": {
-    "mtime": 1787969415.757669,
-    "seen": 1789120314.0148203,
-    "ast_hash": "968373c2cdc3a09a8d23f3f4b1e9e988",
-    "semantic_hash": "968373c2cdc3a09a8d23f3f4b1e9e988"
+    "mtime": 1790273086.285684,
+    "seen": 1790304922.6607842,
+    "ast_hash": "be0c284659f6d7c6f6bed4540b11c0e3",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/api/weekly-schedule/route.ts": {
-    "mtime": 1788173706.43954,
-    "seen": 1789120314.0148213,
-    "ast_hash": "dde93e67b24f1896a2677b9590b34137",
-    "semantic_hash": "dde93e67b24f1896a2677b9590b34137"
+    "mtime": 1790273472.610736,
+    "seen": 1790304922.6607842,
+    "ast_hash": "9e45d75eb13c1bf696b25fcdd0df60e5",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/auth/change-password/page.tsx": {
     "mtime": 1788013581.6797626,
@@ -366,16 +366,16 @@
     "semantic_hash": "1b56a7d7194c907b8c669b6eea90120e"
   },
   "hearty-bridge/app/dashboard/invoices/page.tsx": {
-    "mtime": 1788199061.4356675,
-    "seen": 1789120314.014827,
-    "ast_hash": "8660b6f73d45c20b78c5f835da267f79",
-    "semantic_hash": "8660b6f73d45c20b78c5f835da267f79"
+    "mtime": 1790273619.9785676,
+    "seen": 1790304922.6607842,
+    "ast_hash": "c90f234178752ed44596cd30dc523f66",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/dashboard/layout.tsx": {
-    "mtime": 1788064990.413365,
-    "seen": 1789120314.014828,
-    "ast_hash": "f6519bea894742e3bcc31b86ca2c3a1e",
-    "semantic_hash": "f6519bea894742e3bcc31b86ca2c3a1e"
+    "mtime": 1790273134.9619606,
+    "seen": 1790304922.6607842,
+    "ast_hash": "19c7fc98fc6330a73d6e03ae642a71b0",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/dashboard/messages/page.tsx": {
     "mtime": 1787851668.8889565,
@@ -384,46 +384,46 @@
     "semantic_hash": "67be2c37202ac910cc8c9e3e8de8d2be"
   },
   "hearty-bridge/app/dashboard/page.tsx": {
-    "mtime": 1788177413.804738,
-    "seen": 1789120314.0148299,
-    "ast_hash": "fef047e84ad4482810c6d79c41354963",
-    "semantic_hash": "fef047e84ad4482810c6d79c41354963"
+    "mtime": 1790273675.0256052,
+    "seen": 1790304922.6607842,
+    "ast_hash": "0558e00a0eedb84f6ca975c5a72550c2",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/dashboard/patients/[id]/page.tsx": {
-    "mtime": 1787970040.4736912,
-    "seen": 1789120314.0148306,
-    "ast_hash": "b5c5af64bf6fcfc4c2d28cdc52bc6a35",
-    "semantic_hash": "b5c5af64bf6fcfc4c2d28cdc52bc6a35"
+    "mtime": 1790273007.3998318,
+    "seen": 1790304922.6607842,
+    "ast_hash": "54905c882a196c24ce8839577db0fe72",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/dashboard/patients/page.tsx": {
-    "mtime": 1789986363.9024796,
-    "seen": 1790077093.0817199,
-    "ast_hash": "668cbf701eaefd1c3449d03b42118a08",
+    "mtime": 1790273182.7287982,
+    "seen": 1790304922.6607842,
+    "ast_hash": "6058a32add45008897c4f26327966088",
     "semantic_hash": ""
   },
   "hearty-bridge/app/dashboard/reports/[id]/edit/page.tsx": {
-    "mtime": 1787953534.2123082,
-    "seen": 1789120314.0148327,
-    "ast_hash": "3c50c105d0a68c5264387363c2fff562",
-    "semantic_hash": "3c50c105d0a68c5264387363c2fff562"
+    "mtime": 1790273428.250845,
+    "seen": 1790304922.6607842,
+    "ast_hash": "0b449409e01229a947f2ddf484d8cb1f",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/dashboard/reports/new/page.tsx": {
-    "mtime": 1787953487.6838048,
-    "seen": 1789120314.0148337,
-    "ast_hash": "29202b735611b4698fc36761f3f0f9f1",
-    "semantic_hash": "29202b735611b4698fc36761f3f0f9f1"
+    "mtime": 1790273402.8340738,
+    "seen": 1790304922.6607842,
+    "ast_hash": "15215215153e72b0dd8eac011a49b8e6",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/dashboard/reports/page.tsx": {
-    "mtime": 1788177748.3561716,
-    "seen": 1789120314.0148344,
-    "ast_hash": "bf80fb12454428f20ca79095999b4315",
-    "semantic_hash": "bf80fb12454428f20ca79095999b4315"
+    "mtime": 1790273580.3641398,
+    "seen": 1790304922.6607842,
+    "ast_hash": "334a8f258735c00459496fca0f21a12e",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/dashboard/schedules/page.tsx": {
-    "mtime": 1788187622.3935587,
-    "seen": 1789120314.0148351,
-    "ast_hash": "7a97a0738d86b383e88e62d7d610d9fe",
-    "semantic_hash": "7a97a0738d86b383e88e62d7d610d9fe"
+    "mtime": 1790273922.9090078,
+    "seen": 1790304922.6607842,
+    "ast_hash": "cac24e18248c651e27bfe53106f13766",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/dashboard/settings/page.tsx": {
     "mtime": 1787851668.8979573,
@@ -444,10 +444,10 @@
     "semantic_hash": "41e332fe7a15960cdf7e3517188d8fe5"
   },
   "hearty-bridge/app/dashboard/super-admin/financial/page.tsx": {
-    "mtime": 1788179683.8928616,
-    "seen": 1789120314.0148394,
-    "ast_hash": "cac87a2a225d9af45f0a8fe6c775de88",
-    "semantic_hash": "cac87a2a225d9af45f0a8fe6c775de88"
+    "mtime": 1790273887.9014964,
+    "seen": 1790304922.6607842,
+    "ast_hash": "54be1e02a63df4048b3514ab775141b8",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/dashboard/super-admin/packages/page.tsx": {
     "mtime": 1788178114.5710227,
@@ -456,9 +456,9 @@
     "semantic_hash": "30991806500ed8a3c94211dc733a5e91"
   },
   "hearty-bridge/app/dashboard/therapists/page.tsx": {
-    "mtime": 1789986318.7962227,
-    "seen": 1790077093.0817199,
-    "ast_hash": "0660559f83fdf1d9c05b96faffb91c72",
+    "mtime": 1790273242.1217296,
+    "seen": 1790304922.6607842,
+    "ast_hash": "9bfc10d67b14b0297ae16491179a9cd3",
     "semantic_hash": ""
   },
   "hearty-bridge/app/layout.tsx": {
@@ -510,10 +510,10 @@
     "semantic_hash": "cffb56602bbfbf1e9d7ed0a41df0a4fa"
   },
   "hearty-bridge/components/dashboard/announcement-wall.tsx": {
-    "mtime": 1787851668.9097426,
-    "seen": 1789120314.0148506,
-    "ast_hash": "09187fd7bafe73f27ffa8831235d9505",
-    "semantic_hash": "09187fd7bafe73f27ffa8831235d9505"
+    "mtime": 1790273670.9038725,
+    "seen": 1790304922.6607842,
+    "ast_hash": "6ffb0a496186d385cf2641627d1c9129",
+    "semantic_hash": ""
   },
   "hearty-bridge/components/documents/document-library.tsx": {
     "mtime": 1787851668.9097426,
@@ -912,10 +912,10 @@
     "semantic_hash": "af91c41cd5cc50780774974761df674d"
   },
   "hearty-bridge/lib/types/auth.ts": {
-    "mtime": 1787851668.9478824,
-    "seen": 1789120314.0149148,
-    "ast_hash": "50b73971573bc4c71d4da94f92dfc09d",
-    "semantic_hash": "50b73971573bc4c71d4da94f92dfc09d"
+    "mtime": 1790273013.4139452,
+    "seen": 1790304922.6607842,
+    "ast_hash": "b5c2a16e67f214ecb20c598da225b534",
+    "semantic_hash": ""
   },
   "hearty-bridge/lib/types/index.ts": {
     "mtime": 1787851668.9488723,
@@ -942,10 +942,10 @@
     "semantic_hash": "cf3670e45f193595ff3df032a315b14c"
   },
   "hearty-bridge/lib/utils/compress.ts": {
-    "mtime": 1787985945.9426258,
-    "seen": 1789120314.0149198,
-    "ast_hash": "39a2be872b467beb4590d545eb16ac5a",
-    "semantic_hash": "39a2be872b467beb4590d545eb16ac5a"
+    "mtime": 1790273688.1530893,
+    "seen": 1790304922.6607842,
+    "ast_hash": "247435705e82a2d6d5e9d4e35a1b5645",
+    "semantic_hash": ""
   },
   "hearty-bridge/lib/utils/error-handler.ts": {
     "mtime": 1787851668.9519684,
@@ -966,15 +966,15 @@
     "semantic_hash": "887d74355ef76cc03ca23dd3a4fa10be"
   },
   "hearty-bridge/lib/utils/notify.ts": {
-    "mtime": 1787947374.782421,
-    "seen": 1789120314.0149233,
-    "ast_hash": "e439830d69242bc40e9b1404505e9e8e",
-    "semantic_hash": "e439830d69242bc40e9b1404505e9e8e"
+    "mtime": 1790273037.7293532,
+    "seen": 1790304922.6607842,
+    "ast_hash": "6dba6fe39936e305208be749e3a83226",
+    "semantic_hash": ""
   },
   "hearty-bridge/lib/utils/permissions.ts": {
-    "mtime": 1789986238.1439948,
-    "seen": 1790077093.0817199,
-    "ast_hash": "144a0f638111c08c459af7ddcf348cb8",
+    "mtime": 1790273133.3341,
+    "seen": 1790304922.6607842,
+    "ast_hash": "7bebe11637043fd249872bac0ed649a2",
     "semantic_hash": ""
   },
   "hearty-bridge/lib/utils/report-access.ts": {
@@ -990,10 +990,10 @@
     "semantic_hash": "6e34a5df6c12def90ee44206be80f9dd"
   },
   "hearty-bridge/lib/utils/upload-with-progress.ts": {
-    "mtime": 1787953470.7370875,
-    "seen": 1789120314.014927,
-    "ast_hash": "b44d3bb7d430b9403d1f5c721524acef",
-    "semantic_hash": "b44d3bb7d430b9403d1f5c721524acef"
+    "mtime": 1790273206.2851052,
+    "seen": 1790304922.6607842,
+    "ast_hash": "89edb698d4fbcfa61418b13b46184330",
+    "semantic_hash": ""
   },
   "hearty-bridge/lib/validation/auth.ts": {
     "mtime": 1787851668.9562683,
@@ -1044,10 +1044,10 @@
     "semantic_hash": ""
   },
   "hearty-bridge/models/Announcement.ts": {
-    "mtime": 1787851668.9617264,
-    "seen": 1789120314.0149374,
-    "ast_hash": "7c6261298f71c0d8a11cf774521cb8a4",
-    "semantic_hash": "7c6261298f71c0d8a11cf774521cb8a4"
+    "mtime": 1790273592.2767215,
+    "seen": 1790304922.6607842,
+    "ast_hash": "1bce8251a2d262bc475031e2ebc062d1",
+    "semantic_hash": ""
   },
   "hearty-bridge/models/Assessment.ts": {
     "mtime": 1787851668.9617264,
@@ -1116,10 +1116,10 @@
     "semantic_hash": "4634da9aba1f6cb8bf84551433f31d32"
   },
   "hearty-bridge/models/Notification.ts": {
-    "mtime": 1787947362.489352,
-    "seen": 1789120314.0149484,
-    "ast_hash": "13eb8322c63e5d36bc4005f81e04fd76",
-    "semantic_hash": "13eb8322c63e5d36bc4005f81e04fd76"
+    "mtime": 1790273037.7850173,
+    "seen": 1790304922.6607842,
+    "ast_hash": "f3532d3d94496fb9d13958d4edf35214",
+    "semantic_hash": ""
   },
   "hearty-bridge/models/Package.ts": {
     "mtime": 1787851668.9680078,
@@ -1134,10 +1134,10 @@
     "semantic_hash": "434c8ed1aee36c12b06bc219d420bd75"
   },
   "hearty-bridge/models/Report.ts": {
-    "mtime": 1787984593.710347,
-    "seen": 1789120314.0149512,
-    "ast_hash": "190ec06b485107b5394ed0be50b3d30b",
-    "semantic_hash": "190ec06b485107b5394ed0be50b3d30b"
+    "mtime": 1790273154.991941,
+    "seen": 1790304922.6607842,
+    "ast_hash": "702daef9fef081d7b8a5d36e3d99273c",
+    "semantic_hash": ""
   },
   "hearty-bridge/models/ReportComment.ts": {
     "mtime": 1787851668.9700067,
@@ -1158,10 +1158,10 @@
     "semantic_hash": "811c53488a57b217728c81ec89c72fa3"
   },
   "hearty-bridge/models/TherapistLeave.ts": {
-    "mtime": 1787851668.97215,
-    "seen": 1789120314.014955,
-    "ast_hash": "f9748336f6e116b09bed02a4bf19dfcc",
-    "semantic_hash": "f9748336f6e116b09bed02a4bf19dfcc"
+    "mtime": 1790273044.5756392,
+    "seen": 1790304922.6607842,
+    "ast_hash": "c6e512f771773049594d837263996d91",
+    "semantic_hash": ""
   },
   "hearty-bridge/models/TokenTransaction.ts": {
     "mtime": 1787851668.97215,
@@ -1170,34 +1170,34 @@
     "semantic_hash": "9bf1668b9969cee2415db9ea97a97620"
   },
   "hearty-bridge/models/User.ts": {
-    "mtime": 1787969354.373003,
-    "seen": 1789120314.014957,
-    "ast_hash": "9ee633e6a6d855d029a298c7abb1164a",
-    "semantic_hash": "9ee633e6a6d855d029a298c7abb1164a"
+    "mtime": 1790273013.4118533,
+    "seen": 1790304922.6607842,
+    "ast_hash": "cf33766f2b1349cbb80317584f95cdc1",
+    "semantic_hash": ""
   },
   "hearty-bridge/models/WeeklySchedule.ts": {
-    "mtime": 1787851668.9731429,
-    "seen": 1789120314.0149581,
-    "ast_hash": "4c0cb6e258f51dfcf7064d55d067e25b",
-    "semantic_hash": "4c0cb6e258f51dfcf7064d55d067e25b"
+    "mtime": 1790272649.9578822,
+    "seen": 1790304922.6607842,
+    "ast_hash": "74292f5e8b3353997eec8e83407fbe86",
+    "semantic_hash": ""
   },
   "hearty-bridge/models/index.ts": {
-    "mtime": 1788064990.4195814,
-    "seen": 1789120314.0149589,
-    "ast_hash": "cd53e293b436078706276b33fe2338f3",
-    "semantic_hash": "cd53e293b436078706276b33fe2338f3"
+    "mtime": 1790273030.530459,
+    "seen": 1790304922.6607842,
+    "ast_hash": "4e69aaee92ae3d04c52d4df95c4b60a7",
+    "semantic_hash": ""
   },
   "hearty-bridge/next.config.ts": {
-    "mtime": 1788172871.1609247,
-    "seen": 1789120314.0149598,
-    "ast_hash": "9db68b3b69a0c7e07a89fa602d24fc8c",
-    "semantic_hash": "9db68b3b69a0c7e07a89fa602d24fc8c"
+    "mtime": 1790273092.179145,
+    "seen": 1790304922.6607842,
+    "ast_hash": "85f0feff5703d9d510c7b9f677d35ee2",
+    "semantic_hash": ""
   },
   "hearty-bridge/package.json": {
-    "mtime": 1788173913.0541773,
-    "seen": 1789120314.014961,
-    "ast_hash": "aa3abaa4f8bfb502dbf65910268f4978",
-    "semantic_hash": "aa3abaa4f8bfb502dbf65910268f4978"
+    "mtime": 1790272994.6640759,
+    "seen": 1790304922.6607842,
+    "ast_hash": "fbc1533c88188d04c5d698bface8c0c9",
+    "semantic_hash": ""
   },
   "hearty-bridge/postcss.config.mjs": {
     "mtime": 1787851668.9786508,
@@ -1752,9 +1752,9 @@
     "semantic_hash": ""
   },
   "hearty-bridge/CLAUDE.md": {
-    "mtime": 1787851668.8338892,
-    "seen": 1789982651.5730455,
-    "ast_hash": "30ccc29d531593a72fd723a5c9abcd0c",
+    "mtime": 1790304669.3797717,
+    "seen": 1790304922.6622982,
+    "ast_hash": "e134b5912317dcc5ae9a2bd173146606",
     "semantic_hash": ""
   },
   "hearty-bridge/README.md": {
@@ -1851,6 +1851,168 @@
     "mtime": 1790069772.1062882,
     "seen": 1790077093.0817199,
     "ast_hash": "c1ef204ed3c29e24050e98513087f119",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/app/api/deletion-requests/[id]/route.ts": {
+    "mtime": 1790273316.7273142,
+    "seen": 1790304922.6607842,
+    "ast_hash": "f0caff9bc7b621437c6c19606273d787",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/app/api/deletion-requests/route.ts": {
+    "mtime": 1790273316.7273142,
+    "seen": 1790304922.6607842,
+    "ast_hash": "f24c303f6514749d87051d5920ccb810",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/app/api/super-admin/financial/export/route.ts": {
+    "mtime": 1790273998.858689,
+    "seen": 1790304922.6607842,
+    "ast_hash": "c6602ea6b65b9c85637487b8b0e019a6",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/app/dashboard/super-admin/deletion-requests/page.tsx": {
+    "mtime": 1790273342.5873308,
+    "seen": 1790304922.6607842,
+    "ast_hash": "3b565b63c37fa747be30ec3201500481",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/components/admin/request-deletion-dialog.tsx": {
+    "mtime": 1790273324.8468263,
+    "seen": 1790304922.6607842,
+    "ast_hash": "23c8cec44b50eaa80d8ff6c1a6bc2fdf",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/components/dashboard/unpaid-invoice-popup.tsx": {
+    "mtime": 1790273649.7312593,
+    "seen": 1790304922.6607842,
+    "ast_hash": "75701ed964b241d4fda3600a61427a44",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/components/invoices/payment-history-pdf.tsx": {
+    "mtime": 1790273781.692028,
+    "seen": 1790304922.6607842,
+    "ast_hash": "51fee63efa4c71eb9c41b3d5e2b58800",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/components/reports/report-media-uploader.tsx": {
+    "mtime": 1790273329.2992592,
+    "seen": 1790304922.6607842,
+    "ast_hash": "8b32547045c20b1fe1e0866e5205fc88",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/components/ui/lightbox.tsx": {
+    "mtime": 1790273246.0683901,
+    "seen": 1790304922.6607842,
+    "ast_hash": "68a3094abb63f08bffa9474c09025c6d",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/lib/services/announcement-media.ts": {
+    "mtime": 1790273611.4731214,
+    "seen": 1790304922.6607842,
+    "ast_hash": "d88cfad13a2d44755237fa30509099fb",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/lib/services/video-transcode.ts": {
+    "mtime": 1790273147.732022,
+    "seen": 1790304922.6607842,
+    "ast_hash": "0cee9e3143fe27ed98006612b16546e9",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/lib/types/heic-convert.d.ts": {
+    "mtime": 1790273090.0941718,
+    "seen": 1790304922.6607842,
+    "ast_hash": "110b7a1bceb72a41b56633871c7b67a7",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/lib/utils/account-deletion.ts": {
+    "mtime": 1790273316.7258046,
+    "seen": 1790304922.6607842,
+    "ast_hash": "ef19e68153285051aa46043161430ef9",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/lib/utils/financial-query.ts": {
+    "mtime": 1790273706.5735426,
+    "seen": 1790304922.6607842,
+    "ast_hash": "dce193c0235312045da333543c04b226",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/lib/utils/invoice-package.ts": {
+    "mtime": 1790273499.9439063,
+    "seen": 1790304922.6607842,
+    "ast_hash": "76f8cad7338738df73e36f1057c1adb4",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/lib/utils/media-mime.ts": {
+    "mtime": 1790273051.5930529,
+    "seen": 1790304922.6607842,
+    "ast_hash": "ed8bc093dc9fb9834277f13241c74b3e",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/lib/utils/package-schedule.ts": {
+    "mtime": 1790273472.5864024,
+    "seen": 1790304922.6607842,
+    "ast_hash": "b7315ccd6ef19411ac8d84b3b57b5a14",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/lib/utils/payment-history-export.ts": {
+    "mtime": 1790273774.1296809,
+    "seen": 1790304922.6607842,
+    "ast_hash": "bc27a2a3bd89fe5284ac303b31b545f8",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/lib/utils/session-balance.ts": {
+    "mtime": 1790273258.7892368,
+    "seen": 1790304922.6607842,
+    "ast_hash": "95f6a0c0c3efc326908b960a186dd064",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/lib/utils/therapist-leave.ts": {
+    "mtime": 1790273053.7520406,
+    "seen": 1790304922.6607842,
+    "ast_hash": "78e4a4d3f0aab820b69a4294cd60f33e",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/lib/utils/xlsx-lite.ts": {
+    "mtime": 1790273817.1846044,
+    "seen": 1790304922.6607842,
+    "ast_hash": "d084d7de9f0c62c6bf9be804b1e1351a",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/models/DeletionRequest.ts": {
+    "mtime": 1790273316.7288904,
+    "seen": 1790304922.6607842,
+    "ast_hash": "94c2683da35705bdab24216f0548bf04",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/scripts/migrate-leave-cuti-to-sakit-izin.js": {
+    "mtime": 1790273299.5919747,
+    "seen": 1790304922.6607842,
+    "ast_hash": "e027aeb23d1d3bad618763d5319d2a05",
+    "semantic_hash": ""
+  },
+  "docs/testing/task1-breakdown.md": {
+    "mtime": 1790251778.6115398,
+    "seen": 1790304922.6622982,
+    "ast_hash": "87d1d5b3b563754c4223dcfc6ecca290",
+    "semantic_hash": ""
+  },
+  "docs/testing/task1-plan-step1.md": {
+    "mtime": 1790252521.8617866,
+    "seen": 1790304922.6622982,
+    "ast_hash": "4f17b95533465acd2df5aa400cbf233e",
+    "semantic_hash": ""
+  },
+  "docs/testing/task1-plan-step2.md": {
+    "mtime": 1790252522.0266142,
+    "seen": 1790304922.6622982,
+    "ast_hash": "c4d8f86ca09f1c11e23daa0f57838aa5",
+    "semantic_hash": ""
+  },
+  "docs/testing/task1-plan-step3.md": {
+    "mtime": 1790252522.1999278,
+    "seen": 1790304922.6622982,
+    "ast_hash": "337e98f298acb4a47bcf189d7f671c93",
     "semantic_hash": ""
   }
 }

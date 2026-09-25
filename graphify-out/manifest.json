@@ -420,9 +420,9 @@
     "semantic_hash": ""
   },
   "hearty-bridge/app/dashboard/schedules/page.tsx": {
-    "mtime": 1790273922.9090078,
-    "seen": 1790304922.6607842,
-    "ast_hash": "cac24e18248c651e27bfe53106f13766",
+    "mtime": 1790309805.0755723,
+    "seen": 1790310734.639024,
+    "ast_hash": "22aa21aaded5c85fe63d92f5280f3c2e",
     "semantic_hash": ""
   },
   "hearty-bridge/app/dashboard/settings/page.tsx": {
@@ -1206,10 +1206,10 @@
     "semantic_hash": "481fac0fdecd70e1821cc30b86030c1a"
   },
   "hearty-bridge/proxy.ts": {
-    "mtime": 1787851668.9786508,
-    "seen": 1789120314.014963,
-    "ast_hash": "6c0567b2d15cad91385cd726288acb12",
-    "semantic_hash": "6c0567b2d15cad91385cd726288acb12"
+    "mtime": 1790309264.9277122,
+    "seen": 1790310734.639024,
+    "ast_hash": "c8da6078dde74ecb18a354886586b6e1",
+    "semantic_hash": ""
   },
   "hearty-bridge/scripts/backfill-therapist-colors.js": {
     "mtime": 1787997745.4263797,
