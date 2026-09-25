@@ -49,7 +49,7 @@ export const POST = withAnyAuth(
 
     await connectToDatabase();
 
-    const report = await Report.findOne({ _id: reportId, isActive: true }).select('childId therapistId').lean();
+    const report = await Report.findOne({ _id: reportId, isActive: true }).select('childId therapistId status').lean();
     if (!report) {
       return NextResponse.json({ success: false, error: 'Report not found' }, { status: 404 });
     }
@@ -215,7 +215,7 @@ export const DELETE = withAnyAuth(
 
     await connectToDatabase();
 
-    const report = await Report.findOne({ _id: reportId, isActive: true }).select('childId therapistId').lean();
+    const report = await Report.findOne({ _id: reportId, isActive: true }).select('childId therapistId status').lean();
     if (!report) {
       return NextResponse.json({ success: false, error: 'Report not found' }, { status: 404 });
     }

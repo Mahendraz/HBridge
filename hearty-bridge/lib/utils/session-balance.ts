@@ -97,6 +97,7 @@ interface InvoiceLean {
   packageTransactionId?: Oid;
   status: 'unpaid' | 'paid' | 'overdue';
   invoiceNumber: string;
+  isActive?: boolean;
 }
 
 interface SlotLean {
@@ -139,9 +140,11 @@ export async function getSessionBalances(
   const txOids = topups.map((t) => t._id);
 
   const [invoices, usedAgg] = await Promise.all([
-    Invoice.find({ packageTransactionId: { $in: txOids }, isActive: { $ne: false } })
+    // Deleted invoices are fetched too: removing an unpaid invoice must not
+    // turn its package into "paid" and flip a negative balance positive.
+    Invoice.find({ packageTransactionId: { $in: txOids } })
       .sort({ createdAt: -1 })
-      .select('packageTransactionId status invoiceNumber')
+      .select('packageTransactionId status invoiceNumber isActive')
       .lean<InvoiceLean[]>(),
     Session.aggregate<{ _id: Oid; count: number }>([
       { $match: { packageId: { $in: txOids }, status: 'completed', isActive: true } },
@@ -149,11 +152,15 @@ export async function getSessionBalances(
     ]),
   ]);
 
-  // Latest active invoice per package wins (sorted newest first above).
+  // Latest active invoice per package wins; if every invoice was deleted, the
+  // latest deleted one still decides (sorted newest first above).
   const invoiceByTx = new Map<string, InvoiceLean>();
   for (const inv of invoices) {
     const key = inv.packageTransactionId?.toString();
-    if (key && !invoiceByTx.has(key)) invoiceByTx.set(key, inv);
+    if (!key) continue;
+    const current = invoiceByTx.get(key);
+    const isActive = inv.isActive !== false;
+    if (!current || (isActive && current.isActive === false)) invoiceByTx.set(key, inv);
   }
   const usedByTx = new Map<string, number>(
     usedAgg.map((r) => [r._id.toString(), r.count])
@@ -163,6 +170,7 @@ export async function getSessionBalances(
     const childId = tx.childId.toString();
     const txId = tx._id.toString();
     const inv = invoiceByTx.get(txId) ?? null;
+    // No invoice at all = legacy package from before invoices existed.
     const isPaid = inv ? inv.status === 'paid' : true;
     const total = tx.amount ?? 0;
     const used = usedByTx.get(txId) ?? 0;

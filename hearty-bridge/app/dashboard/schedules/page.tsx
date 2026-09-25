@@ -277,8 +277,10 @@ interface TherapistOption {
 function formatTherapyLabel(p: PatientOption): string {
   const breakdown = p.therapyBalance ?? {};
   const entries = Object.entries(breakdown).filter(([type, v]) => type !== 'assessment' && v > 0);
-  if (entries.length === 0) return `${p.tokenBalance ?? 0} sesi tersisa`;
-  return entries.map(([type, count]) => `${count} sesi ${type}`).join(' · ');
+  // therapyBalance = sessions not yet on the calendar, not the package's
+  // remaining (that's the session-balance helper) — label it as such.
+  if (entries.length === 0) return `${p.tokenBalance ?? 0} sesi belum dijadwalkan`;
+  return `${entries.map(([type, count]) => `${count} sesi ${type}`).join(' · ')} belum dijadwalkan`;
 }
 
 // ---------------------------------------------------------------------------
@@ -1616,6 +1618,15 @@ export default function SchedulesPage() {
   // that date. Sakit/Izin slots stay visible with a marker; Inaktif slots are
   // hidden unless the admin opts to show them (to move them to someone else).
   const [leaveMap, setLeaveMap] = useState<Map<string, 'sakit_izin' | 'inactive'>>(new Map());
+  // Therapists that can be assigned in the week being viewed: anyone Inaktif on
+  // any day of that week is left out (Sakit/Izin stays selectable — short-term).
+  const pickerTherapists = useMemo(() => {
+    const inactiveIds = new Set<string>();
+    leaveMap.forEach((type, key) => {
+      if (type === 'inactive') inactiveIds.add(key.split('_')[0]);
+    });
+    return allTherapists.filter((t) => !inactiveIds.has(t._id));
+  }, [allTherapists, leaveMap]);
   const [showInactiveSlots, setShowInactiveSlots] = useState(false);
 
   // Grid search/filter — allTherapists is already fetched for the slot-creation
@@ -1769,10 +1780,10 @@ export default function SchedulesPage() {
       }
       if (tRes.ok) {
         const tr = await tRes.json();
-        // Inaktif therapists (and disabled accounts) can't be picked for new
-        // slots; Sakit/Izin ones stay selectable since that's short-term.
+        // Disabled accounts are dropped here. Inaktif leave is filtered per
+        // viewed week in pickerTherapists, since /api/therapists only knows today.
         const rawTherapists: any[] = tr.therapists || [];
-        setAllTherapists(rawTherapists.filter((t) => t.status !== 'inactive').map((t) => ({
+        setAllTherapists(rawTherapists.filter((t) => !(t.status === 'inactive' && t.currentLeave !== 'inactive')).map((t) => ({
           _id: t._id?.toString() ?? "",
           name: t.name,
           therapyType: t.therapyType ?? null,
@@ -2576,7 +2587,7 @@ export default function SchedulesPage() {
                       className="flex-1 border border-gray-300 rounded-md px-3 py-2 text-sm bg-white focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent"
                     >
                       <option value="">Belum ditentukan</option>
-                      {allTherapists.map((t) => (
+                      {pickerTherapists.map((t) => (
                         <option key={t._id} value={t._id}>
                           {t.name}{t.therapyType ? ` (${t.therapyType})` : ''}
                         </option>
@@ -2651,7 +2662,7 @@ export default function SchedulesPage() {
       {showExtraSessionModal && (
         <ExtraSessionModal
           patients={allPatients}
-          therapists={allTherapists}
+          therapists={pickerTherapists}
           weekStart={weekStart}
           onClose={() => setShowExtraSessionModal(false)}
           onSave={handleCreateExtraSession}
@@ -2663,7 +2674,7 @@ export default function SchedulesPage() {
         <SlotModal
           slot={editingSlot}
           patients={editingSlot._id ? allPatients : unscheduledPatients}
-          therapists={allTherapists}
+          therapists={pickerTherapists}
           weekStart={weekStart}
           onClose={closeModal}
           onSave={handleSave}

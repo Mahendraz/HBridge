@@ -51,8 +51,13 @@ export const PATCH = withAdminAuth(async (request: NextRequest, user: any) => {
     }
     // Deactivating a parent is deleting their account (ADM-3): Super Admin
     // only, via DELETE so the children go with it. Admin files a request.
-    if (targetUser.role === 'parent' && !isActive && user.role !== 'super_admin') {
-      return ErrorResponse.forbidden('Hapus akun orang tua harus lewat persetujuan Super Admin');
+    // Reactivating is Super Admin only too, so admin can't undo an approved deletion.
+    if (targetUser.role === 'parent' && isActive !== targetUser.isActive && user.role !== 'super_admin') {
+      return ErrorResponse.forbidden(
+        isActive
+          ? 'Mengaktifkan kembali akun orang tua hanya bisa dilakukan Super Admin'
+          : 'Hapus akun orang tua harus lewat persetujuan Super Admin'
+      );
     }
     targetUser.isActive = isActive;
   }

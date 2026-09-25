@@ -119,6 +119,8 @@ export function useReportMediaUploader({
   const idleWaiters = useRef<(() => void)[]>([]);
   const objectUrls = useRef(new Map<string, string>());
   const reportIdRef = useRef<string | null>(null);
+  /** Media that was already on the report, removed in the form but not yet deleted (edit page). */
+  const pendingRemovals = useRef<MediaItem[]>([]);
 
   // Latest callbacks without re-creating the upload machinery every render
   const getReportIdRef = useRef(getReportId);
@@ -298,6 +300,12 @@ export function useReportMediaUploader({
       jobs.current.delete(item.id);
       return;
     }
+    // Media that was already saved on the report is only deleted when the form
+    // is saved (commitRemovals), so cancelling the edit keeps it.
+    if (!item.isNew) {
+      pendingRemovals.current.push(item);
+      return;
+    }
 
     try {
       await deleteOnServer(item);
@@ -317,8 +325,21 @@ export function useReportMediaUploader({
 
   /** Load media already attached to the report (edit page). */
   const setExisting = useCallback((media: ServerMediaFile[]) => {
+    pendingRemovals.current = [];
     setItems((prev) => [...media.map(fromServer), ...prev.filter((it) => it.isNew)]);
   }, []);
+
+  /** Deletes the saved media the user removed in the form. Call when saving. */
+  const commitRemovals = useCallback(async (): Promise<{ failed: number }> => {
+    const toDelete = pendingRemovals.current;
+    pendingRemovals.current = [];
+    const results = await Promise.allSettled(toDelete.map((it) => deleteOnServer(it)));
+    const failedItems = toDelete.filter((_, i) => results[i].status === "rejected");
+    if (failedItems.length > 0) {
+      pendingRemovals.current = failedItems; // retried on the next save
+    }
+    return { failed: failedItems.length };
+  }, [deleteOnServer]);
 
   /** Resolves once every queued/in-flight upload has finished; returns how many failed. */
   const waitForUploads = useCallback((): Promise<{ failed: number }> => {
@@ -364,6 +385,7 @@ export function useReportMediaUploader({
     remove,
     retry,
     setExisting,
+    commitRemovals,
     waitForUploads,
     discardNew,
     pendingCount: pendingItems.length,

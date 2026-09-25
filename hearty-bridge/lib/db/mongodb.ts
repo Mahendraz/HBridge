@@ -15,6 +15,11 @@ if (!process.env.MONGODB_URI) {
 
 const MONGODB_URI: string = process.env.MONGODB_URI;
 
+// Model operations run inside connection.transaction() pick up the transaction
+// session automatically, so helpers (e.g. regeneratePackageSchedule) don't need
+// a session parameter. Has no effect outside a transaction.
+mongoose.set('transactionAsyncLocalStorage', true);
+
 let cached: MongooseCache = global.mongoose || { conn: null, promise: null };
 
 if (!global.mongoose) {

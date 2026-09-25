@@ -231,6 +231,12 @@ export default function EditReportPage() {
         throw new Error(`${failed} file gagal diunggah. Coba lagi atau hapus file tersebut sebelum menyimpan.`);
       }
 
+      // Media removed in the form is only deleted now, on save.
+      const removal = await media.commitRemovals();
+      if (removal.failed > 0) {
+        throw new Error(`${removal.failed} file gagal dihapus. Coba simpan lagi.`);
+      }
+
       const payload = {
         title: form.title.trim(),
         description: form.description.trim(),

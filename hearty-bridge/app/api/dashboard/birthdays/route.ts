@@ -9,8 +9,18 @@ import mongoose from 'mongoose';
 // Therapist birthday reminder window: H-3 up to and including the day itself.
 const THERAPIST_REMINDER_DAYS = 3;
 
+// The clinic runs on WIB (UTC+7). "Today" is taken in WIB so the H-x count
+// doesn't lag a day between 00:00 and 07:00 WIB on a server running in UTC.
+const WIB_OFFSET_MS = 7 * 3600 * 1000;
+
+/** Today's WIB calendar date, as UTC midnight. */
+function todayWib(): Date {
+  const wib = new Date(Date.now() + WIB_OFFSET_MS);
+  return new Date(Date.UTC(wib.getUTCFullYear(), wib.getUTCMonth(), wib.getUTCDate()));
+}
+
 /**
- * Days from today (local midnight) until the next occurrence of a birth date
+ * Days from today (UTC-midnight date) until the next occurrence of a birth date
  * stored as UTC midnight. A Feb 29 birthday falls on Feb 28 in non-leap years.
  */
 function nextBirthday(dob: Date, todayMidnight: Date): { daysUntil: number; turningAge: number } {
@@ -18,9 +28,9 @@ function nextBirthday(dob: Date, todayMidnight: Date): { daysUntil: number; turn
   const day = dob.getUTCDate();
   const occurrence = (year: number) => {
     const isLeap = (year % 4 === 0 && year % 100 !== 0) || year % 400 === 0;
-    return month === 1 && day === 29 && !isLeap ? new Date(year, 1, 28) : new Date(year, month, day);
+    return month === 1 && day === 29 && !isLeap ? new Date(Date.UTC(year, 1, 28)) : new Date(Date.UTC(year, month, day));
   };
-  const thisYear = todayMidnight.getFullYear();
+  const thisYear = todayMidnight.getUTCFullYear();
   let target = occurrence(thisYear);
   let year = thisYear;
   if (target < todayMidnight) {
@@ -93,7 +103,7 @@ export const GET = withAnyAuth(
 
       therapistBirthdays = therapists
         .map((t) => {
-          const { daysUntil, turningAge } = nextBirthday(new Date(t.profile.dateOfBirth), todayMidnight);
+          const { daysUntil, turningAge } = nextBirthday(new Date(t.profile.dateOfBirth), todayWib());
           return {
             therapistId: t._id.toString(),
             name: t.name,

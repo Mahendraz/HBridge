@@ -466,6 +466,7 @@ async function parentStats(user: JWTPayload): Promise<NextResponse> {
     Report.find({
       childId: { $in: childIds },
       isActive: true,
+      status: 'completed',
       createdAt: { $gte: startOfWeek, $lte: endOfWeek },
     }).sort({ createdAt: -1 })
       .select('childName title type status createdAt')

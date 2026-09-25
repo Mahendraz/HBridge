@@ -6,6 +6,9 @@ export interface ITokenTransaction extends Document {
   adminId: mongoose.Types.ObjectId;
   adminName: string;
   type: 'topup' | 'deduct';
+  // Set on package topups AND on session deducts (which carry their package's
+  // name/program for per-program history). To find packages, always filter
+  // type: 'topup' — packageType != null alone also matches deducts.
   packageType: string | null;
   packageId?: mongoose.Types.ObjectId | null;
   therapyType: 'OT' | 'TW' | 'assessment' | null;

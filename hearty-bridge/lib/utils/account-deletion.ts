@@ -22,6 +22,9 @@ import WeeklySchedule from '@/models/WeeklySchedule';
 async function deactivateChildren(childIds: string[]): Promise<number> {
   if (childIds.length === 0) return 0;
   const now = new Date();
+  // Today's WIB (UTC+7) calendar date as UTC midnight — the format Session.date uses.
+  const wibNow = new Date(now.getTime() + 7 * 3600 * 1000);
+  const startOfTodayUtc = new Date(Date.UTC(wibNow.getUTCFullYear(), wibNow.getUTCMonth(), wibNow.getUTCDate()));
   const objectIds = childIds.map((id) => new mongoose.Types.ObjectId(id));
 
   const res = await Child.updateMany(
@@ -38,7 +41,9 @@ async function deactivateChildren(childIds: string[]): Promise<number> {
       { $set: { effectiveUntil: now } }
     ),
     Session.updateMany(
-      { childId: { $in: objectIds }, status: 'scheduled', date: { $gte: now } },
+      // Session.date is stored at UTC midnight, so compare from the start of
+      // today — otherwise later sessions on the day of deletion stay scheduled.
+      { childId: { $in: objectIds }, status: 'scheduled', date: { $gte: startOfTodayUtc } },
       { $set: { status: 'cancelled' } }
     ),
   ]);

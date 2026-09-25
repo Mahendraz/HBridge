@@ -6,6 +6,7 @@ import Session from '@/models/Session';
 import Child from '@/models/Child';
 import TokenTransaction from '@/models/TokenTransaction';
 import mongoose from 'mongoose';
+import { getInactiveTherapistError } from '@/lib/utils/therapist-leave';
 
 function getSessionId(req: NextRequest): string {
   const parts = new URL(req.url).pathname.split('/');
@@ -98,6 +99,13 @@ export const PATCH = withAdminAuth(
       parsedDate = new Date(date + 'T00:00:00Z');
       if (isNaN(parsedDate.getTime())) {
         return NextResponse.json(ErrorResponse.badRequest('Invalid date format'), { status: 400 });
+      }
+    }
+
+    if (parsedDate) {
+      const inactiveError = await getInactiveTherapistError(session.therapistId, parsedDate);
+      if (inactiveError) {
+        return NextResponse.json(ErrorResponse.badRequest(inactiveError), { status: 400 });
       }
     }
 

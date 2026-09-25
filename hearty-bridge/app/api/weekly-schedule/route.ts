@@ -13,6 +13,7 @@ import {
   regeneratePackageSchedule,
 } from '@/lib/utils/package-schedule';
 import mongoose from 'mongoose';
+import { getInactiveTherapistError } from '@/lib/utils/therapist-leave';
 
 /** Return the Monday (UTC) of the week containing the given date string, as a Date. */
 function getMondayOfWeek(dateStr?: string): Date {
@@ -98,12 +99,58 @@ async function moveRecurringSeries(body: {
     );
   }
 
-  const oldDate = new Date(session.date);
-  oldDate.setUTCHours(0, 0, 0, 0);
-  const oldDay = dateToDayName(oldDate);
-  const oldTime = session.time;
-  const oldHour = timeToHour(oldTime);
-  const shiftDays = Math.round((targetDate.getTime() - oldDate.getTime()) / DAY_MS);
+  const sessionDate = new Date(session.date);
+  sessionDate.setUTCHours(0, 0, 0, 0);
+  const patientId = session.childId.toString();
+  const packageIdStr = session.packageId.toString();
+
+  // Find the recurring slot this session belongs to. Normally that is the slot
+  // at the session's own day/hour, but a session already moved "hanya minggu
+  // ini" sits somewhere else — then the slot is the one left empty that week.
+  const slots = await WeeklySchedule.find({ patientId, packageId: packageIdStr })
+    .select('day hour')
+    .lean<{ day: string; hour: number }[]>();
+  const uniqueSlots = [...new Map(slots.map((sl) => [`${sl.day}-${sl.hour}`, sl])).values()];
+  const weekMonday = getMondayOfWeek(sessionDate.toISOString().split('T')[0]);
+  const slotDateInWeek = (day: string) => {
+    const d = new Date(weekMonday);
+    d.setUTCDate(weekMonday.getUTCDate() + (DAY_TO_IDX[day] ?? 1) - 1);
+    return d;
+  };
+
+  let anchor = uniqueSlots.find(
+    (sl) => sl.day === dateToDayName(sessionDate) && sl.hour === timeToHour(session.time)
+  );
+  if (!anchor) {
+    const weekEnd = new Date(weekMonday.getTime() + 7 * DAY_MS);
+    const weekSessions = await Session.find({
+      _id: { $ne: session._id },
+      packageId: session.packageId,
+      isActive: true,
+      sessionCategory: { $ne: 'extra' as const },
+      date: { $gte: weekMonday, $lt: weekEnd },
+    }).select('date time').lean();
+    const emptySlots = uniqueSlots.filter((sl) => {
+      const slotDate = slotDateInWeek(sl.day).getTime();
+      return !weekSessions.some(
+        (ws) => new Date(ws.date).getTime() === slotDate && timeToHour(ws.time) === sl.hour
+      );
+    });
+    if (emptySlots.length === 1) anchor = emptySlots[0];
+  }
+  if (!anchor) {
+    return NextResponse.json(
+      ErrorResponse.badRequest(
+        'Jadwal rutin asal sesi ini tidak bisa ditentukan (sesi ini sudah pernah dipindah). Pindahkan dengan pilihan "Hanya minggu ini", atau ubah jadwal rutinnya lewat detail jadwal.'
+      ),
+      { status: 400 }
+    );
+  }
+
+  const oldDay = anchor.day;
+  const oldHour = anchor.hour;
+  const anchorDate = slotDateInWeek(oldDay);
+  const shiftDays = Math.round((targetDate.getTime() - anchorDate.getTime()) / DAY_MS);
 
   const laterSeries = (await Session.find({
     _id: { $ne: session._id },
@@ -111,13 +158,17 @@ async function moveRecurringSeries(body: {
     isActive: true,
     sessionCategory: { $ne: 'extra' as const },
     status: 'scheduled',
-    date: { $gt: session.date },
-    time: oldTime,
-  }).lean()).filter((s) => dateToDayName(new Date(s.date)) === oldDay);
+    date: { $gt: anchorDate },
+  }).lean()).filter(
+    (s) => dateToDayName(new Date(s.date)) === oldDay && timeToHour(s.time) === oldHour
+  );
 
   type SeriesSession = { _id: mongoose.Types.ObjectId; therapistId: mongoose.Types.ObjectId; date: Date };
   const series = [session, ...laterSeries] as SeriesSession[];
   const moves = series.map((s) => {
+    // The dragged session lands exactly where it was dropped; the rest of the
+    // series shifts by the same offset from the recurring slot.
+    if (s._id.equals(session._id)) return { _id: s._id, therapistId: s.therapistId, date: targetDate };
     const d = new Date(s.date);
     d.setUTCHours(0, 0, 0, 0);
     d.setUTCDate(d.getUTCDate() + shiftDays);
@@ -159,9 +210,6 @@ async function moveRecurringSeries(body: {
       updateOne: { filter: { _id: m._id }, update: { $set: { date: m.date, time } } },
     }))
   );
-
-  const patientId = session.childId.toString();
-  const packageIdStr = session.packageId.toString();
 
   await WeeklySchedule.updateMany(
     { patientId, packageId: packageIdStr, day: oldDay as IWeeklySchedule['day'], hour: oldHour },
@@ -561,6 +609,13 @@ export const POST = withAnyAuth(
     const effectiveFrom = effectiveFromStr
       ? new Date(effectiveFromStr + 'T00:00:00Z')
       : getMondayOfWeek();
+
+    if (mongoose.isValidObjectId(data.therapistId)) {
+      const inactiveError = await getInactiveTherapistError(data.therapistId, effectiveFrom);
+      if (inactiveError) {
+        return NextResponse.json(ErrorResponse.badRequest(inactiveError), { status: 400 });
+      }
+    }
 
     // Hero Bridge is a one-off session, not a recurring weekly template — pin
     // effectiveUntil to the same week so it only appears on its single occurrence

@@ -62,6 +62,7 @@ export const GET = withAnyAuth(
       }).select('_id').lean();
       const childIds = (children as any[]).map((c) => c._id);
       query.childId = { $in: childIds };
+      query.status = 'completed';
     } else if (user.role === 'therapist') {
       query.therapistId = new mongoose.Types.ObjectId(user.userId);
     }

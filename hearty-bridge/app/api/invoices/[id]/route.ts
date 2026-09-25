@@ -7,6 +7,9 @@ import BankAccountSettings from '@/models/BankAccountSettings';
 import mongoose from 'mongoose';
 import { notify } from '@/lib/utils/notify';
 import { applyInvoicePackageChange } from '@/lib/utils/invoice-package';
+import { withOptionalTransaction } from '@/lib/db/transaction';
+
+class InvoiceGoneError extends Error {}
 
 function getInvoiceId(req: NextRequest): string {
   const parts = new URL(req.url).pathname.split('/');
@@ -115,28 +118,47 @@ export const PATCH = withAdminAuth(
     if (isVisibleToParent !== undefined) update.isVisibleToParent = isVisibleToParent;
 
     const currentPackageId = existing.packageId?.toString() ?? null;
-    if (packageId !== undefined && packageId !== currentPackageId) {
-      const change = await applyInvoicePackageChange(
-        {
-          childId: existing.childId,
-          packageTransactionId: existing.packageTransactionId,
-          therapyType: existing.therapyType,
-          discountAmount: existing.discountAmount,
-        },
-        packageId
+    const changingPackage = packageId !== undefined && packageId !== currentPackageId;
+
+    // A package change touches the TokenTransaction, Child.tokenBalance, the
+    // package's Sessions and the invoice — one transaction, so a failure part
+    // way through leaves nothing half-applied. Retries re-run the whole block.
+    const outcome = await withOptionalTransaction(async (session) => {
+      const fullUpdate: Record<string, unknown> = { ...update };
+      if (changingPackage) {
+        const change = await applyInvoicePackageChange(
+          {
+            childId: existing.childId,
+            packageTransactionId: existing.packageTransactionId,
+            therapyType: existing.therapyType,
+            discountAmount: existing.discountAmount,
+          },
+          packageId as string
+        );
+        // Validation errors are raised before anything is written.
+        if ('error' in change) return { error: change.error, invoice: null };
+        Object.assign(fullUpdate, change.update);
+      }
+
+      console.log('[PATCH invoice]', id, 'update:', JSON.stringify(fullUpdate));
+
+      // Write directly via native driver to bypass any Mongoose model-cache issue.
+      // The native driver doesn't read the async-local session, so pass it.
+      const invoice = await db.collection('invoices').findOneAndUpdate(
+        { _id: objectId },
+        { $set: fullUpdate },
+        { returnDocument: 'after', session }
       );
-      if ('error' in change) return ErrorResponse.badRequest(change.error);
-      Object.assign(update, change.update);
-    }
+      // Abort (roll back the package changes) if the invoice vanished meanwhile.
+      if (!invoice) throw new InvoiceGoneError();
+      return { error: null, invoice };
+    }).catch((err) => {
+      if (err instanceof InvoiceGoneError) return { error: null, invoice: null };
+      throw err;
+    });
 
-    console.log('[PATCH invoice]', id, 'update:', JSON.stringify(update));
-
-    // Write directly via native driver to bypass any Mongoose model-cache issue
-    const writeResult = await db.collection('invoices').findOneAndUpdate(
-      { _id: objectId },
-      { $set: update },
-      { returnDocument: 'after' }
-    );
+    if (outcome.error) return ErrorResponse.badRequest(outcome.error);
+    const writeResult = outcome.invoice;
 
     console.log('[PATCH invoice] writeResult:', JSON.stringify(writeResult));
 

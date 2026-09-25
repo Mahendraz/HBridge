@@ -7,6 +7,7 @@ import Child from '@/models/Child';
 import TokenTransaction from '@/models/TokenTransaction';
 import WeeklySchedule from '@/models/WeeklySchedule';
 import mongoose from 'mongoose';
+import { getInactiveTherapistError } from '@/lib/utils/therapist-leave';
 
 const DAY_NAMES: Record<number, string> = {
   0: 'minggu', 1: 'senin', 2: 'selasa', 3: 'rabu', 4: 'kamis', 5: 'jumat', 6: 'sabtu',
@@ -237,6 +238,11 @@ export const POST = withAnyAuth(
         ? new mongoose.Types.ObjectId(bodyTherapistId)
         : (child.therapistId || new mongoose.Types.ObjectId(user.userId));
 
+      const inactiveError = await getInactiveTherapistError(therapistId, startDate);
+      if (inactiveError) {
+        return NextResponse.json(ErrorResponse.badRequest(inactiveError), { status: 400 });
+      }
+
       // Build session dates: startDate + 0, 7, 14, … days
       const sessionDates = Array.from({ length: totalSessions }, (_, i) => {
         const d = new Date(startDate);
@@ -329,6 +335,11 @@ export const POST = withAnyAuth(
       const therapistId = (body.therapistId && mongoose.isValidObjectId(body.therapistId))
         ? new mongoose.Types.ObjectId(body.therapistId)
         : (child.therapistId || new mongoose.Types.ObjectId(user.userId));
+
+      const inactiveError = await getInactiveTherapistError(therapistId, new Date(body.date + 'T00:00:00Z'));
+      if (inactiveError) {
+        return NextResponse.json(ErrorResponse.badRequest(inactiveError), { status: 400 });
+      }
 
       const extraSession = await Session.create({
         childId: new mongoose.Types.ObjectId(childId),

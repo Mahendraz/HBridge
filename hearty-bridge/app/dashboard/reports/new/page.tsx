@@ -217,13 +217,19 @@ export default function NewReportPage() {
   });
 
   const handleBack = async () => {
-    if (draftReportId) {
+    // The draft may still be being created (first file just picked) — wait for
+    // it so it can be discarded instead of left behind.
+    let pendingDraftId = draftReportId;
+    if (!pendingDraftId && draftReportPromise.current) {
+      pendingDraftId = await draftReportPromise.current.catch(() => null);
+    }
+    if (pendingDraftId) {
       const discard = confirm(
         "Media sudah diunggah ke draf laporan ini.\n\nOK = hapus draf beserta medianya\nBatal = simpan sebagai draf"
       );
       if (discard) {
         await media.discardNew();
-        await fetch(`/api/reports/${draftReportId}`, {
+        await fetch(`/api/reports/${pendingDraftId}`, {
           method: "DELETE",
           headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` },
         }).catch(() => {});

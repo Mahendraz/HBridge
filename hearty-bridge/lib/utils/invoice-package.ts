@@ -3,6 +3,7 @@ import Package from '@/models/Package';
 import TokenTransaction from '@/models/TokenTransaction';
 import Child from '@/models/Child';
 import Session from '@/models/Session';
+import WeeklySchedule from '@/models/WeeklySchedule';
 import { regeneratePackageSchedule } from '@/lib/utils/package-schedule';
 
 /**
@@ -76,6 +77,16 @@ export async function applyInvoicePackageChange(
   tx.balanceAfter = (tx.balanceBefore ?? 0) + newSessions;
   tx.note = `Paket ${pkg.name} (${newSessions} sesi)${discount > 0 ? ` - Diskon Rp ${discount.toLocaleString('id-ID')}` : ''}`;
   await tx.save();
+
+  // A single-program package (OT or TW) pins every weekly slot of this package
+  // to that program, even when the session count stays the same (e.g. OT 10 →
+  // TW 10). An "OT & TW" package keeps the per-slot programs admin already set.
+  if (pkg.therapyType === 'OT' || pkg.therapyType === 'TW') {
+    await WeeklySchedule.updateMany(
+      { packageId: tx._id.toString(), therapyType: { $ne: pkg.therapyType } },
+      { $set: { therapyType: pkg.therapyType } }
+    );
+  }
 
   const delta = newSessions - oldSessions;
   if (delta !== 0) {

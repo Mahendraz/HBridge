@@ -510,7 +510,7 @@ export default function UnifiedPatientsPage() {
                 <h3 className="text-2xl font-bold text-gray-900">
                   {filteredPatients.reduce((sum, p) => sum + (p.sessionProgress?.completed || 0), 0)}
                   <span className="text-lg text-gray-400">
-                    /{filteredPatients.reduce((sum, p) => sum + (p.tokenBalance || 0), 0)}
+                    /{filteredPatients.reduce((sum, p) => sum + (p.sessionProgress?.total || 0), 0)}
                   </span>
                 </h3>
                 <p className="text-gray-600">Sesi Terlaksana / Dibeli</p>

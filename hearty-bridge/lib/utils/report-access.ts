@@ -9,6 +9,9 @@ import { canActOnOwnRecord } from '@/lib/utils/permissions';
  */
 export async function canAccessReport(report: any, user: any): Promise<boolean> {
   if (user.role === 'parent') {
+    // Drafts are auto-created as soon as a therapist picks the first media file,
+    // so parents only ever see a report once it has been saved as completed.
+    if (report.status !== 'completed') return false;
     const Child = mongoose.models.Child ||
       mongoose.model('Child', new mongoose.Schema({ parentId: mongoose.Schema.Types.ObjectId }));
     const child = await Child.findOne({
