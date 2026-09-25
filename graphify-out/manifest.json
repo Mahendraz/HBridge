@@ -6,10 +6,10 @@
     "semantic_hash": "59ba355106a1d4325086f0ac147893aa"
   },
   "hearty-bridge/app/about/page.tsx": {
-    "mtime": 1788161370.0769398,
-    "seen": 1789120314.014764,
-    "ast_hash": "1186ee5ff4088cbe2286e60e97a74144",
-    "semantic_hash": "1186ee5ff4088cbe2286e60e97a74144"
+    "mtime": 1790335331.6998048,
+    "seen": 1790335859.204128,
+    "ast_hash": "85da865e21bd2636f5af576167201c97",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/api/admin/stats/route.ts": {
     "mtime": 1787851668.841708,
@@ -354,10 +354,10 @@
     "semantic_hash": "d1082a808404a5465831dec520fd5597"
   },
   "hearty-bridge/app/contact/page.tsx": {
-    "mtime": 1788161370.0769398,
-    "seen": 1789120314.014825,
-    "ast_hash": "909a8d9bc223c8c9962a963604838071",
-    "semantic_hash": "909a8d9bc223c8c9962a963604838071"
+    "mtime": 1790335331.7473836,
+    "seen": 1790335859.204128,
+    "ast_hash": "71ae4f46318a0dde803a8d95e1eb8a85",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/dashboard/attendance/page.tsx": {
     "mtime": 1790316668.6330025,
@@ -462,28 +462,28 @@
     "semantic_hash": ""
   },
   "hearty-bridge/app/layout.tsx": {
-    "mtime": 1788161403.9037406,
-    "seen": 1789120314.014842,
-    "ast_hash": "8408b889155b6c4df2b33e3dea5193ba",
-    "semantic_hash": "8408b889155b6c4df2b33e3dea5193ba"
+    "mtime": 1790333874.8712094,
+    "seen": 1790335859.204128,
+    "ast_hash": "36817d36748a15ec0d9911a4f536b902",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/page.tsx": {
-    "mtime": 1788161355.5984948,
-    "seen": 1789120314.0148437,
-    "ast_hash": "410d37cfbb6074d4eaa8e84bb0d79d65",
-    "semantic_hash": "410d37cfbb6074d4eaa8e84bb0d79d65"
+    "mtime": 1790333847.0541463,
+    "seen": 1790335859.204128,
+    "ast_hash": "04016e0c982bd52524cac459bf731f66",
+    "semantic_hash": ""
   },
   "hearty-bridge/app/services/page.tsx": {
-    "mtime": 1788161370.036536,
-    "seen": 1789120314.0148444,
-    "ast_hash": "cdf9861cd257eaa4090877c01287f54e",
-    "semantic_hash": "cdf9861cd257eaa4090877c01287f54e"
+    "mtime": 1790335331.834139,
+    "seen": 1790335859.204128,
+    "ast_hash": "9a6c8d29975077074e3c8235cde82731",
+    "semantic_hash": ""
   },
   "hearty-bridge/components/auth/auth-guard.tsx": {
-    "mtime": 1787851668.9056106,
-    "seen": 1789120314.0148454,
-    "ast_hash": "c1a275fbe16a9db7d294f54c71e303f4",
-    "semantic_hash": "c1a275fbe16a9db7d294f54c71e303f4"
+    "mtime": 1790333817.641502,
+    "seen": 1790335859.204128,
+    "ast_hash": "772e1e529798a12e9a4c6b7ef3cfb020",
+    "semantic_hash": ""
   },
   "hearty-bridge/components/auth/protected-route.tsx": {
     "mtime": 1787851668.9066138,
@@ -534,22 +534,16 @@
     "semantic_hash": ""
   },
   "hearty-bridge/components/home/about-section.tsx": {
-    "mtime": 1788161290.4175084,
-    "seen": 1789120314.0148554,
-    "ast_hash": "46df392b182f25f6bbbdefe3911f00a6",
-    "semantic_hash": "46df392b182f25f6bbbdefe3911f00a6"
+    "mtime": 1790334159.4284918,
+    "seen": 1790335859.204128,
+    "ast_hash": "f75af8219586e373ceb8eb141d4836e4",
+    "semantic_hash": ""
   },
   "hearty-bridge/components/home/contact-section.tsx": {
-    "mtime": 1788161336.9145265,
-    "seen": 1789120314.014857,
-    "ast_hash": "27967a869fb6220b98493d7581b636ba",
-    "semantic_hash": "27967a869fb6220b98493d7581b636ba"
-  },
-  "hearty-bridge/components/home/services-section.tsx": {
-    "mtime": 1788161318.3515265,
-    "seen": 1789120314.014858,
-    "ast_hash": "ddf8b51a45d480eae41814642213ec1c",
-    "semantic_hash": "ddf8b51a45d480eae41814642213ec1c"
+    "mtime": 1790334159.4234185,
+    "seen": 1790335859.204128,
+    "ast_hash": "177662da03afe3137f256f7f7aa03bb9",
+    "semantic_hash": ""
   },
   "hearty-bridge/components/icons/instagram-icon.tsx": {
     "mtime": 1788007417.8091385,
@@ -558,10 +552,10 @@
     "semantic_hash": "92f3452eb245ba149b450396c984cf0d"
   },
   "hearty-bridge/components/instagram/instagram-feed-section.tsx": {
-    "mtime": 1788008810.0117939,
-    "seen": 1789120314.0148597,
-    "ast_hash": "cee76aa298df6e13177fdb299691708c",
-    "semantic_hash": "cee76aa298df6e13177fdb299691708c"
+    "mtime": 1790334159.4272027,
+    "seen": 1790335859.204128,
+    "ast_hash": "ed06062cabb86530831f2ea46945de07",
+    "semantic_hash": ""
   },
   "hearty-bridge/components/instagram/instagram-post-embed.tsx": {
     "mtime": 1788007229.4219375,
@@ -588,34 +582,22 @@
     "semantic_hash": ""
   },
   "hearty-bridge/components/layout/footer.tsx": {
-    "mtime": 1788007420.6387982,
-    "seen": 1789120314.0148647,
-    "ast_hash": "a08ea0e8fd9ee40189e719bea2f26098",
-    "semantic_hash": "a08ea0e8fd9ee40189e719bea2f26098"
+    "mtime": 1790334159.424862,
+    "seen": 1790335859.204128,
+    "ast_hash": "802ac7f6244b673446a1a545578735ea",
+    "semantic_hash": ""
   },
   "hearty-bridge/components/layout/header.tsx": {
-    "mtime": 1788161361.575276,
-    "seen": 1789120314.0148654,
-    "ast_hash": "b927290378d11225a79a2513fe4af7a6",
-    "semantic_hash": "b927290378d11225a79a2513fe4af7a6"
+    "mtime": 1790334507.6988134,
+    "seen": 1790335859.204128,
+    "ast_hash": "bdcfe00f7396a1b16b487f2028f532f8",
+    "semantic_hash": ""
   },
   "hearty-bridge/components/layout/notification-bell.tsx": {
     "mtime": 1790316761.5103884,
     "seen": 1790321565.2091148,
     "ast_hash": "c1717d13a0812a5e6153c5f176d6dacd",
     "semantic_hash": ""
-  },
-  "hearty-bridge/components/layout/page-cta.tsx": {
-    "mtime": 1788014593.3485017,
-    "seen": 1789120314.0148673,
-    "ast_hash": "a06d45e9153add2b65533eb926d8ec8c",
-    "semantic_hash": "a06d45e9153add2b65533eb926d8ec8c"
-  },
-  "hearty-bridge/components/layout/page-hero.tsx": {
-    "mtime": 1788014593.4350116,
-    "seen": 1789120314.0148685,
-    "ast_hash": "f674047a9475859aba37d17b76f601fa",
-    "semantic_hash": "f674047a9475859aba37d17b76f601fa"
   },
   "hearty-bridge/components/magicui/animated-gradient-text.tsx": {
     "mtime": 1787851668.9156594,
@@ -1038,9 +1020,9 @@
     "semantic_hash": "22c81fe3f5858809deedc5929c668497"
   },
   "hearty-bridge/messages/id.json": {
-    "mtime": 1789982447.9310164,
-    "seen": 1789982651.5730455,
-    "ast_hash": "9b64d22de9a3270d7cdab57a19f67e80",
+    "mtime": 1790328870.1149535,
+    "seen": 1790335859.2058423,
+    "ast_hash": "00321a08ad672332796269f3d7edfa8d",
     "semantic_hash": ""
   },
   "hearty-bridge/models/Announcement.ts": {
@@ -2019,6 +2001,150 @@
     "mtime": 1790315659.6198921,
     "seen": 1790315791.4405243,
     "ast_hash": "00e762fe8285c1816bcba4121f858ed8",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/app/robots.ts": {
+    "mtime": 1790334186.18472,
+    "seen": 1790335859.204128,
+    "ast_hash": "f1c3bfe6d1a81aea59f74832d29a5440",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/app/sitemap.ts": {
+    "mtime": 1790334186.2333958,
+    "seen": 1790335859.204128,
+    "ast_hash": "b5e1dee13865d7a5b93337a97f6b77fb",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/components/home/collaboration-section.tsx": {
+    "mtime": 1790334507.6962888,
+    "seen": 1790335859.204128,
+    "ast_hash": "729ce543f6c80add7295f82ca98a84de",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/components/home/conditions-section.tsx": {
+    "mtime": 1790334507.694164,
+    "seen": 1790335859.204128,
+    "ast_hash": "a2ee17cee6d0d3f796543ae4bec39eb0",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/components/home/faq-section.tsx": {
+    "mtime": 1790334159.4343634,
+    "seen": 1790335859.204128,
+    "ast_hash": "49c3c5e8e24b438cdb0afcea3a599165",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/components/home/final-cta-section.tsx": {
+    "mtime": 1790334159.4297094,
+    "seen": 1790335859.204128,
+    "ast_hash": "53c0b61125f17f851901cc49dc39815a",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/components/home/hero-section.tsx": {
+    "mtime": 1790333973.105059,
+    "seen": 1790335859.204128,
+    "ast_hash": "488ba28b9212cd68b308fb277a4a508e",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/components/home/inquiry-context.tsx": {
+    "mtime": 1790334016.089314,
+    "seen": 1790335859.204128,
+    "ast_hash": "aa9be01cd54908c1f7876134f9836dd3",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/components/home/inquiry-panel.tsx": {
+    "mtime": 1790334100.1856523,
+    "seen": 1790335859.204128,
+    "ast_hash": "f0b682376fad9c5fb02a9d99fe4aca89",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/components/home/journey-section.tsx": {
+    "mtime": 1790334159.4363606,
+    "seen": 1790335859.204128,
+    "ast_hash": "17fd585a480cb0a52833de7baf4bc685",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/components/home/section-heading.tsx": {
+    "mtime": 1790333983.2528908,
+    "seen": 1790335859.204128,
+    "ast_hash": "7bc1c9a0d715333f4fa6c686a70a4e36",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/components/home/services-explorer.tsx": {
+    "mtime": 1790334507.6926372,
+    "seen": 1790335859.204128,
+    "ast_hash": "1307ba36b426f447d2492b348142288b",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/components/home/services-marquee.tsx": {
+    "mtime": 1790333983.2555144,
+    "seen": 1790335859.204128,
+    "ast_hash": "fd07373906ecd86a28a4d556f84401e3",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/components/home/session-facts-section.tsx": {
+    "mtime": 1790328303.5129912,
+    "seen": 1790335859.204128,
+    "ast_hash": "55bbdbd00aaabb8d80dedeee651933e5",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/components/home/sticky-cta.tsx": {
+    "mtime": 1790334054.0390527,
+    "seen": 1790335859.204128,
+    "ast_hash": "a06827bff55812e49484055312715541",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/components/home/team-section.tsx": {
+    "mtime": 1790334159.4284918,
+    "seen": 1790335859.204128,
+    "ast_hash": "3994454d67d5fb4c763c027ed8be5a60",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/components/home/why-section.tsx": {
+    "mtime": 1790333983.2570808,
+    "seen": 1790335859.204128,
+    "ast_hash": "4ad091f6ef67f7ee3ace8c519b755787",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/components/icons/whatsapp-icon.tsx": {
+    "mtime": 1790325060.8165398,
+    "seen": 1790335859.204128,
+    "ast_hash": "0f6222e4c5807ac115e2f0c280d90207",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/components/layout/brand-mark.tsx": {
+    "mtime": 1790334507.6977975,
+    "seen": 1790335859.204128,
+    "ast_hash": "c74885435c5139be7e998d712260b024",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/lib/content/landing.ts": {
+    "mtime": 1790333807.8955252,
+    "seen": 1790335859.2058423,
+    "ast_hash": "53bccec6cbd1f00308293422a33ff647",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/lib/hooks/use-fine-pointer.ts": {
+    "mtime": 1790325060.9040904,
+    "seen": 1790335859.2058423,
+    "ast_hash": "f5f935fc9c0c2ffb24ba9fd47389d8c0",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/lib/hooks/use-magnetic.ts": {
+    "mtime": 1790333983.2570808,
+    "seen": 1790335859.2058423,
+    "ast_hash": "15a81c5895e6e0a51d3e239022c09807",
+    "semantic_hash": ""
+  },
+  "hearty-bridge/lib/hooks/use-reduced-motion.ts": {
+    "mtime": 1790333954.1855023,
+    "seen": 1790335859.2058423,
+    "ast_hash": "eea0cad564918515f5a063ce96c86ddb",
+    "semantic_hash": ""
+  },
+  "docs/planning/LANDING_PAGE_PLAN.md": {
+    "mtime": 1790335382.7592807,
+    "seen": 1790335859.2058423,
+    "ast_hash": "53c6dd0e57ad3ad11e069b7bda23a5ef",
     "semantic_hash": ""
   }
 }
