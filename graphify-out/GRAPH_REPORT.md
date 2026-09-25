@@ -1,37 +1,37 @@
-# Graph Report - HBridge  (2026-09-22)
+# Graph Report - HBridge  (2026-09-25)
 
 ## Corpus Check
-- 299 files · ~235,788 words
+- 326 files · ~256,509 words
 - Verdict: corpus is large enough that graph structure adds value.
-- Unclassified: 5 file(s) not represented in the graph (top: (none) 3, .toml 1, .css 1)
+- Unclassified: 6 file(s) not represented in the graph (top: (none) 4, .toml 1, .css 1)
 
 ## Summary
-- 1648 nodes · 3926 edges · 127 communities (105 shown, 22 thin omitted)
-- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 3 edges (avg confidence: 0.85)
+- 1785 nodes · 4166 edges · 124 communities (104 shown, 20 thin omitted)
+- Extraction: 100% EXTRACTED · 0% INFERRED · 0% AMBIGUOUS · INFERRED: 13 edges (avg confidence: 0.9)
 - Token cost: 0 input · 0 output
 
 ## Graph Freshness
-- Built from commit: `830aa72c`
+- Built from commit: `6c0b41fe`
 - Run `git rev-parse HEAD` and compare to check if the graph is stale.
 - Run `graphify update .` after code changes (no API cost).
 
 ## Community Hubs (Navigation)
-- patients/page.tsx
-- mongoose
+- button.tsx
+- tokens/route.ts
 - api/children/route.ts
 - cn
-- .badRequest
+- .ok
 - search.ts
-- badge.tsx
-- media/route.ts
+- milestone-tracker.tsx
+- r2-storage.ts
 - schedules/page.tsx
 - connectToDatabase
 - reports/page.tsx
-- react
-- .forbidden
+- D. Admin
+- media/route.ts
 - models/index.ts
 - dependencies
-- app/page.tsx
+- app/layout.tsx
 - package.json
 - diag-multi-package.js
 - Request ke Client — Hearty Bridge (Landing Page)
@@ -39,19 +39,19 @@
 - dashboard/page.tsx
 - messaging.ts
 - middleware/auth.ts
-- useAuth
+- react
 - [id]/page.tsx
 - AssignmentEngine
 - validation/auth.ts
 - compilerOptions
-- .methodNotAllowed
-- usePermissions
+- Hearty Bridge - Next.js Application
+- patients/page.tsx
 - Message.ts
 - seed-patients.js
-- error-handler.ts
+- SuccessResponse
 - jwt.ts
 - PermissionChecker
-- reports/[id]/route.ts
+- mongoose
 - media.ts
 - Conversation.ts
 - Family.ts
@@ -62,25 +62,25 @@
 - weekly-schedule/route.ts
 - invoices/page.tsx
 - auth-context.tsx
-- reports/[id]/pdf/route.ts
-- analytics/page.tsx
+- report-media-uploader.tsx
+- therapist-leaves/route.ts
 - devDependencies
 - Document.ts
 - seed-database.js
 - dashboard/layout.tsx
 - invoice-pdf-template.tsx
 - dashboard-sidebar.tsx
-- proxy.ts
+- video-transcode.ts
 - compress.ts
 - bcryptjs
 - document.ts
 - Report.ts
 - seed-parents-children.js
-- .internalServerError
+- announcements/[id]/route.ts
 - MediaFile.ts
 - populate-simple.js
 - reset-staff-accounts.js
-- logout/route.ts
+- reports/[id]/route.ts
 - useConversations.ts
 - Progress.ts
 - cleanup-orphan-packages.js
@@ -122,17 +122,14 @@
 - IUserModel
 - eslint.config.mjs
 - postcss.config.mjs
-- mongodb.ts
+- migrate-leave-cuti-to-sakit-izin.js
 - financial/page.tsx
 - reset-user-password.js
-- assessments/[id]/route.ts
+- [id]/assessments/route.ts
 - HBridge - Hearty Bridge Project
-- login/route.ts
-- handleError
-- generate-password.ts
+- Announcement.ts
+- heic-convert.d.ts
 - IChildModel
-- IChild
-- IUser
 - check-users.js
 - clear-data.js
 - delete-patients-and-parents.js
@@ -140,97 +137,97 @@
 - migrate-to-atlas.js
 
 ## God Nodes (most connected - your core abstractions)
-1. `connectToDatabase()` - 139 edges
-2. `mongoose` - 107 edges
-3. `react` - 73 edges
+1. `connectToDatabase()` - 129 edges
+2. `mongoose` - 108 edges
+3. `react` - 75 edges
 4. `cn()` - 59 edges
 5. `ErrorResponse` - 54 edges
 6. `withErrorHandling()` - 50 edges
 7. `useAuth()` - 50 edges
 8. `SuccessResponse` - 46 edges
-9. `lucide-react` - 43 edges
-10. `withAnyAuth()` - 39 edges
+9. `lucide-react` - 45 edges
+10. `withAnyAuth()` - 40 edges
 
 ## Surprising Connections (you probably didn't know these)
-- `ROUTE_PERMISSIONS` --calls--> `PermissionChecker`  [EXTRACTED]
-  hearty-bridge/app/dashboard/layout.tsx → hearty-bridge/lib/utils/permissions.ts
-- `DocumentLibrary()` --calls--> `useToast()`  [EXTRACTED]
-  hearty-bridge/components/documents/document-library.tsx → hearty-bridge/components/ui/toast.tsx
-- `MediaGallery()` --calls--> `useToast()`  [EXTRACTED]
-  hearty-bridge/components/child-profile/media-gallery.tsx → hearty-bridge/components/ui/toast.tsx
-- `MilestoneTracker()` --calls--> `useToast()`  [EXTRACTED]
-  hearty-bridge/components/child-profile/milestone-tracker.tsx → hearty-bridge/components/ui/toast.tsx
-- `UnifiedDashboard()` --calls--> `useAuth()`  [EXTRACTED]
-  hearty-bridge/app/dashboard/page.tsx → hearty-bridge/lib/contexts/auth-context.tsx
+- `1A · Media: video & pengumuman` --references--> `compressImage()`  [INFERRED]
+  docs/testing/task1-plan-step1.md → hearty-bridge/lib/utils/compress.ts
+- `1A · Media: video & pengumuman` --references--> `Lightbox()`  [INFERRED]
+  docs/testing/task1-plan-step1.md → hearty-bridge/components/ui/lightbox.tsx
+- `1A · Media: video & pengumuman` --references--> `compressVideo()`  [INFERRED]
+  docs/testing/task1-plan-step1.md → hearty-bridge/lib/utils/compress.ts
+- `1B · Data terapis: ulang tahun & status` --references--> `SlotCard()`  [INFERRED]
+  docs/testing/task1-plan-step1.md → hearty-bridge/app/dashboard/schedules/page.tsx
+- `API Route Pattern` --references--> `withAnyAuth()`  [INFERRED]
+  hearty-bridge/CLAUDE.md → hearty-bridge/lib/middleware/auth.ts
 
 ## Import Cycles
 - None detected.
 
-## Communities (127 total, 22 thin omitted)
+## Communities (124 total, 20 thin omitted)
 
-### Community 0 - "patients/page.tsx"
-Cohesion: 0.07
-Nodes (47): Patient, LeaveRecord, Therapist, ResetPasswordDialog(), ResetPasswordDialogProps, ResetPasswordTarget, IMediaFile, MediaGallery() (+39 more)
+### Community 0 - "button.tsx"
+Cohesion: 0.05
+Nodes (53): EMPTY_FORM, formatRupiah(), PackageData, SuperAdminPackagesPage(), THERAPY_COLOR, THERAPY_LABEL, ResetPasswordDialogProps, AnnouncementAttachment (+45 more)
 
-### Community 1 - "mongoose"
-Cohesion: 0.12
-Nodes (18): createSchema, DAY_NAMES, PACKAGE_PRICES, withAnyAuth(), ErrorResponse, withErrorHandling(), ChildSchema, InvoiceSchema (+10 more)
+### Community 1 - "tokens/route.ts"
+Cohesion: 0.11
+Nodes (19): DAY_NAMES, GET, GET, getChildId(), POST, GET, PACKAGE_PRICES, GET (+11 more)
 
 ### Community 2 - "api/children/route.ts"
-Cohesion: 0.12
-Nodes (31): DELETE, GET, PUT, GET, POST, buildChildSearchQuery(), buildChildSortQuery(), calculateAge() (+23 more)
+Cohesion: 0.05
+Nodes (53): GET(), GET(), DELETE(), GET(), PUT(), DELETE(), GET(), PUT() (+45 more)
 
 ### Community 3 - "cn"
-Cohesion: 0.06
-Nodes (40): ChildProfileLayoutProps, IChild, AnimatedGradientText(), AnimatedGradientTextProps, AnimatedShinyText(), AnimatedShinyTextProps, MagicCard(), MagicCardProps (+32 more)
+Cohesion: 0.08
+Nodes (33): ChildProfileLayoutProps, IChild, AnimatedShinyText(), AnimatedShinyTextProps, DotPattern(), DotPatternProps, MagicCard(), MagicCardProps (+25 more)
 
-### Community 4 - ".badRequest"
-Cohesion: 0.12
-Nodes (31): POST, sanitizeFileName(), POST, POST, GET, getChildId(), POST, GET (+23 more)
+### Community 4 - ".ok"
+Cohesion: 0.09
+Nodes (42): DELETE, PATCH, updateUserSchema, POST, DELETE, GET, getAssessmentId(), PATCH (+34 more)
 
 ### Community 5 - "search.ts"
 Cohesion: 0.11
 Nodes (18): AdvancedSearchInput, advancedSearchSchema, BulkIndexOperationInput, bulkIndexOperationSchema, EntitySearchInput, entitySearchSchema, GlobalSearchInput, globalSearchSchema (+10 more)
 
-### Community 6 - "badge.tsx"
-Cohesion: 0.08
-Nodes (25): DocumentUploadDialog(), DocumentUploadDialogProps, IDocument, FamilyTreeVisualization(), FamilyTreeVisualizationProps, getRelationshipColor(), IFamily, IFamilyMember (+17 more)
+### Community 6 - "milestone-tracker.tsx"
+Cohesion: 0.05
+Nodes (41): IMediaFile, MediaGallery(), MediaGalleryProps, categoryColors, IMilestone, MilestoneTracker(), MilestoneTrackerProps, statusColors (+33 more)
 
-### Community 7 - "media/route.ts"
-Cohesion: 0.18
-Nodes (18): ALLOWED_MIME_TYPES, ALLOWED_MIME_TYPES, injectSignedUrls(), ALLOWED, ALLOWED_MIME_TYPES, compressVideoInBackground(), DELETE, detectFileType() (+10 more)
+### Community 7 - "r2-storage.ts"
+Cohesion: 0.35
+Nodes (10): ALLOWED, DELETE, extractR2Key(), getChildId(), POST, createR2Client(), deleteFromR2(), existsInR2() (+2 more)
 
 ### Community 8 - "schedules/page.tsx"
 Cohesion: 0.09
-Nodes (35): ActivePackageInfo, addDays(), addWeeks(), AssessmentSlot, dateStrToDayName(), dateUTCStr(), Day, DAY_LABELS (+27 more)
+Nodes (36): 1B · Data terapis: ulang tahun & status, ActivePackageInfo, addDays(), addWeeks(), AssessmentSlot, dateStrToDayName(), dateUTCStr(), Day (+28 more)
 
 ### Community 9 - "connectToDatabase"
-Cohesion: 0.11
-Nodes (33): GET, POST, DELETE, PATCH, GET, POST, DELETE, getAnnouncementId() (+25 more)
+Cohesion: 0.09
+Nodes (37): createSchema, GET, haversineMeters(), POST, toWIBISOString(), GET, GET, todayWIB() (+29 more)
 
 ### Community 10 - "reports/page.tsx"
 Cohesion: 0.13
-Nodes (18): EMOJIS, formatSavedAt(), getStatusBadgeVariant(), getStatusLabel(), getTypeColor(), getTypeLabel(), PatientOption, PatientPickerDialog() (+10 more)
+Nodes (17): EMOJIS, formatSavedAt(), getStatusBadgeVariant(), getStatusLabel(), getTypeColor(), getTypeLabel(), PatientOption, PatientPickerDialog() (+9 more)
 
-### Community 11 - "react"
-Cohesion: 0.13
-Nodes (22): BankAccount, EMPTY_FORM, PageCta(), PageCtaProps, PageHero(), PageHeroProps, BlurFade(), BlurFadeProps (+14 more)
+### Community 11 - "D. Admin"
+Cohesion: 0.07
+Nodes (29): A. Orang Tua, ADM-1 · Pilihan ubah jadwal: minggu ini saja atau semua minggu ✅, ADM-2 · Edit invoice mengikuti jenis layanan/paket ✅, ADM-3 · Hapus akun ortu & anak (lewat persetujuan Super Admin) ✅, ADM-4 · Status terapis: Aktif / Sakit-Izin / Inaktif ✅, ADM-5 · Drag & drop jadwal ke minggu lain ✅, ADM-6 · Nama terapis di profil anak ✅, ADM-7 · Komentar terbaru di atas pada notifikasi lonceng ✅ (+21 more)
 
-### Community 12 - ".forbidden"
-Cohesion: 0.11
-Nodes (20): DELETE, GET, getAssessmentId(), PATCH, haversineMeters(), POST, toWIBISOString(), countWorkingDays() (+12 more)
+### Community 12 - "media/route.ts"
+Cohesion: 0.19
+Nodes (19): DELETE, getReportId(), POST, sanitizeFileName(), sanitizeUploadId(), sanitizeFileName(), storeAnnouncementFile(), StoreAttachmentResult (+11 more)
 
 ### Community 13 - "models/index.ts"
-Cohesion: 0.08
-Nodes (27): AnnouncementAttachmentSchema, AnnouncementSchema, IAnnouncement, IAnnouncementAttachment, AttendanceSchema, IAttendance, IAttendanceModel, BankAccountSchema (+19 more)
+Cohesion: 0.09
+Nodes (24): AttendanceSchema, IAttendance, IAttendanceModel, BankAccountSchema, BankAccountSettingsSchema, IBankAccount, IBankAccountSettings, IBankAccountSettingsModel (+16 more)
 
 ### Community 14 - "dependencies"
 Cohesion: 0.07
-Nodes (29): dependencies, @aws-sdk/client-s3, @aws-sdk/s3-request-presigner, bcryptjs, class-variance-authority, clsx, ffmpeg-static, fluent-ffmpeg (+21 more)
+Nodes (30): dependencies, @aws-sdk/client-s3, @aws-sdk/s3-request-presigner, bcryptjs, class-variance-authority, clsx, ffmpeg-static, fluent-ffmpeg (+22 more)
 
-### Community 15 - "app/page.tsx"
-Cohesion: 0.06
-Nodes (26): geistMono, geistSans, localBusinessSchema, metadata, features, services, AboutSection(), ContactSection() (+18 more)
+### Community 15 - "app/layout.tsx"
+Cohesion: 0.08
+Nodes (19): geistMono, geistSans, localBusinessSchema, metadata, InstagramIcon(), FEATURED_POSTS, InstagramFeedSection(), InstagramPostEmbed() (+11 more)
 
 ### Community 16 - "package.json"
 Cohesion: 0.07
@@ -249,24 +246,24 @@ Cohesion: 0.13
 Nodes (16): AbsentEntry, AdminData, AttendancePage(), AttendanceRecord, CheckInResult, ChildAttendanceRecord, ChildAttendanceSection(), formatCheckInTime() (+8 more)
 
 ### Community 20 - "dashboard/page.tsx"
-Cohesion: 0.10
-Nodes (17): ActivityItem, AdminMainContent(), AdminStatsCards(), BirthdayItem, ChildInfo, DashboardData, DAY_LABELS, DAY_ORDER (+9 more)
+Cohesion: 0.08
+Nodes (23): ActivityItem, AdminMainContent(), AdminStatsCards(), BirthdayItem, ChildInfo, DashboardData, DAY_LABELS, DAY_ORDER (+15 more)
 
 ### Community 21 - "messaging.ts"
 Cohesion: 0.09
 Nodes (22): AddParticipantInput, addParticipantSchema, AddReactionInput, addReactionSchema, BulkMessageOperationInput, bulkMessageOperationSchema, ConversationQueryInput, conversationQuerySchema (+14 more)
 
 ### Community 22 - "middleware/auth.ts"
-Cohesion: 0.17
-Nodes (15): AuthenticatedHandler, getClientIp(), IpRateLimitOptions, ipRateLimitStore, RateLimitOptions, rateLimitStore, UnauthenticatedHandler, withAuth() (+7 more)
+Cohesion: 0.15
+Nodes (17): countWorkingDays(), currentMonthRange(), GET, todayWIB(), AuthenticatedHandler, getClientIp(), IpRateLimitOptions, ipRateLimitStore (+9 more)
 
-### Community 23 - "useAuth"
-Cohesion: 0.13
-Nodes (19): ChangePasswordFormData, ChangePasswordPage(), changePasswordSchema, LoginPage(), AuthGuard(), AuthGuardProps, Header(), navigation (+11 more)
+### Community 23 - "react"
+Cohesion: 0.09
+Nodes (33): ChangePasswordFormData, ChangePasswordPage(), changePasswordSchema, LoginPage(), features, services, AuthGuard(), AuthGuardProps (+25 more)
 
 ### Community 24 - "[id]/page.tsx"
-Cohesion: 0.09
-Nodes (22): AvailablePackage, ChildDetail, DAY_LABELS, DAY_ORDER, formatDate(), formatRupiah(), InvoiceRecord, PatientDetailPage() (+14 more)
+Cohesion: 0.17
+Nodes (13): AvailablePackage, ChildDetail, DAY_LABELS, DAY_ORDER, formatDate(), formatRupiah(), InvoiceRecord, PatientDetailPage() (+5 more)
 
 ### Community 25 - "AssignmentEngine"
 Cohesion: 0.13
@@ -274,19 +271,19 @@ Nodes (7): ASSIGNMENT_RULES, AssignmentEngine, AssignmentResult, AssignmentRule,
 
 ### Community 26 - "validation/auth.ts"
 Cohesion: 0.10
-Nodes (18): AccountDeactivationData, accountDeactivationSchema, commonValidations, EmailVerificationData, emailVerificationSchema, LoginFormData, PasswordChangeData, passwordChangeSchema (+10 more)
+Nodes (19): AccountDeactivationData, accountDeactivationSchema, commonValidations, EmailVerificationData, emailVerificationSchema, LoginFormData, loginSchema, PasswordChangeData (+11 more)
 
 ### Community 27 - "compilerOptions"
 Cohesion: 0.11
 Nodes (18): compilerOptions, allowJs, esModuleInterop, incremental, isolatedModules, jsx, lib, module (+10 more)
 
-### Community 28 - ".methodNotAllowed"
-Cohesion: 0.12
-Nodes (16): GET(), GET(), DELETE(), POST(), DELETE(), GET(), POST(), PUT() (+8 more)
+### Community 28 - "Hearty Bridge - Next.js Application"
+Cohesion: 0.10
+Nodes (19): Auth Context (Frontend), Common Commands, Database Connection, Directory Layout, Environment Variables Required, Error Responses, Hearty Bridge - Next.js Application, Important: Next.js Version Notice (+11 more)
 
-### Community 29 - "usePermissions"
-Cohesion: 0.09
-Nodes (27): UnifiedPatientsPage(), ChildOption, EditReportPage(), formatSavedAt(), FormState, MediaFile, ChildOption, EMPTY_FORM (+19 more)
+### Community 29 - "patients/page.tsx"
+Cohesion: 0.06
+Nodes (51): Patient, UnifiedPatientsPage(), ChildOption, EditReportPage(), formatSavedAt(), FormState, ChildOption, EMPTY_FORM (+43 more)
 
 ### Community 30 - "Message.ts"
 Cohesion: 0.11
@@ -296,17 +293,21 @@ Nodes (7): IMessage, IMessageModel, IMessageReaction, IMessageReadStatus, Messag
 Cohesion: 0.12
 Nodes (17): bcrypt, BOY_NAMES, DAY_HOURS, DAYS, DIAGNOSES, DOW_MAP, fs, GIRL_NAMES (+9 more)
 
-### Community 32 - "error-handler.ts"
-Cohesion: 0.11
-Nodes (18): resetPasswordSchema, updateUserSchema, createUserSchema, changePasswordSchema, bankAccountSchema, bodySchema, updateSchema, packageSchema (+10 more)
+### Community 32 - "SuccessResponse"
+Cohesion: 0.10
+Nodes (27): GET, POST, resetPasswordSchema, createUserSchema, GET, POST, changePasswordSchema, POST (+19 more)
 
 ### Community 33 - "jwt.ts"
-Cohesion: 0.19
-Nodes (15): decodeToken(), generateAccessToken(), generateRefreshToken(), getJWTConfig(), getTokenExpiration(), hasAnyRole(), hasRole(), isTokenNearExpiry() (+7 more)
+Cohesion: 0.12
+Nodes (24): disconnect(), withOptionalAuth(), decodeToken(), extractTokenFromRequest(), generateAccessToken(), generateRefreshToken(), getJWTConfig(), getTokenExpiration() (+16 more)
 
-### Community 35 - "reports/[id]/route.ts"
-Cohesion: 0.22
-Nodes (11): ALLOWED_EMOJIS, DELETE, GET, getReportId(), PUT, GET, injectSignedUrls(), POST (+3 more)
+### Community 34 - "PermissionChecker"
+Cohesion: 0.14
+Nodes (5): 1C · Label menu, File yang disentuh lagi di step lain, Task 1 · Step 1: Media, Terapis, Label, PermissionChecker, withPermissions()
+
+### Community 35 - "mongoose"
+Cohesion: 0.13
+Nodes (17): GET, getInvoiceId(), DELETE, GET, getInvoiceId(), PATCH, GET, injectSignedUrls() (+9 more)
 
 ### Community 36 - "media.ts"
 Cohesion: 0.13
@@ -337,8 +338,8 @@ Cohesion: 0.15
 Nodes (3): IMilestone, IMilestoneModel, MilestoneSchema
 
 ### Community 43 - "weekly-schedule/route.ts"
-Cohesion: 0.33
-Nodes (9): dateToDayName(), DAY_NAMES, DAY_TO_IDX, deduplicateSlots(), GET, getMondayOfWeek(), nextOccurrenceOf(), regeneratePackageSchedule() (+1 more)
+Cohesion: 0.30
+Nodes (11): dateToDayName(), DAY_NAMES, DAY_TO_IDX, deduplicateSlots(), DELETE, GET, getMondayOfWeek(), nextOccurrenceOf() (+3 more)
 
 ### Community 44 - "invoices/page.tsx"
 Cohesion: 0.20
@@ -348,13 +349,13 @@ Nodes (9): BankAccount, formatDate(), formatRupiah(), Invoice, InvoicesPage(), P
 Cohesion: 0.24
 Nodes (10): AuthContext, AuthProviderProps, AuthContextType, AuthResponse, LoginFormData, loginSchema, NavigationItem, RegisterFormData (+2 more)
 
-### Community 46 - "reports/[id]/pdf/route.ts"
-Cohesion: 0.39
-Nodes (6): formatDate(), ReportPdfData, ReportPdfDocument(), styles, TYPE_LABELS, @react-pdf/renderer
+### Community 46 - "report-media-uploader.tsx"
+Cohesion: 0.20
+Nodes (11): fromServer(), getToken(), ItemStatus, MediaItem, newUploadId(), ReportMediaUploader, ServerMediaFile, UploadJob (+3 more)
 
-### Community 47 - "analytics/page.tsx"
-Cohesion: 0.21
-Nodes (9): FinancialOutstanding, FinancialTrendPoint, formatMonth(), formatRupiah(), formatRupiahCompact(), MONTH_LABEL, PatientAnalyticsPage(), TrendPoint (+1 more)
+### Community 47 - "therapist-leaves/route.ts"
+Cohesion: 0.24
+Nodes (11): DELETE, getLeaveId(), PATCH, updateSchema, createSchema, GET, getLeaveScheduleWarning(), LEAVE_TYPE_LABELS (+3 more)
 
 ### Community 48 - "devDependencies"
 Cohesion: 0.18
@@ -373,20 +374,20 @@ Cohesion: 0.18
 Nodes (13): ALL_ROLES, allowedRolesForPath(), Layout(), Props, ROUTE_PERMISSION_SOURCE, ROUTE_PERMISSIONS, ProtectedRoute(), ProtectedRouteProps (+5 more)
 
 ### Community 52 - "invoice-pdf-template.tsx"
-Cohesion: 0.28
-Nodes (8): formatDate(), formatRupiah(), InvoicePdfData, InvoicePdfDocument(), STATUS_LABEL, STATUS_STYLE, styles, THERAPY_LABEL
+Cohesion: 0.15
+Nodes (14): formatDate(), formatRupiah(), InvoicePdfData, InvoicePdfDocument(), STATUS_LABEL, STATUS_STYLE, styles, THERAPY_LABEL (+6 more)
 
 ### Community 53 - "dashboard-sidebar.tsx"
-Cohesion: 0.22
-Nodes (10): DashboardSidebar(), DashboardSidebarProps, iconMap, NotificationBell(), NotificationItem, timeAgo(), fetchWithTimeout(), ref_next_image (+2 more)
+Cohesion: 0.24
+Nodes (9): DashboardSidebar(), DashboardSidebarProps, iconMap, NotificationBell(), NotificationItem, timeAgo(), fetchWithTimeout(), ref_next_image (+1 more)
 
-### Community 54 - "proxy.ts"
-Cohesion: 0.47
-Nodes (5): config, getRouteType(), matchesPattern(), proxy(), routeConfig
+### Community 54 - "video-transcode.ts"
+Cohesion: 0.28
+Nodes (8): 1A · Media: video & pengumuman, formatSize(), Lightbox(), queue, transcode(), TranscodedVideo, transcodeVideoInBackground(), compressVideo()
 
 ### Community 55 - "compress.ts"
-Cohesion: 0.28
-Nodes (8): CompressResult, compressVideo(), loadFfmpeg(), loadSharp(), verifyFfmpegRuns(), ffmpeg-static, fluent-ffmpeg, sharp
+Cohesion: 0.10
+Nodes (16): CompressResult, heicToJpeg(), loadFfmpeg(), loadSharp(), resolveFfmpegPath(), verifyFfmpegRuns(), generateTempPassword(), pick() (+8 more)
 
 ### Community 56 - "bcryptjs"
 Cohesion: 0.22
@@ -404,9 +405,9 @@ Nodes (7): IReport, IReportMediaFile, IReportModel, IReportReaction, IReportSeen
 Cohesion: 0.25
 Nodes (6): bcrypt, childSchema, mongoose, PARENTS_NO_CHILDREN, PARENTS_WITH_CHILDREN, userSchema
 
-### Community 60 - ".internalServerError"
-Cohesion: 0.17
-Nodes (15): DELETE, extractR2Key(), getChildId(), POST, GET, getInvoiceId(), POST, DELETE (+7 more)
+### Community 60 - "announcements/[id]/route.ts"
+Cohesion: 0.31
+Nodes (7): DELETE, getAnnouncementId(), PUT, GET, injectSignedUrls(), hearty_bridge_models_index_announcement, hearty_bridge_models_index_iannouncementattachment
 
 ### Community 61 - "MediaFile.ts"
 Cohesion: 0.29
@@ -420,9 +421,9 @@ Nodes (5): Child, childSchema, mongoose, User, userSchema
 Cohesion: 0.33
 Nodes (6): bcrypt, crypto, mongoose, newStaff, randomPassword(), run()
 
-### Community 64 - "logout/route.ts"
-Cohesion: 0.28
-Nodes (8): DELETE(), GET(), POST, PUT(), withOptionalAuth(), clearAuthCookies(), extractTokenFromRequest(), getUserFromRequest()
+### Community 64 - "reports/[id]/route.ts"
+Cohesion: 0.54
+Nodes (6): DELETE, GET, getReportId(), PUT, canActOnOwnRecord(), canAccessReport()
 
 ### Community 65 - "useConversations.ts"
 Cohesion: 0.33
@@ -556,57 +557,49 @@ Nodes (3): fs, mongoose, path
 Cohesion: 0.67
 Nodes (3): https, makeRequest(), testTherapistAPI()
 
-### Community 111 - "mongodb.ts"
-Cohesion: 0.25
-Nodes (5): GET, disconnect(), isConnected(), MongooseCache, createHealthCheck()
+### Community 111 - "migrate-leave-cuti-to-sakit-izin.js"
+Cohesion: 0.29
+Nodes (7): fs, mongoose, path, readMongoUriFromEnvLocal(), run(), ref_fs, ref_path
 
 ### Community 112 - "financial/page.tsx"
 Cohesion: 0.22
 Nodes (8): formatDate(), formatRupiah(), InvoiceData, STATUS_COLOR, STATUS_LABEL, Summary, SuperAdminFinancialPage(), Transaction
 
 ### Community 113 - "reset-user-password.js"
-Cohesion: 0.24
-Nodes (10): bcrypt, fs, generateTempPassword(), mongoose, path, pick(), readMongoUri(), run() (+2 more)
+Cohesion: 0.31
+Nodes (8): bcrypt, fs, generateTempPassword(), mongoose, path, pick(), readMongoUri(), run()
 
-### Community 114 - "assessments/[id]/route.ts"
-Cohesion: 0.22
-Nodes (6): patchSchema, resultSchema, AssessmentResultSchema, AssessmentSchema, IAssessment, IAssessmentResult
+### Community 114 - "[id]/assessments/route.ts"
+Cohesion: 0.29
+Nodes (6): GET, getChildId(), AssessmentResultSchema, AssessmentSchema, IAssessment, IAssessmentResult
 
 ### Community 115 - "HBridge - Hearty Bridge Project"
 Cohesion: 0.25
 Nodes (7): Documentation, Environment: WSL2 on Windows, HBridge - Hearty Bridge Project, Main Application, Project Overview, Quick Commands, Repository Structure
 
-### Community 116 - "login/route.ts"
-Cohesion: 0.33
-Nodes (5): DELETE(), GET(), loginRateLimit, PUT(), loginSchema
-
-### Community 117 - "handleError"
+### Community 116 - "Announcement.ts"
 Cohesion: 0.40
-Nodes (4): GET, handleError(), handleJWTError(), handleMongoError()
-
-### Community 118 - "generate-password.ts"
-Cohesion: 0.67
-Nodes (3): generateTempPassword(), pick(), ref_crypto
+Nodes (4): AnnouncementAttachmentSchema, AnnouncementSchema, IAnnouncement, IAnnouncementAttachment
 
 ## Knowledge Gaps
-- **662 isolated node(s):** `Project Overview`, `Repository Structure`, `Main Application`, `Quick Commands`, `Environment: WSL2 on Windows` (+657 more)
-  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 864 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
-- **22 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
+- **726 isolated node(s):** `ORT-1 · Sisa terapi per program di dashboard ✅`, `ORT-2 · Nama terapi di jadwal hari ini & mendatang ✅`, `ORT-3 · Sesi minus untuk kasbon / utang paket ✅`, `ORT-4 · Foto di pengumuman tidak bisa diperbesar ✅`, `ORT-5 · Jam janji temu tidak bisa di-scroll di HP ✅` (+721 more)
+  These have ≤1 connection - possible missing edges or undocumented components. (Counts symbols only; 948 node(s) total have ≤1 connection when file, concept and rationale nodes are included.)
+- **20 thin communities (<3 nodes) omitted from report** — run `graphify query` to explore isolated nodes.
 
 ## Suggested Questions
 _Questions this graph is uniquely positioned to answer:_
 
-- **Why does `mongoose` connect `mongoose` to `api/children/route.ts`, `media/route.ts`, `models/index.ts`, `package.json`, `diag-multi-package.js`, `Message.ts`, `seed-patients.js`, `error-handler.ts`, `reports/[id]/route.ts`, `Conversation.ts`, `Family.ts`, `SearchIndex.ts`, `populate-mongodb.js`, `dashboard/stats/route.ts`, `IMilestoneModel`, `weekly-schedule/route.ts`, `reports/[id]/pdf/route.ts`, `Document.ts`, `seed-database.js`, `bcryptjs`, `Report.ts`, `seed-parents-children.js`, `MediaFile.ts`, `populate-simple.js`, `reset-staff-accounts.js`, `Progress.ts`, `cleanup-orphan-packages.js`, `consolidate-packages.js`, `create-super-admin.js`, `diag-get-schedule.js`, `diag-session-visibility.js`, `fix-missing-sessions.js`, `fix-unlinked-slots.js`, `seed-packages.js`, `backfill-therapist-colors.js`, `delete-duplicate-slots.js`, `diag-aldi.js`, `diag-aldi-kamis.js`, `diag-aldi-slots-raw.js`, `diag-kevin.js`, `diag-laila-slots.js`, `diag-notype-packages.js`, `diag-packages.js`, `diag-patient.js`, `diag-recent.js`, `diag-recent-tx.js`, `diag-remaining.js`, `diag-session-mismatch.js`, `diag-slots.js`, `fix-admin-password.js`, `fix-aldi-duplicate-slots.js`, `fix-kevin-tw-package-type.js`, `fix-slot-effective-until.js`, `sync-sessions.js`, `test-therapist-data.js`, `mongodb.ts`, `reset-user-password.js`, `assessments/[id]/route.ts`, `check-users.js`, `clear-data.js`, `delete-patients-and-parents.js`, `fix-therapy-type.js`, `migrate-to-atlas.js`?**
-  _High betweenness centrality (0.400) - this node is a cross-community bridge._
-- **Why does `react` connect `react` to `patients/page.tsx`, `cn`, `badge.tsx`, `schedules/page.tsx`, `reports/page.tsx`, `app/page.tsx`, `package.json`, `attendance/page.tsx`, `dashboard/page.tsx`, `useAuth`, `[id]/page.tsx`, `usePermissions`, `invoices/page.tsx`, `auth-context.tsx`, `analytics/page.tsx`, `dashboard/layout.tsx`, `dashboard-sidebar.tsx`, `useConversations.ts`, `financial/page.tsx`?**
-  _High betweenness centrality (0.169) - this node is a cross-community bridge._
-- **Why does `zod` connect `error-handler.ts` to `mongoose`, `api/children/route.ts`, `media.ts`, `search.ts`, `family.ts`, `auth-context.tsx`, `package.json`, `assessments/[id]/route.ts`, `messaging.ts`, `useAuth`, `document.ts`, `validation/auth.ts`?**
-  _High betweenness centrality (0.142) - this node is a cross-community bridge._
-- **What connects `Project Overview`, `Repository Structure`, `Main Application` to the rest of the system?**
-  _662 weakly-connected nodes found - possible documentation gaps or missing edges._
-- **Should `patients/page.tsx` be split into smaller, more focused modules?**
-  _Cohesion score 0.07043650793650794 - nodes in this community are weakly interconnected._
-- **Should `mongoose` be split into smaller, more focused modules?**
-  _Cohesion score 0.11515151515151516 - nodes in this community are weakly interconnected._
+- **Why does `mongoose` connect `mongoose` to `tokens/route.ts`, `api/children/route.ts`, `.ok`, `r2-storage.ts`, `connectToDatabase`, `media/route.ts`, `models/index.ts`, `package.json`, `diag-multi-package.js`, `Message.ts`, `seed-patients.js`, `SuccessResponse`, `Conversation.ts`, `Family.ts`, `SearchIndex.ts`, `populate-mongodb.js`, `dashboard/stats/route.ts`, `IMilestoneModel`, `weekly-schedule/route.ts`, `therapist-leaves/route.ts`, `Document.ts`, `seed-database.js`, `bcryptjs`, `Report.ts`, `seed-parents-children.js`, `announcements/[id]/route.ts`, `MediaFile.ts`, `populate-simple.js`, `reset-staff-accounts.js`, `reports/[id]/route.ts`, `Progress.ts`, `cleanup-orphan-packages.js`, `consolidate-packages.js`, `create-super-admin.js`, `diag-get-schedule.js`, `diag-session-visibility.js`, `fix-missing-sessions.js`, `fix-unlinked-slots.js`, `seed-packages.js`, `backfill-therapist-colors.js`, `delete-duplicate-slots.js`, `diag-aldi.js`, `diag-aldi-kamis.js`, `diag-aldi-slots-raw.js`, `diag-kevin.js`, `diag-laila-slots.js`, `diag-notype-packages.js`, `diag-packages.js`, `diag-patient.js`, `diag-recent.js`, `diag-recent-tx.js`, `diag-remaining.js`, `diag-session-mismatch.js`, `diag-slots.js`, `fix-admin-password.js`, `fix-aldi-duplicate-slots.js`, `fix-kevin-tw-package-type.js`, `fix-slot-effective-until.js`, `sync-sessions.js`, `test-therapist-data.js`, `migrate-leave-cuti-to-sakit-izin.js`, `reset-user-password.js`, `[id]/assessments/route.ts`, `Announcement.ts`, `check-users.js`, `clear-data.js`, `delete-patients-and-parents.js`, `fix-therapy-type.js`, `migrate-to-atlas.js`?**
+  _High betweenness centrality (0.328) - this node is a cross-community bridge._
+- **Why does `react` connect `react` to `button.tsx`, `useConversations.ts`, `cn`, `milestone-tracker.tsx`, `schedules/page.tsx`, `reports/page.tsx`, `invoices/page.tsx`, `auth-context.tsx`, `report-media-uploader.tsx`, `app/layout.tsx`, `financial/page.tsx`, `package.json`, `dashboard/layout.tsx`, `attendance/page.tsx`, `dashboard/page.tsx`, `dashboard-sidebar.tsx`, `[id]/page.tsx`, `patients/page.tsx`?**
+  _High betweenness centrality (0.145) - this node is a cross-community bridge._
+- **Why does `zod` connect `connectToDatabase` to `SuccessResponse`, `api/children/route.ts`, `.ok`, `media.ts`, `search.ts`, `family.ts`, `auth-context.tsx`, `therapist-leaves/route.ts`, `package.json`, `messaging.ts`, `react`, `document.ts`, `validation/auth.ts`?**
+  _High betweenness centrality (0.136) - this node is a cross-community bridge._
+- **What connects `ORT-1 · Sisa terapi per program di dashboard ✅`, `ORT-2 · Nama terapi di jadwal hari ini & mendatang ✅`, `ORT-3 · Sesi minus untuk kasbon / utang paket ✅` to the rest of the system?**
+  _726 weakly-connected nodes found - possible documentation gaps or missing edges._
+- **Should `button.tsx` be split into smaller, more focused modules?**
+  _Cohesion score 0.053208137715179966 - nodes in this community are weakly interconnected._
+- **Should `tokens/route.ts` be split into smaller, more focused modules?**
+  _Cohesion score 0.10826210826210826 - nodes in this community are weakly interconnected._
 - **Should `api/children/route.ts` be split into smaller, more focused modules?**
-  _Cohesion score 0.12233285917496443 - nodes in this community are weakly interconnected._
+  _Cohesion score 0.052214452214452214 - nodes in this community are weakly interconnected._
