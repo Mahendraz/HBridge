@@ -76,9 +76,23 @@ interface Patient {
   tokenExpiry?: string | null;
   sessionProgress?: { completed: number; total: number } | null;
   therapyBalance?: Record<string, number>;
+  sessionBalance?: {
+    remaining: number;
+    hasUnpaid: boolean;
+    programs: Array<{ therapyType: string; label: string; total: number; used: number; remaining: number; hasUnpaid: boolean }>;
+  };
+  therapistsByProgram?: Array<{ therapyType: string; label: string; therapists: Array<{ id: string; name: string }> }>;
   createdAt?: string;
   weeklyFrequency?: number;
 }
+
+const PROGRAM_BADGE: Record<string, string> = {
+  OT: 'bg-blue-100 text-blue-700',
+  TW: 'bg-purple-100 text-purple-700',
+  HB: 'bg-emerald-100 text-emerald-700',
+  both: 'bg-teal-100 text-teal-700',
+};
+
 
 export default function UnifiedPatientsPage() {
   const { user } = useAuth();
@@ -208,6 +222,8 @@ export default function UnifiedPatientsPage() {
             tokenExpiry: child.tokenExpiry ?? null,
             sessionProgress: child.sessionProgress ?? null,
             therapyBalance: child.therapyBalance ?? {},
+            sessionBalance: child.sessionBalance,
+            therapistsByProgram: child.therapistsByProgram ?? [],
             createdAt: child.createdAt,
             weeklyFrequency: child.weeklyFrequency ?? 0
           };
@@ -638,9 +654,24 @@ export default function UnifiedPatientsPage() {
                     <UserIcon className="h-5 w-5 text-gray-600" />
                     <div>
                       <p className="font-medium text-gray-900">Terapis yang Ditugaskan</p>
-                      <p className="text-sm text-gray-600">
-                        {child.assignedTherapist?.name} - {child.assignedTherapist?.specialty}
-                      </p>
+                      {(child.therapistsByProgram ?? []).length > 0 ? (
+                        <div className="mt-1 space-y-1">
+                          {(child.therapistsByProgram ?? []).map((p) => (
+                            <p key={p.therapyType} className="text-sm text-gray-600 flex items-center gap-2">
+                              <span className={`text-xs font-semibold px-2 py-0.5 rounded-full ${PROGRAM_BADGE[p.therapyType] ?? 'bg-gray-100 text-gray-700'}`}>
+                                {p.label}
+                              </span>
+                              {p.therapists.map((t) => t.name).join(', ')}
+                            </p>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-sm text-gray-600">
+                          {child.assignedTherapist
+                            ? `${child.assignedTherapist.name} - ${child.assignedTherapist.specialty}`
+                            : 'Belum ada terapis'}
+                        </p>
+                      )}
                     </div>
                   </div>
                   <Button
@@ -662,20 +693,25 @@ export default function UnifiedPatientsPage() {
                 {/* Active packages */}
                 <div>
                   <h3 className="font-semibold text-gray-900 mb-3">Paket Terapi Aktif</h3>
-                  {child.therapyBalance && Object.keys(child.therapyBalance).length > 0 ? (
+                  {child.sessionBalance && child.sessionBalance.programs.length > 0 ? (
                     <div className="flex flex-wrap gap-3">
-                      {Object.entries(child.therapyBalance).map(([type, total]) => (
-                        <div key={type} className="flex-1 min-w-[120px] rounded-xl border border-teal-100 bg-teal-50 p-3 text-center">
-                          <p className="text-xs font-semibold text-teal-600 uppercase tracking-wide mb-1">{type}</p>
-                          <p className="text-2xl font-bold text-teal-800">{total}</p>
-                          <p className="text-xs text-teal-600">sesi tersisa</p>
-                          {child.sessionProgress && (
-                            <p className="text-xs text-gray-500 mt-1">
-                              {child.sessionProgress.completed} terlaksana
-                            </p>
-                          )}
-                        </div>
-                      ))}
+                      {child.sessionBalance.programs.map((p) => {
+                        const minus = p.remaining < 0;
+                        return (
+                          <div
+                            key={p.therapyType}
+                            className={`flex-1 min-w-[120px] rounded-xl border p-3 text-center ${minus ? 'border-red-200 bg-red-50' : 'border-teal-100 bg-teal-50'}`}
+                          >
+                            <p className={`text-xs font-semibold uppercase tracking-wide mb-1 ${minus ? 'text-red-600' : 'text-teal-600'}`}>{p.label}</p>
+                            <p className={`text-2xl font-bold ${minus ? 'text-red-700' : 'text-teal-800'}`}>{p.remaining}</p>
+                            <p className={`text-xs ${minus ? 'text-red-600' : 'text-teal-600'}`}>sesi tersisa</p>
+                            <p className="text-xs text-gray-500 mt-1">{p.used} terlaksana</p>
+                            {p.hasUnpaid && (
+                              <p className="text-[11px] text-amber-700 mt-0.5">Paket belum lunas</p>
+                            )}
+                          </div>
+                        );
+                      })}
                     </div>
                   ) : (
                     <div className="rounded-xl border-2 border-dashed border-gray-200 py-6 text-center">
@@ -806,6 +842,17 @@ export default function UnifiedPatientsPage() {
                                   {child.weeklyFrequency}x/minggu
                                 </span>
                               )}
+                              {child.sessionBalance?.programs
+                                .filter((p) => p.remaining < 0)
+                                .map((p) => (
+                                  <span
+                                    key={p.therapyType}
+                                    className="text-xs font-medium px-2 py-0.5 rounded-full bg-red-100 text-red-700"
+                                    title="Sesi sudah berjalan, paket belum lunas"
+                                  >
+                                    {p.label} {p.remaining}
+                                  </span>
+                                ))}
                               <Badge variant={child.status === 'active' ? 'default' : 'secondary'}>
                                 {child.status === 'active' ? 'Aktif' : child.status === 'inactive' ? 'Tidak Aktif' : 'Tertunda'}
                               </Badge>

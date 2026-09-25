@@ -66,6 +66,35 @@ export const GET = withAnyAuth(
       const attendedSessions = allSessions.filter(s => s.status === 'completed').length;
       const upcomingSessions = allSessions.filter(s => s.status === 'scheduled' && s.date >= new Date()).length;
 
+      // Program (OT/TW) per session, from its package. "OT & TW" packages have
+      // no single type — fall back to the weekly slot on the same weekday.
+      const pkgIds = [...new Set(
+        sessions.map(s => s.packageId?.toString()).filter(Boolean)
+      )] as string[];
+      const pkgTypeMap = new Map<string, string>();
+      const slotTypeMap = new Map<string, string>();
+      if (pkgIds.length > 0) {
+        const [pkgTxs, pkgSlots] = await Promise.all([
+          TokenTransaction.find({ _id: { $in: pkgIds.map(pid => new mongoose.Types.ObjectId(pid)) } })
+            .select('_id therapyType').lean(),
+          WeeklySchedule.find({ packageId: { $in: pkgIds }, therapyType: { $ne: null } })
+            .select('packageId day therapyType').lean(),
+        ]);
+        for (const tx of pkgTxs as any[]) {
+          if (tx.therapyType) pkgTypeMap.set(tx._id.toString(), tx.therapyType);
+        }
+        for (const slot of pkgSlots as any[]) {
+          slotTypeMap.set(`${slot.packageId}_${slot.day}`, slot.therapyType);
+          if (!slotTypeMap.has(slot.packageId)) slotTypeMap.set(slot.packageId, slot.therapyType);
+        }
+      }
+      const therapyTypeOf = (session: any): string | null => {
+        const pid = session.packageId?.toString();
+        if (!pid) return null;
+        const day = DAY_NAMES[new Date(session.date).getUTCDay()];
+        return pkgTypeMap.get(pid) ?? slotTypeMap.get(`${pid}_${day}`) ?? slotTypeMap.get(pid) ?? null;
+      };
+
       // Format response
       const formattedSessions = sessions.map(session => ({
         id: session._id,
@@ -81,6 +110,8 @@ export const GET = withAnyAuth(
         goals: session.goals || [],
         nextSteps: session.nextSteps,
         packageId: session.packageId,
+        therapyType: therapyTypeOf(session),
+        sessionCategory: session.sessionCategory,
         sessionNumber: session.sessionNumber,
         totalSessions: session.totalSessions,
       }));

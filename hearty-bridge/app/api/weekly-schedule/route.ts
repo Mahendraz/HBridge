@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAnyAuth } from '@/lib/middleware/auth';
 import { withErrorHandling, ErrorResponse } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
-import WeeklySchedule from '@/models/WeeklySchedule';
+import WeeklySchedule, { type IWeeklySchedule } from '@/models/WeeklySchedule';
 import Session from '@/models/Session';
 import Child from '@/models/Child';
 import TokenTransaction from '@/models/TokenTransaction';
@@ -218,6 +218,165 @@ async function regeneratePackageSchedule(
     { $set: { totalSessions: total, effectiveUntil: lastDate } }
   );
   await Child.findByIdAndUpdate(patientId, { tokenExpiry: lastDate });
+}
+
+const DAY_MS = 24 * 3600 * 1000;
+
+/**
+ * "Semua minggu berikutnya" for a drag-drop reschedule in the schedule grid.
+ *
+ * Moves the dragged Session to `date`/`time`, plus every later still-'scheduled'
+ * regular session of the same package that sits on the same weekday + time
+ * (i.e. the rest of that recurring series), each shifted by the same number of
+ * days — so a Senin 10:00 → Rabu 13:00 drop turns every following Senin 10:00
+ * into Rabu 13:00, and a drop onto the adjacent week shifts the whole series
+ * by a week. The WeeklySchedule template behind the series is repointed to
+ * the new day/hour in place.
+ *
+ * Deliberately not done via a second versioned template + regeneratePackageSchedule:
+ * that helper collapses linked slots per *day*, so an old Senin doc and a new
+ * Rabu doc on the same package would be read as a 2x/week package, and it
+ * re-derives dates from "today", which would drag any not-yet-moved sessions
+ * between now and the dropped week along too. Repointing the template in place
+ * is safe for past weeks: GET hides a package slot whose week already has a
+ * session elsewhere and shows that session as a standalone card instead.
+ *
+ * Only the Session PATCH (`/api/sessions/[id]`) handles "Hanya minggu ini".
+ */
+async function moveRecurringSeries(body: {
+  sessionId?: string;
+  date?: string;
+  time?: string;
+  force?: boolean;
+}): Promise<NextResponse> {
+  const { sessionId, date, time, force } = body;
+
+  if (!sessionId || !mongoose.isValidObjectId(sessionId)) {
+    return NextResponse.json(ErrorResponse.badRequest('Invalid session ID'), { status: 400 });
+  }
+  if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date) || !time || !/^\d{1,2}:\d{2}$/.test(time)) {
+    return NextResponse.json(ErrorResponse.badRequest('date (YYYY-MM-DD) dan time (HH:mm) diperlukan'), { status: 400 });
+  }
+
+  const newHour = timeToHour(time);
+  if (newHour < 9 || newHour > 17) {
+    return NextResponse.json(ErrorResponse.badRequest('Jam harus antara 09:00 dan 17:00'), { status: 400 });
+  }
+
+  const targetDate = new Date(date + 'T00:00:00Z');
+  if (isNaN(targetDate.getTime())) {
+    return NextResponse.json(ErrorResponse.badRequest('Invalid date format'), { status: 400 });
+  }
+  const newDay = dateToDayName(targetDate);
+  if (newDay === 'minggu') {
+    return NextResponse.json(ErrorResponse.badRequest('Tidak ada jadwal di hari Minggu'), { status: 400 });
+  }
+
+  const session = await Session.findOne({ _id: sessionId, isActive: true });
+  if (!session) {
+    return NextResponse.json(ErrorResponse.notFound('Session'), { status: 404 });
+  }
+  if (!session.packageId) {
+    return NextResponse.json(
+      ErrorResponse.badRequest('Sesi ini tidak terikat paket, jadi hanya bisa dipindah untuk minggu ini.'),
+      { status: 400 }
+    );
+  }
+  if (session.sessionCategory === 'extra') {
+    return NextResponse.json(
+      ErrorResponse.badRequest('Sesi susulan tidak berulang, jadi hanya bisa dipindah untuk minggu ini.'),
+      { status: 400 }
+    );
+  }
+
+  const oldDate = new Date(session.date);
+  oldDate.setUTCHours(0, 0, 0, 0);
+  const oldDay = dateToDayName(oldDate);
+  const oldTime = session.time;
+  const oldHour = timeToHour(oldTime);
+  const shiftDays = Math.round((targetDate.getTime() - oldDate.getTime()) / DAY_MS);
+
+  const laterSeries = (await Session.find({
+    _id: { $ne: session._id },
+    packageId: session.packageId,
+    isActive: true,
+    sessionCategory: { $ne: 'extra' as const },
+    status: 'scheduled',
+    date: { $gt: session.date },
+    time: oldTime,
+  }).lean()).filter((s) => dateToDayName(new Date(s.date)) === oldDay);
+
+  type SeriesSession = { _id: mongoose.Types.ObjectId; therapistId: mongoose.Types.ObjectId; date: Date };
+  const series = [session, ...laterSeries] as SeriesSession[];
+  const moves = series.map((s) => {
+    const d = new Date(s.date);
+    d.setUTCHours(0, 0, 0, 0);
+    d.setUTCDate(d.getUTCDate() + shiftDays);
+    return { _id: s._id, therapistId: s.therapistId, date: d };
+  });
+
+  if (!force) {
+    const conflicts = await Session.find({
+      _id: { $nin: moves.map((m) => m._id) },
+      status: { $ne: 'cancelled' },
+      isActive: true,
+      $or: moves.map((m) => ({ therapistId: m.therapistId, date: m.date, time })),
+    })
+      .sort({ date: 1 })
+      .populate('childId', 'name')
+      .lean();
+
+    if (conflicts.length > 0) {
+      const first = conflicts[0];
+      const childName = (first.childId as unknown as { name?: string } | null)?.name || 'pasien lain';
+      const firstDate = new Date(first.date).toISOString().split('T')[0];
+      const more = conflicts.length > 1 ? ` dan ${conflicts.length - 1} jadwal lain` : '';
+      return NextResponse.json(
+        {
+          success: false,
+          error: `Terapis sudah punya jadwal lain jam ${time} untuk ${childName} (${firstDate})${more}.`,
+          code: 'SCHEDULE_CONFLICT',
+          conflict: true,
+          conflictCount: conflicts.length,
+          timestamp: new Date().toISOString(),
+        },
+        { status: 409 }
+      );
+    }
+  }
+
+  await Session.bulkWrite(
+    moves.map((m) => ({
+      updateOne: { filter: { _id: m._id }, update: { $set: { date: m.date, time } } },
+    }))
+  );
+
+  const patientId = session.childId.toString();
+  const packageIdStr = session.packageId.toString();
+
+  await WeeklySchedule.updateMany(
+    { patientId, packageId: packageIdStr, day: oldDay as IWeeklySchedule['day'], hour: oldHour },
+    { $set: { day: newDay as IWeeklySchedule['day'], hour: newHour } },
+    { runValidators: true }
+  );
+
+  // Moving the series can change the package's last session date — keep
+  // effectiveUntil / tokenExpiry honest, same as regeneratePackageSchedule does.
+  const lastSession = await Session.findOne({
+    packageId: session.packageId,
+    isActive: true,
+    sessionCategory: { $ne: 'extra' as const },
+  }).sort({ date: -1 }).select('date').lean();
+  if (lastSession) {
+    const lastDate = lastSession.date;
+    await WeeklySchedule.updateMany(
+      { patientId, packageId: packageIdStr },
+      { $set: { effectiveUntil: lastDate } }
+    );
+    await Child.findByIdAndUpdate(patientId, { tokenExpiry: lastDate });
+  }
+
+  return NextResponse.json({ success: true, data: { moved: moves.length } });
 }
 
 /**
@@ -525,6 +684,10 @@ export const GET = withAnyAuth(
 /**
  * POST /api/weekly-schedule
  * Admin only: create or update a recurring slot with versioning.
+ *
+ * Body `{ action: 'moveRecurring', sessionId, date, time, force? }` instead
+ * moves a dragged session and the rest of its weekly series — see
+ * moveRecurringSeries. Returns 409 on a therapist double-booking unless `force`.
  */
 export const POST = withAnyAuth(
   withErrorHandling(async (req: NextRequest, user: any) => {
@@ -538,6 +701,9 @@ export const POST = withAnyAuth(
     await connectToDatabase();
 
     const body = await req.json();
+    if (body.action === 'moveRecurring') {
+      return moveRecurringSeries(body);
+    }
     const { _id, effectiveFrom: effectiveFromStr, ...data } = body;
 
     // Hero Bridge slots are schedule-only — no package/token requirement, no

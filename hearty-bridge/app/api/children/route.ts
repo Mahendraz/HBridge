@@ -20,6 +20,7 @@ import { getR2SignedUrl } from '@/lib/services/r2-storage';
 import Session from '@/models/Session';
 import Assessment from '@/models/Assessment';
 import mongoose from 'mongoose';
+import { getSessionBalances, getTherapistsByProgram } from '@/lib/utils/session-balance';
 
 /**
  * GET /api/children
@@ -224,8 +225,26 @@ export const GET = withAnyAuth(
           therapyByChild[cid][type] = (therapyByChild[cid][type] ?? 0) + remaining;
         }
 
+        // therapyBalance = sessions not yet on the calendar, per type (drives
+        // scheduling eligibility on the schedule page). Not the parent-facing
+        // "sisa sesi" — that's sessionBalance below.
         for (const child of formattedChildren) {
           child.therapyBalance = therapyByChild[child.id] ?? {};
+        }
+
+        // Sisa sesi per program (paid/unpaid aware) + therapists per program.
+        const [balanceMap, therapistsMap] = await Promise.all([
+          getSessionBalances(childObjectIds),
+          getTherapistsByProgram(formattedChildren.map((c: any) => c.id)),
+        ]);
+        for (const child of formattedChildren) {
+          const b = balanceMap.get(child.id);
+          child.sessionBalance = {
+            remaining: b?.remaining ?? 0,
+            hasUnpaid: b?.hasUnpaid ?? false,
+            programs: b?.programs ?? [],
+          };
+          child.therapistsByProgram = therapistsMap.get(child.id) ?? [];
         }
 
         // Count total active packages per child (for slot-scheduling eligibility check)
@@ -278,7 +297,13 @@ export const GET = withAnyAuth(
         }
         for (const child of formattedChildren) {
           const sp = sessionByChild[child.id] ?? null;
-          child.sessionProgress = sp ? { completed: sp.completed, total: sp.total } : null;
+          // Prefer package numbers (same source as sisa sesi) so "X/Y sesi"
+          // lines up with the remaining count; raw Session counts only for
+          // children without a therapy package.
+          const b = balanceMap.get(child.id);
+          child.sessionProgress = b && b.total > 0
+            ? { completed: b.used, total: b.total }
+            : sp ? { completed: sp.completed, total: sp.total } : null;
           child.sessionsThisMonth = sp?.completedThisMonth ?? 0;
         }
 

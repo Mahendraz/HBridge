@@ -15,6 +15,7 @@ import Child from '@/models/Child';
 import WeeklySchedule from '@/models/WeeklySchedule';
 import mongoose from 'mongoose';
 import { getR2SignedUrl } from '@/lib/services/r2-storage';
+import { getSessionBalances, getTherapistsByProgram, emptySessionBalance } from '@/lib/utils/session-balance';
 
 /**
  * GET /api/children/[id]
@@ -90,6 +91,15 @@ export const GET = withAnyAuth(
       (formattedChild as any).therapyStartDate = effectiveFromTimes.length
         ? new Date(Math.min(...effectiveFromTimes)).toISOString()
         : null;
+
+      // Therapists per program (OT: A, TW: B) and sisa sesi per program — the
+      // same helper the dashboard and patient list use, so the numbers match.
+      const [therapistsMap, balanceMap] = await Promise.all([
+        getTherapistsByProgram([id!]),
+        getSessionBalances([id!]),
+      ]);
+      (formattedChild as any).therapistsByProgram = therapistsMap.get(id!) ?? [];
+      (formattedChild as any).sessionBalance = balanceMap.get(id!) ?? emptySessionBalance(id!);
 
       // Sign R2 key for photo if present
       if (formattedChild.photoUrl && !formattedChild.photoUrl.startsWith('http')) {

@@ -152,17 +152,31 @@ export const PATCH = withAdminAuth(
             ? `#${session.sessionNumber}/${session.totalSessions}`
             : '';
 
+        // Tag the deduction with the session's package (name + program) so the
+        // transaction history lines up per program with the sisa sesi count in
+        // lib/utils/session-balance.ts, which counts completed sessions per package.
+        const packageTx = session.packageId
+          ? await TokenTransaction.findById(session.packageId)
+              .select('packageType packageId therapyType')
+              .lean<{ packageType: string | null; packageId: mongoose.Types.ObjectId | null; therapyType: 'OT' | 'TW' | 'assessment' | null }>()
+          : null;
+        const programLabel = packageTx?.therapyType && packageTx.therapyType !== 'assessment'
+          ? ` ${packageTx.therapyType}`
+          : '';
+
         await TokenTransaction.create({
           childId: session.childId,
           childName: child.name,
           adminId: new mongoose.Types.ObjectId(user.userId),
           adminName: user.name || '',
           type: 'deduct',
-          packageType: null,
+          packageType: packageTx?.packageType ?? null,
+          packageId: packageTx?.packageId ?? null,
+          therapyType: packageTx?.therapyType ?? null,
           amount: 1,
           balanceBefore,
           balanceAfter: child.tokenBalance,
-          note: `Sesi ${sessionLabel} selesai`.trim(),
+          note: `Sesi${programLabel} ${sessionLabel} selesai`.replace(/\s+/g, ' ').trim(),
         });
       }
     }

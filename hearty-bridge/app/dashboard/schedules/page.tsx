@@ -138,7 +138,8 @@ const DAY_LABELS: Record<Day, string> = {
   sabtu: "Sabtu",
 };
 
-const HOURS = [9, 10, 11, 12, 13, 14, 15, 16] as const;
+// Operating hours are 09.00–18.00, so the last 1-hour slot starts at 17.00.
+const HOURS = [9, 10, 11, 12, 13, 14, 15, 16, 17] as const;
 
 // ---------------------------------------------------------------------------
 // ScheduleSkeleton — mirrors the page's header + week-nav + weekly grid shape
@@ -231,6 +232,9 @@ interface WeeklySlot {
   _type?: 'session' | 'weekly';
 }
 
+/** Drag-drop reschedule: this week's session only, or it and every following week. */
+type MoveScope = "this" | "all";
+
 interface AssessmentSlot {
   _id: string;
   childId: { _id: string; name: string } | string;
@@ -293,6 +297,7 @@ function SlotCard({
   therapistColor,
   onClick,
   onOpenReportModal,
+  canDrag,
   onSlotDragStart,
   onSlotDragEnd,
 }: {
@@ -308,6 +313,7 @@ function SlotCard({
   therapistColor?: string | null;
   onClick: () => void;
   onOpenReportModal: (slot: WeeklySlot, sessionDate: string) => void;
+  canDrag?: boolean;
   onSlotDragStart?: (slot: WeeklySlot) => void;
   onSlotDragEnd?: () => void;
 }) {
@@ -357,7 +363,10 @@ function SlotCard({
   // yet) has nothing for a drag-drop to PATCH, so it stays click-only. Native
   // HTML5 drag-and-drop (not dnd-kit) is used here: the browser renders and
   // positions the drag ghost itself, so there's no rect-measurement to get
-  // wrong.
+  // wrong. Only admins can drag (the PATCH is admin-only anyway): on a phone,
+  // a draggable element turns a long-press into a drag and fights the page's
+  // touch scroll, which made the parent's agenda hard to scroll.
+  const isDraggable = !!canDrag && !!slot.sessionId;
   const [isDragging, setIsDragging] = useState(false);
 
   const baseStyle: React.CSSProperties = useTherapistColor
@@ -373,9 +382,9 @@ function SlotCard({
 
   return (
     <div
-      draggable={!!slot.sessionId}
+      draggable={isDraggable}
       onDragStart={(e) => {
-        if (!slot.sessionId) return;
+        if (!isDraggable || !slot.sessionId) return;
         e.dataTransfer.effectAllowed = "move";
         e.dataTransfer.setData("text/plain", slot.sessionId);
         setIsDragging(true);
@@ -387,7 +396,7 @@ function SlotCard({
       }}
       className={`p-2 rounded-lg border text-xs transition-all hover:shadow-sm hover:-translate-y-px relative ${
         isTherapistOnLeave ? 'bg-red-50 border-red-300 hover:bg-red-100' : useTherapistColor ? '' : fallback.card
-      } ${slot.sessionId ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}
+      } ${isDraggable ? 'cursor-grab active:cursor-grabbing' : 'cursor-pointer'}`}
       style={{
         ...baseStyle,
         opacity: isDragging ? 0.35 : 1,
@@ -516,6 +525,9 @@ function DroppableCell({
 }) {
   const [isOver, setIsOver] = useState(false);
 
+  // Read-only viewers (parent/therapist) get a plain wrapper — no drop target.
+  if (!onDropSlot) return <div className={className}>{children}</div>;
+
   return (
     <div
       onDragOver={(e) => {
@@ -527,12 +539,60 @@ function DroppableCell({
       onDrop={(e) => {
         e.preventDefault();
         setIsOver(false);
-        onDropSlot?.(day, hour);
+        onDropSlot(day, hour);
       }}
       className={`${className ?? ""} ${isOver ? "ring-2 ring-teal-400 ring-inset rounded" : ""}`}
     >
       {children}
     </div>
+  );
+}
+
+// ---------------------------------------------------------------------------
+// WeekNavButton — prev/next week arrow that doubles as a drop target: dropping
+// a dragged SlotCard on it moves that session to the same day/hour in the
+// adjacent week. (Switching weeks on hover mid-drag was avoided: it unmounts
+// the dragged card, which some browsers treat as a cancelled drag.)
+// ---------------------------------------------------------------------------
+
+function WeekNavButton({
+  direction,
+  onClick,
+  onDropSlot,
+}: {
+  direction: -1 | 1;
+  onClick: () => void;
+  onDropSlot?: (direction: -1 | 1) => void;
+}) {
+  const [isOver, setIsOver] = useState(false);
+  const label = direction < 0 ? "Minggu sebelumnya" : "Minggu berikutnya";
+  const Icon = direction < 0 ? ChevronLeftIcon : ChevronRightIcon;
+
+  return (
+    <button
+      onClick={onClick}
+      onDragOver={onDropSlot ? (e) => {
+        e.preventDefault();
+        e.dataTransfer.dropEffect = "move";
+        if (!isOver) setIsOver(true);
+      } : undefined}
+      onDragLeave={onDropSlot ? () => setIsOver(false) : undefined}
+      onDrop={onDropSlot ? (e) => {
+        e.preventDefault();
+        setIsOver(false);
+        onDropSlot(direction);
+      } : undefined}
+      className={`p-1.5 rounded transition-colors flex items-center gap-1 ${
+        isOver
+          ? "bg-teal-100 text-teal-700 ring-2 ring-teal-400"
+          : "hover:bg-gray-100 text-gray-500 hover:text-gray-700"
+      }`}
+      title={onDropSlot ? `${label} — lepas jadwal di sini untuk memindahkannya ke ${label.toLowerCase()}` : label}
+    >
+      {direction > 0 && isOver && <span className="text-xs font-medium whitespace-nowrap">Pindah ke {label.toLowerCase()}</span>}
+      <Icon className="h-4 w-4" />
+      {direction < 0 && isOver && <span className="text-xs font-medium whitespace-nowrap">Pindah ke {label.toLowerCase()}</span>}
+    </button>
   );
 }
 
@@ -1824,8 +1884,19 @@ export default function SchedulesPage() {
     sessionId: string;
     date: string;
     time: string;
+    scope: MoveScope;
     message: string;
   } | null>(null);
+  // A drop no longer saves straight away — it opens a confirm asking whether
+  // the move is for this week only (PATCH the one Session) or for every
+  // following week too (move the series + repoint its template).
+  const [pendingMove, setPendingMove] = useState<{
+    slot: WeeklySlot;
+    fromDate: string;
+    date: string;
+    time: string;
+  } | null>(null);
+  const [moveScope, setMoveScope] = useState<MoveScope>("this");
 
   // Package session modal state
   const [showPackageModal, setShowPackageModal] = useState(false);
@@ -2127,23 +2198,35 @@ export default function SchedulesPage() {
 
   // ---- Drag-and-drop reschedule ----
 
+  // "this" → PATCH just this Session (existing endpoint). "all" → move this
+  // Session plus the rest of its weekly series and repoint the recurring
+  // template (POST /api/weekly-schedule, action "moveRecurring").
   const submitDragReschedule = useCallback(
-    async (sessionId: string, date: string, time: string, force = false) => {
+    async (sessionId: string, date: string, time: string, scope: MoveScope, force = false) => {
       setDragSaving(true);
       setDragError(null);
       try {
         const token = localStorage.getItem("token");
-        const res = await fetch(`/api/sessions/${sessionId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
-          body: JSON.stringify({ date, time, ...(force ? { force: true } : {}) }),
-        });
+        const headers = { "Content-Type": "application/json", Authorization: `Bearer ${token}` };
+        const res = scope === "all"
+          ? await fetch("/api/weekly-schedule", {
+              method: "POST",
+              headers,
+              body: JSON.stringify({ action: "moveRecurring", sessionId, date, time, ...(force ? { force: true } : {}) }),
+            })
+          : await fetch(`/api/sessions/${sessionId}`, {
+              method: "PATCH",
+              headers,
+              body: JSON.stringify({ date, time, ...(force ? { force: true } : {}) }),
+            });
         if (res.status === 409) {
           const data = await res.json().catch(() => ({}));
+          setPendingMove(null);
           setDragConflict({
             sessionId,
             date,
             time,
+            scope,
             message: data.error || `Terapis sudah punya jadwal lain jam ${time}.`,
           });
           return;
@@ -2152,15 +2235,21 @@ export default function SchedulesPage() {
           const err = await res.json().catch(() => ({}));
           throw new Error(err.error || `Gagal memindahkan jadwal (${res.status})`);
         }
+        setPendingMove(null);
         setDragConflict(null);
-        await fetchSlots();
+        // Moved into another week (drop on the prev/next arrow) → follow it
+        // there; changing weekStart refetches on its own.
+        const targetWeek = mondayOfDateStr(date);
+        if (targetWeek !== weekStart) setWeekStart(targetWeek);
+        else await fetchSlots();
       } catch (e) {
+        setPendingMove(null);
         setDragError(e instanceof Error ? e.message : "Gagal memindahkan jadwal");
       } finally {
         setDragSaving(false);
       }
     },
-    [fetchSlots]
+    [fetchSlots, weekStart]
   );
 
   const handleSlotDragStart = (slot: WeeklySlot) => {
@@ -2172,14 +2261,30 @@ export default function SchedulesPage() {
     draggedSlotRef.current = null;
   };
 
+  const openMoveConfirm = (slot: WeeklySlot, date: string, hour: number) => {
+    setMoveScope("this");
+    setPendingMove({
+      slot,
+      fromDate: slotSessionDate(weekStart, slot.day),
+      date,
+      time: `${String(hour).padStart(2, "0")}:00`,
+    });
+  };
+
   const handleCellDrop = (day: string, hour: number) => {
     const slot = draggedSlotRef.current;
     draggedSlotRef.current = null;
     if (!slot?.sessionId) return;
     if (slot.day === day && slot.hour === hour) return; // dropped back where it was
-    const newDate = slotSessionDate(weekStart, day);
-    const newTime = `${String(hour).padStart(2, "0")}:00`;
-    void submitDragReschedule(slot.sessionId, newDate, newTime);
+    openMoveConfirm(slot, slotSessionDate(weekStart, day), hour);
+  };
+
+  // Dropped on the prev/next week arrow → same day/hour, one week earlier/later.
+  const handleWeekNavDrop = (direction: -1 | 1) => {
+    const slot = draggedSlotRef.current;
+    draggedSlotRef.current = null;
+    if (!slot?.sessionId) return;
+    openMoveConfirm(slot, addDays(slotSessionDate(weekStart, slot.day), direction * 7), slot.hour);
   };
 
   // ---- Package session creation ----
@@ -2361,6 +2466,7 @@ export default function SchedulesPage() {
             onClick={() => {
               if (permissions.hasPermission("schedules:manage_all")) openEditSlot(slot);
             }}
+            canDrag={canManageSchedule}
             onSlotDragStart={handleSlotDragStart}
             onSlotDragEnd={handleSlotDragEnd}
             onOpenReportModal={(s, sd) => {
@@ -2444,23 +2550,19 @@ export default function SchedulesPage() {
 
       {/* Week navigation */}
       <div className="flex items-center gap-2 bg-white border border-gray-200 rounded-lg px-3 py-2">
-        <button
+        <WeekNavButton
+          direction={-1}
           onClick={() => setWeekStart((ws) => addWeeks(ws, -1))}
-          className="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
-          title="Minggu sebelumnya"
-        >
-          <ChevronLeftIcon className="h-4 w-4" />
-        </button>
+          onDropSlot={canManageSchedule ? handleWeekNavDrop : undefined}
+        />
         <span className="flex-1 text-center text-sm font-medium text-gray-700">
           {formatWeekRange(weekStart)}
         </span>
-        <button
+        <WeekNavButton
+          direction={1}
           onClick={() => setWeekStart((ws) => addWeeks(ws, 1))}
-          className="p-1.5 rounded hover:bg-gray-100 text-gray-500 hover:text-gray-700 transition-colors"
-          title="Minggu berikutnya"
-        >
-          <ChevronRightIcon className="h-4 w-4" />
-        </button>
+          onDropSlot={canManageSchedule ? handleWeekNavDrop : undefined}
+        />
         {weekStart !== getCurrentMondayStr() && (
           <Button
             variant="outline"
@@ -2646,7 +2748,7 @@ export default function SchedulesPage() {
                           isToday ? "bg-teal-50/30" : ""
                         }`}
                       >
-                        <DroppableCell day={day} hour={hour} className="flex flex-col gap-1 min-h-[64px] h-full" onDropSlot={handleCellDrop}>
+                        <DroppableCell day={day} hour={hour} className="flex flex-col gap-1 min-h-[64px] h-full" onDropSlot={canManageSchedule ? handleCellDrop : undefined}>
                           <CellContent day={day} hour={hour} />
                         </DroppableCell>
                       </td>
@@ -2695,7 +2797,7 @@ export default function SchedulesPage() {
                 <div className="w-14 shrink-0 pt-1 text-xs font-medium text-gray-500">
                   {String(hour).padStart(2, "0")}:00
                 </div>
-                <DroppableCell day={selectedMobileDay} hour={hour} className="flex-1 min-w-0 flex flex-col gap-1" onDropSlot={handleCellDrop}>
+                <DroppableCell day={selectedMobileDay} hour={hour} className="flex-1 min-w-0 flex flex-col gap-1" onDropSlot={canManageSchedule ? handleCellDrop : undefined}>
                   <CellContent day={selectedMobileDay} hour={hour} />
                 </DroppableCell>
               </div>
@@ -2990,6 +3092,91 @@ export default function SchedulesPage() {
         </Dialog>
       )}
 
+      {/* Drag-drop reschedule: this week only vs every following week */}
+      {pendingMove && (() => {
+        const { slot, fromDate, date, time } = pendingMove;
+        const fromDay = dateStrToDayName(fromDate) as Day | null;
+        const toDay = dateStrToDayName(date) as Day | null;
+        const fromTime = `${String(slot.hour).padStart(2, "0")}:00`;
+        // Susulan sessions and sessions outside a package aren't part of a weekly series.
+        const canMoveAll = !!slot.packageId && slot.sessionCategory !== "extra";
+        const scope: MoveScope = canMoveAll ? moveScope : "this";
+        return (
+          <Dialog open onOpenChange={(o) => { if (!o && !dragSaving) setPendingMove(null); }}>
+            <DialogContent size="sm">
+              <DialogHeader>
+                <DialogTitle>Pindahkan Jadwal</DialogTitle>
+              </DialogHeader>
+              <div className="mt-3 space-y-4">
+                <div className="rounded-lg bg-teal-50 border border-teal-100 p-3 text-sm">
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="font-semibold text-teal-800">{slot.patientName}</p>
+                    {slot.therapyType && (
+                      <span className="shrink-0 inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-bold bg-teal-600 text-white leading-none">
+                        {slot.therapyType}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-teal-600 text-xs mt-0.5">{slot.therapistName}</p>
+                  <p className="text-teal-700 text-xs mt-1.5 font-medium">
+                    {fromDay ? DAY_LABELS[fromDay] : ""} {formatShortDate(fromDate)} · {fromTime}
+                    {" → "}
+                    {toDay ? DAY_LABELS[toDay] : ""} {formatShortDate(date)} · {time}
+                  </p>
+                </div>
+
+                <div className="rounded-lg border border-gray-200 bg-gray-50 px-4 py-3 space-y-2">
+                  <p className="text-xs font-semibold text-gray-600">Perubahan berlaku untuk:</p>
+                  <label className="flex items-start gap-2 text-sm cursor-pointer">
+                    <input
+                      type="radio"
+                      name="moveScope"
+                      checked={scope === "this"}
+                      onChange={() => setMoveScope("this")}
+                      className="accent-teal-600 mt-1"
+                    />
+                    <span>
+                      Hanya minggu ini
+                      <span className="block text-gray-400 text-xs">
+                        Jadwal tidak tetap — minggu lain tetap {fromDay ? DAY_LABELS[fromDay] : ""} {fromTime}
+                      </span>
+                    </span>
+                  </label>
+                  <label className={`flex items-start gap-2 text-sm ${canMoveAll ? "cursor-pointer" : "cursor-not-allowed opacity-50"}`}>
+                    <input
+                      type="radio"
+                      name="moveScope"
+                      checked={scope === "all"}
+                      onChange={() => setMoveScope("all")}
+                      disabled={!canMoveAll}
+                      className="accent-teal-600 mt-1"
+                    />
+                    <span>
+                      Semua minggu berikutnya
+                      <span className="block text-gray-400 text-xs">
+                        {canMoveAll
+                          ? `Jadwal tetap — mulai ${formatShortDate(date)}, setiap ${toDay ? DAY_LABELS[toDay] : ""} ${time}`
+                          : "Sesi susulan tidak berulang, jadi hanya bisa dipindah untuk minggu ini"}
+                      </span>
+                    </span>
+                  </label>
+                </div>
+
+                <div className="flex justify-end gap-2">
+                  <Button variant="outline" onClick={() => setPendingMove(null)} disabled={dragSaving}>Batal</Button>
+                  <Button
+                    onClick={() => slot.sessionId && submitDragReschedule(slot.sessionId, date, time, scope)}
+                    disabled={dragSaving}
+                  >
+                    {dragSaving ? "Memindahkan..." : "Pindahkan"}
+                  </Button>
+                </div>
+              </div>
+            </DialogContent>
+          </Dialog>
+        );
+      })()}
+
       {/* Drag-drop reschedule conflict confirmation */}
       {dragConflict && (
         <Dialog open onOpenChange={(o) => { if (!o) setDragConflict(null); }}>
@@ -2998,11 +3185,16 @@ export default function SchedulesPage() {
               <DialogTitle>Jadwal Bentrok</DialogTitle>
             </DialogHeader>
             <div className="mt-3 space-y-3">
-              <p className="text-sm text-gray-700">{dragConflict.message} Tetap pindahkan sesi ini ke slot tersebut?</p>
+              <p className="text-sm text-gray-700">
+                {dragConflict.message}{" "}
+                {dragConflict.scope === "all"
+                  ? "Tetap pindahkan jadwal ini untuk semua minggu berikutnya?"
+                  : "Tetap pindahkan sesi ini ke slot tersebut?"}
+              </p>
               <div className="flex justify-end gap-2">
                 <Button variant="outline" onClick={() => setDragConflict(null)} disabled={dragSaving}>Batal</Button>
                 <Button
-                  onClick={() => submitDragReschedule(dragConflict.sessionId, dragConflict.date, dragConflict.time, true)}
+                  onClick={() => submitDragReschedule(dragConflict.sessionId, dragConflict.date, dragConflict.time, dragConflict.scope, true)}
                   disabled={dragSaving}
                 >
                   {dragSaving ? "Memindahkan..." : "Tetap Pindahkan"}

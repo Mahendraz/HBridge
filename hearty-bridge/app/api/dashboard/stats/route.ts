@@ -8,20 +8,14 @@ import WeeklySchedule from '@/models/WeeklySchedule';
 import TokenTransaction from '@/models/TokenTransaction';
 import { JWTPayload } from '@/lib/utils/jwt';
 import mongoose from 'mongoose';
+import { getSessionBalances } from '@/lib/utils/session-balance';
 
 // ── helpers ───────────────────────────────────────────────────────────────────
 
 const DAY_ORDER = ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
 
-const DOW_OF_DAY: Record<string, number> = { senin: 1, selasa: 2, rabu: 3, kamis: 4, jumat: 5, sabtu: 6 };
-
-// Days-from-today (0 = today) until the next real-calendar occurrence of `day`.
-// Uses actual weekday numbers (0-6, Sun-Sat) rather than DAY_ORDER's array index,
-// since DAY_ORDER skips Sunday and an index-based mod-6 offset undercounts by one
-// whenever the projection window crosses a Sunday.
-function daysUntil(day: string, todayDow: number): number {
-  return ((DOW_OF_DAY[day] ?? 0) - todayDow + 7) % 7;
-}
+// Parent dashboard "Jadwal Hari Ini & Mendatang" window, in days (incl. today).
+const UPCOMING_DAYS = 7;
 
 function getDateRanges() {
   const now = new Date();
@@ -77,26 +71,32 @@ function timeToHour(time: string): number {
   return parseInt((time || '09:00').split(':')[0], 10);
 }
 
-/**
- * Builds "today's schedule" from actual Session documents (the ground truth
- * for what's really happening today), not from the WeeklySchedule recurring
- * template. A slot's template day/hour goes stale the moment its session for
- * this week is rescheduled (drag-and-drop), cancelled, or manually added —
- * so deriving "today" from WeeklySchedule shows the wrong (or missing)
- * appointments. Session.date is authoritative after any such change.
- */
-async function buildTodayAppointments(therapistOid?: mongoose.Types.ObjectId) {
-  const { startOfToday, endOfToday } = getDateRanges();
+const DAY_NAME_BY_UTC_DOW = ['minggu', 'senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'];
 
+/**
+ * Builds a schedule from actual Session documents (the ground truth for what's
+ * really happening), not from the WeeklySchedule recurring template. A slot's
+ * template day/hour goes stale the moment its session for a given week is
+ * rescheduled (drag-and-drop), cancelled, or manually added — so deriving the
+ * schedule from WeeklySchedule shows the wrong (or missing) appointments.
+ * Session.date is authoritative after any such change.
+ */
+async function buildAppointments(opts: {
+  from: Date;
+  to: Date;
+  therapistOid?: mongoose.Types.ObjectId;
+  childOids?: mongoose.Types.ObjectId[];
+}) {
   const query: any = {
-    date: { $gte: startOfToday, $lte: endOfToday },
+    date: { $gte: opts.from, $lte: opts.to },
     isActive: true,
     status: { $ne: 'cancelled' },
   };
-  if (therapistOid) query.therapistId = therapistOid;
+  if (opts.therapistOid) query.therapistId = opts.therapistOid;
+  if (opts.childOids) query.childId = { $in: opts.childOids };
 
   const sessions = await Session.find(query)
-    .populate<{ childId: { name: string; parentId: { name: string; phone?: string } | null } }>({
+    .populate<{ childId: { _id: mongoose.Types.ObjectId; name: string; parentId: { name: string; phone?: string } | null } }>({
       path: 'childId',
       select: 'name parentId',
       populate: { path: 'parentId', select: 'name phone' },
@@ -106,35 +106,70 @@ async function buildTodayAppointments(therapistOid?: mongoose.Types.ObjectId) {
 
   if (sessions.length === 0) return [];
 
-  const packageOids = [...new Set(
+  const packageIds = [...new Set(
     sessions.map((s: any) => s.packageId?.toString()).filter(Boolean)
-  )].map(id => new mongoose.Types.ObjectId(id));
+  )] as string[];
+  const packageOids = packageIds.map(id => new mongoose.Types.ObjectId(id));
 
+  // Therapy type comes from the session's package. An "OT & TW" package has no
+  // single type (therapyType null), so fall back to the weekly slot the session
+  // was generated from — matched by package + weekday, else any slot of it.
   const therapyTypeMap = new Map<string, string>();
+  const slotTypeMap    = new Map<string, string>();
   if (packageOids.length > 0) {
-    const pkgs = await TokenTransaction.find({ _id: { $in: packageOids } })
-      .select('_id therapyType')
-      .lean();
+    const [pkgs, pkgSlots] = await Promise.all([
+      TokenTransaction.find({ _id: { $in: packageOids } }).select('_id therapyType').lean(),
+      WeeklySchedule.find({ packageId: { $in: packageIds }, therapyType: { $ne: null } })
+        .select('packageId day therapyType').lean(),
+    ]);
     for (const pkg of pkgs as any[]) {
       if (pkg.therapyType) therapyTypeMap.set(pkg._id.toString(), pkg.therapyType);
+    }
+    for (const slot of pkgSlots as any[]) {
+      slotTypeMap.set(`${slot.packageId}_${slot.day}`, slot.therapyType);
+      if (!slotTypeMap.has(slot.packageId)) slotTypeMap.set(slot.packageId, slot.therapyType);
     }
   }
 
   return (sessions as any[])
-    .sort((a, b) => timeToHour(a.time) - timeToHour(b.time))
     .map(s => {
       const child  = s.childId;
       const parent = child?.parentId ?? null;
+      const date   = new Date(s.date);
+      const day    = DAY_NAME_BY_UTC_DOW[date.getUTCDay()];
+      const pkgId  = s.packageId?.toString() ?? '';
+      const therapyType = pkgId
+        ? (therapyTypeMap.get(pkgId) ?? slotTypeMap.get(`${pkgId}_${day}`) ?? slotTypeMap.get(pkgId) ?? '')
+        : '';
       return {
+        childId:       child?._id?.toString() ?? '',
         patientName:   child?.name ?? '',
         parentPhone:   parent?.phone ?? '—',
         therapistName: s.therapistId?.name ?? '',
-        therapyType:   s.packageId ? (therapyTypeMap.get(s.packageId.toString()) ?? '') : '',
+        therapyType,
+        // Session.date is stored at UTC midnight of the session's calendar day.
+        date:          date.toISOString().slice(0, 10),
+        day,
         hour:          timeToHour(s.time),
         sessionNumber: s.sessionNumber ?? 0,
         totalSessions: s.totalSessions ?? 0,
       };
-    });
+    })
+    .sort((a, b) => (a.date !== b.date ? (a.date < b.date ? -1 : 1) : a.hour - b.hour));
+}
+
+async function buildTodayAppointments(therapistOid?: mongoose.Types.ObjectId) {
+  const { startOfToday, endOfToday } = getDateRanges();
+  const appointments = await buildAppointments({ from: startOfToday, to: endOfToday, therapistOid });
+  return appointments.map(a => ({
+    patientName:   a.patientName,
+    parentPhone:   a.parentPhone,
+    therapistName: a.therapistName,
+    therapyType:   a.therapyType,
+    hour:          a.hour,
+    sessionNumber: a.sessionNumber,
+    totalSessions: a.totalSessions,
+  }));
 }
 
 // ── admin ─────────────────────────────────────────────────────────────────────
@@ -417,11 +452,17 @@ async function parentStats(user: JWTPayload): Promise<NextResponse> {
     return SuccessResponse.ok({ data: { role: 'parent', children: [], weeklyReports: [], upcomingSchedule: [], unseenInvoiceCount: 0, sessionBalances: [] } });
   }
 
-  const childIds       = children.map(c => c._id as mongoose.Types.ObjectId);
-  const childStringIds = children.map(c => c._id.toString());
+  const childIds = children.map(c => c._id as mongoose.Types.ObjectId);
 
-  const [allSlots, weeklyReportsRaw, unseenInvoiceCount] = await Promise.all([
-    WeeklySchedule.find({ patientId: { $in: childStringIds } }).lean(),
+  // "Hari ini & mendatang" = today through the next 6 days.
+  const { startOfToday } = getDateRanges();
+  const endOfWindow = new Date(startOfToday);
+  endOfWindow.setDate(startOfToday.getDate() + UPCOMING_DAYS - 1);
+  endOfWindow.setHours(23, 59, 59, 999);
+
+  const [balanceMap, appointments, weeklyReportsRaw, unseenInvoiceCount] = await Promise.all([
+    getSessionBalances(childIds),
+    buildAppointments({ from: startOfToday, to: endOfWindow, childOids: childIds }),
     Report.find({
       childId: { $in: childIds },
       isActive: true,
@@ -437,53 +478,37 @@ async function parentStats(user: JWTPayload): Promise<NextResponse> {
     }),
   ]);
 
-  const completedMap = await buildCompletedCountByPackage(allSlots as any[]);
+  // Sisa Sesi Anda: one entry per child, broken down per program (OT / TW).
+  // Negative remaining = sessions already run on a package not yet paid.
+  const sessionBalances = children.map(c => {
+    const b = balanceMap.get(c._id.toString());
+    return {
+      childId:   c._id.toString(),
+      childName: c.name,
+      remaining: b?.remaining ?? 0,
+      hasUnpaid: b?.hasUnpaid ?? false,
+      programs:  (b?.programs ?? []).map(p => ({
+        therapyType: p.therapyType,
+        label:       p.label,
+        remaining:   p.remaining,
+        used:        p.used,
+        total:       p.total,
+        hasUnpaid:   p.hasUnpaid,
+      })),
+    };
+  });
 
-  // Sisa Sesi Anda: remaining = totalSessions - completed, summed per child across
-  // its distinct active packages (a package can back more than one weekly slot,
-  // e.g. 2x/week, so dedupe by packageId before summing totalSessions).
-  const seenPackageIds = new Set<string>();
-  const remainingByChild = new Map<string, number>();
-  for (const slot of allSlots as any[]) {
-    if (!slot.packageId || seenPackageIds.has(slot.packageId)) continue;
-    seenPackageIds.add(slot.packageId);
-    const completed = completedMap.get(slot.packageId) ?? 0;
-    const remaining = Math.max(0, (slot.totalSessions ?? 0) - completed);
-    remainingByChild.set(slot.patientId, (remainingByChild.get(slot.patientId) ?? 0) + remaining);
-  }
-  const sessionBalances = children.map(c => ({
-    childId:   c._id.toString(),
-    childName: c.name,
-    remaining: remainingByChild.get(c._id.toString()) ?? 0,
+  const upcomingSchedule = appointments.map(a => ({
+    childId:       a.childId,
+    childName:     a.patientName,
+    day:           a.day,
+    date:          a.date,
+    hour:          a.hour,
+    therapistName: a.therapistName,
+    therapyType:   a.therapyType,
+    sessionNumber: a.sessionNumber,
+    totalSessions: a.totalSessions,
   }));
-
-  const childNameMap = new Map(children.map(c => [c._id.toString(), c.name]));
-  const today        = new Date();
-  const todayDow     = today.getDay();
-
-  const upcomingSchedule = (allSlots as any[])
-    .sort((a, b) => {
-      const ai = daysUntil(a.day, todayDow);
-      const bi = daysUntil(b.day, todayDow);
-      return ai !== bi ? ai - bi : a.hour - b.hour;
-    })
-    .map(slot => {
-      const offset   = daysUntil(slot.day, todayDow);
-      const slotDate = new Date(today);
-      slotDate.setDate(today.getDate() + offset);
-      const date = `${slotDate.getFullYear()}-${String(slotDate.getMonth() + 1).padStart(2, '0')}-${String(slotDate.getDate()).padStart(2, '0')}`;
-
-      return {
-        childName:     childNameMap.get(slot.patientId) ?? slot.patientName,
-        day:           slot.day,
-        date,
-        hour:          slot.hour,
-        therapistName: slot.therapistName,
-        therapyType:   slot.therapyType,
-        sessionNumber: slot.packageId ? (completedMap.get(slot.packageId) ?? 0) : 0,
-        totalSessions: slot.totalSessions ?? 0,
-      };
-    });
 
   const weeklyReports = (weeklyReportsRaw as any[]).map(r => ({
     id:        r._id.toString(),

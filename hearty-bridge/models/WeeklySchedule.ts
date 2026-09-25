@@ -27,11 +27,12 @@ const WeeklyScheduleSchema = new Schema<IWeeklySchedule>(
       required: [true, 'Day is required'],
       enum: ['senin', 'selasa', 'rabu', 'kamis', 'jumat', 'sabtu'],
     },
+    // Operating hours are 09.00–18.00, so the last 1-hour slot starts at 17.
     hour: {
       type: Number,
       required: [true, 'Hour is required'],
-      min: [9, 'Hour must be between 9 and 16'],
-      max: [16, 'Hour must be between 9 and 16'],
+      min: [9, 'Hour must be between 9 and 17'],
+      max: [17, 'Hour must be between 9 and 17'],
     },
     patientId:    { type: String, required: [true, 'Patient ID is required'] },
     patientName:  { type: String, required: [true, 'Patient name is required'], trim: true },

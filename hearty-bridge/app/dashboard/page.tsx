@@ -73,6 +73,7 @@ interface WeeklyReport {
 }
 
 interface UpcomingScheduleItem {
+  childId?: string;
   childName: string;
   day: string;
   date: string;
@@ -126,7 +127,22 @@ interface DashboardData {
   weeklyReports?: WeeklyReport[];
   upcomingSchedule?: UpcomingScheduleItem[];
   unseenInvoiceCount?: number;
-  sessionBalances?: Array<{ childId: string; childName: string; remaining: number }>;
+  sessionBalances?: SessionBalance[];
+}
+
+interface SessionBalance {
+  childId: string;
+  childName: string;
+  remaining: number;
+  hasUnpaid?: boolean;
+  programs?: Array<{
+    therapyType: string;
+    label: string;
+    remaining: number;
+    used: number;
+    total: number;
+    hasUnpaid: boolean;
+  }>;
 }
 
 // ── Constants ─────────────────────────────────────────────────────────────────
@@ -135,6 +151,12 @@ const DAY_ORDER = ["senin", "selasa", "rabu", "kamis", "jumat", "sabtu"];
 const DAY_LABELS: Record<string, string> = {
   senin: "Senin", selasa: "Selasa", rabu: "Rabu",
   kamis: "Kamis", jumat: "Jumat", sabtu: "Sabtu",
+};
+
+const THERAPY_BADGE: Record<string, string> = {
+  OT: "bg-blue-100 text-blue-700",
+  TW: "bg-purple-100 text-purple-700",
+  both: "bg-teal-100 text-teal-700",
 };
 
 function slotTime(hour: number) {
@@ -842,23 +864,50 @@ function ParentMainContent({ data }: { data: DashboardData }) {
         </Link>
       )}
 
-      {/* Sisa Sesi Anda */}
+      {/* Sisa Sesi Anda — satu kartu per anak, dirinci per program */}
       {sessionBalances.length > 0 && (
         <div className="relative rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
           <BorderBeam size={120} duration={10} colorFrom="#22c55e" colorTo="#14b8a6" />
           <div className="p-6 border-b border-gray-100">
             <h2 className="text-base font-semibold text-gray-900">Sisa Sesi Anda</h2>
-            <p className="text-sm text-gray-500 mt-0.5">Jumlah sesi terapi yang tersisa dari paket aktif</p>
+            <p className="text-sm text-gray-500 mt-0.5">Sisa sesi terapi per anak dan per program</p>
           </div>
           <div className="p-6 grid grid-cols-1 sm:grid-cols-2 gap-4">
             {sessionBalances.map((b) => (
-              <div key={b.childId} className="rounded-xl border border-gray-100 bg-gray-50 px-5 py-4 text-center">
-                <p className="text-4xl font-bold text-teal-600">{b.remaining}</p>
-                <p className="text-xs text-gray-500 mt-1">sesi tersisa</p>
-                <p className="text-sm font-medium text-gray-900 mt-2 truncate">{b.childName}</p>
+              <div key={b.childId} className="rounded-xl border border-gray-100 bg-gray-50 px-5 py-4">
+                <p className="text-sm font-semibold text-gray-900 truncate">{b.childName}</p>
+                {(b.programs ?? []).length > 0 ? (
+                  <div className="mt-3 space-y-2">
+                    {(b.programs ?? []).map((p) => (
+                      <div key={p.therapyType} className="flex items-center justify-between gap-3 rounded-lg bg-white border border-gray-100 px-3 py-2">
+                        <div className="min-w-0">
+                          <Badge className={`text-xs font-semibold ${THERAPY_BADGE[p.therapyType] ?? "bg-teal-100 text-teal-700"}`}>
+                            {p.label}
+                          </Badge>
+                          {p.hasUnpaid && (
+                            <p className="text-[11px] text-amber-700 mt-1">Paket belum lunas</p>
+                          )}
+                        </div>
+                        <div className="text-right shrink-0">
+                          <p className={`text-2xl font-bold leading-none ${p.remaining < 0 ? "text-red-600" : "text-teal-600"}`}>
+                            {p.remaining}
+                          </p>
+                          <p className="text-[11px] text-gray-500 mt-1">sesi tersisa</p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <p className="text-xs text-gray-400 mt-2">Belum ada paket terapi</p>
+                )}
               </div>
             ))}
           </div>
+          {sessionBalances.some((b) => b.programs?.some((p) => p.remaining < 0)) && (
+            <p className="px-6 pb-5 -mt-2 text-xs text-gray-500">
+              Angka minus berarti sesi sudah berjalan tetapi paketnya belum dibayar.
+            </p>
+          )}
         </div>
       )}
 
@@ -923,12 +972,14 @@ function ParentMainContent({ data }: { data: DashboardData }) {
                     <p className={`text-sm font-semibold ${i === 0 ? "text-teal-900" : "text-gray-900"}`}>
                       {apt.childName}
                     </p>
-                    <p className={`text-xs mt-0.5 ${i === 0 ? "text-teal-700" : "text-gray-500"}`}>
-                      Terapis: {apt.therapistName}
+                    <p className={`text-xs font-medium mt-0.5 ${i === 0 ? "text-teal-700" : "text-gray-600"}`}>
+                      {[apt.therapyType, apt.therapistName].filter(Boolean).join(" · ") || "—"}
                     </p>
-                    <p className={`text-xs ${i === 0 ? "text-teal-600" : "text-gray-400"}`}>
-                      Pertemuan {apt.sessionNumber}/{apt.totalSessions} · {apt.therapyType}
-                    </p>
+                    {apt.sessionNumber > 0 && apt.totalSessions > 0 && (
+                      <p className={`text-xs ${i === 0 ? "text-teal-600" : "text-gray-400"}`}>
+                        Pertemuan {apt.sessionNumber}/{apt.totalSessions}
+                      </p>
+                    )}
                   </div>
                   <div className="text-right">
                     <p className={`text-sm font-semibold ${i === 0 ? "text-teal-800" : "text-gray-700"}`}>

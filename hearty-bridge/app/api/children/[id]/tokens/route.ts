@@ -10,6 +10,7 @@ import Package from '@/models/Package';
 import WeeklySchedule from '@/models/WeeklySchedule';
 import Assessment from '@/models/Assessment';
 import mongoose from 'mongoose';
+import { getSessionBalances, emptySessionBalance } from '@/lib/utils/session-balance';
 
 function getChildId(req: NextRequest): string {
   const parts = new URL(req.url).pathname.split('/');
@@ -86,6 +87,13 @@ export const GET = withAnyAuth(
       (scheduledAssessmentSlots as any[]).map((a: any) => a.packageId?.toString()).filter(Boolean)
     );
 
+    // Sisa sesi (paid/unpaid aware) — see lib/utils/session-balance.ts.
+    const sessionBalance = (await getSessionBalances([childId])).get(childId) ?? emptySessionBalance(childId);
+    const packageBalanceMap = new Map(sessionBalance.packages.map((p) => [p.packageTxId, p]));
+
+    // remainingSessions = sessions not yet placed on the calendar (scheduling
+    // eligibility, used by the schedule page). sessionBalance = sisa sesi as
+    // shown to parent/admin, which can be negative for an unpaid package.
     const transactionsWithRemaining = transactions.map((t: any) => {
       if (t.type === 'topup') {
         const txIdStr = t._id.toString();
@@ -96,7 +104,14 @@ export const GET = withAnyAuth(
         const isScheduled = scheduledTherapyPkgSet.has(txIdStr);
         const used = sessionCountMap.get(txIdStr) ?? 0;
         const remaining = isScheduled ? 0 : Math.max(0, (t.amount ?? 0) - used);
-        return { ...t, remainingSessions: remaining };
+        const pkgBalance = packageBalanceMap.get(txIdStr);
+        return {
+          ...t,
+          remainingSessions: remaining,
+          usedSessions: pkgBalance?.used ?? 0,
+          sessionBalance: pkgBalance?.remaining ?? null,
+          isPaid: pkgBalance?.isPaid ?? null,
+        };
       }
       return t;
     });
@@ -104,6 +119,7 @@ export const GET = withAnyAuth(
     return SuccessResponse.ok({
       data: {
         balance: (child as any).tokenBalance ?? 0,
+        sessionBalance,
         transactions: transactionsWithRemaining,
       },
     });

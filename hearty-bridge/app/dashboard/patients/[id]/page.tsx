@@ -53,6 +53,22 @@ interface ChildDetail {
   tokenBalance?: number;
   scheduleDays?: string[];
   therapyStartDate?: string | null;
+  therapistsByProgram?: ProgramTherapists[];
+}
+
+interface ProgramTherapists {
+  therapyType: string;
+  label: string;
+  therapists: Array<{ id: string; name: string }>;
+}
+
+interface ProgramBalance {
+  therapyType: string;
+  label: string;
+  total: number;
+  used: number;
+  remaining: number;
+  hasUnpaid: boolean;
 }
 
 const DAY_LABELS: Record<string, string> = {
@@ -71,6 +87,9 @@ interface TokenTransaction {
   note: string;
   adminName: string;
   createdAt: string;
+  usedSessions?: number;
+  sessionBalance?: number | null;
+  isPaid?: boolean | null;
 }
 
 interface InvoiceRecord {
@@ -139,6 +158,7 @@ export default function PatientDetailPage() {
 
   // Package state
   const [packages, setPackages] = useState<TokenTransaction[]>([]);
+  const [programBalances, setProgramBalances] = useState<ProgramBalance[]>([]);
   const [invoiceMap, setInvoiceMap] = useState<Record<string, InvoiceRecord>>({});
   const [tokenSaving, setTokenSaving] = useState<string | null>(null);
   const [tokenError, setTokenError] = useState<string | null>(null);
@@ -387,6 +407,7 @@ export default function PatientDetailPage() {
         const txResult = await txRes.json();
         const allTx: TokenTransaction[] = txResult.data?.transactions ?? [];
         setPackages(allTx.filter((tx) => tx.type === 'topup' && tx.packageType));
+        setProgramBalances(txResult.data?.sessionBalance?.programs ?? []);
       }
 
       if (invRes.ok) {
@@ -973,6 +994,27 @@ export default function PatientDetailPage() {
                 </div>
               )}
 
+              {/* Sisa sesi per program (sama dengan dashboard ortu) */}
+              {programBalances.length > 0 && (
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2">
+                  {programBalances.map((p) => (
+                    <div
+                      key={p.therapyType}
+                      className={`rounded-xl border px-3 py-2.5 ${p.remaining < 0 ? 'border-red-200 bg-red-50' : 'border-teal-100 bg-teal-50/60'}`}
+                    >
+                      <p className="text-xs font-semibold text-gray-600">Sisa {p.label}</p>
+                      <p className={`text-2xl font-bold leading-tight ${p.remaining < 0 ? 'text-red-600' : 'text-teal-700'}`}>
+                        {p.remaining} <span className="text-xs font-normal text-gray-500">sesi</span>
+                      </p>
+                      <p className="text-[11px] text-gray-500">
+                        {p.used} terpakai dari {p.total}
+                        {p.hasUnpaid && <span className="text-amber-700"> · ada paket belum lunas</span>}
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              )}
+
               {/* Package list */}
               {packages.length === 0 ? (
                 <div className="rounded-xl border-2 border-dashed border-gray-200 py-10 text-center">
@@ -1025,6 +1067,17 @@ export default function PatientDetailPage() {
                               Ditambahkan {formatDate(pkg.createdAt)}
                               {pkg.adminName && <span className="ml-1">· oleh {pkg.adminName}</span>}
                             </p>
+                            {pkg.therapyType !== 'assessment' && typeof pkg.sessionBalance === 'number' && (
+                              <p className="text-xs text-gray-500 mt-0.5">
+                                {pkg.usedSessions ?? 0} terpakai &middot; sisa{' '}
+                                <span className={`font-semibold ${pkg.sessionBalance < 0 ? 'text-red-600' : 'text-teal-700'}`}>
+                                  {pkg.sessionBalance}
+                                </span>
+                                {pkg.isPaid === false && (
+                                  <span className="text-amber-700"> (dihitung penuh setelah lunas)</span>
+                                )}
+                              </p>
+                            )}
                           </div>
                         </div>
 
@@ -1244,7 +1297,26 @@ export default function PatientDetailPage() {
                 Terapis
               </CardTitle>
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
+              {(child.therapistsByProgram ?? []).length > 0 && (
+                <div className="space-y-2">
+                  {(child.therapistsByProgram ?? []).map((p) => (
+                    <div key={p.therapyType} className="flex items-start gap-2 text-sm">
+                      <span className={`text-xs font-semibold px-2 py-0.5 rounded-full shrink-0 ${
+                        p.therapyType === 'OT' ? 'bg-blue-50 text-blue-700'
+                          : p.therapyType === 'TW' ? 'bg-purple-50 text-purple-700'
+                          : p.therapyType === 'HB' ? 'bg-emerald-50 text-emerald-700'
+                          : 'bg-teal-50 text-teal-700'
+                      }`}>
+                        {p.label}
+                      </span>
+                      <span className="text-gray-900 font-medium">
+                        {p.therapists.map((t) => t.name).join(', ')}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              )}
               {child.therapist ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
@@ -1270,7 +1342,9 @@ export default function PatientDetailPage() {
                   </div>
                 </div>
               ) : (
-                <p className="text-sm text-gray-400 italic">Belum ada terapis yang ditugaskan</p>
+                (child.therapistsByProgram ?? []).length === 0 && (
+                  <p className="text-sm text-gray-400 italic">Belum ada terapis yang ditugaskan</p>
+                )
               )}
             </CardContent>
           </Card>
