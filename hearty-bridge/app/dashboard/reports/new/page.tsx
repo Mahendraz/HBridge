@@ -5,15 +5,12 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { usePermissions } from "@/lib/utils/permissions";
 import { useReportDraft } from "@/lib/hooks/useReportDraft";
-import { uploadFileWithProgress } from "@/lib/utils/upload-with-progress";
+import { useReportMediaUploader, ReportMediaField } from "@/components/reports/report-media-uploader";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Card, CardContent } from "@/components/ui/card";
 import {
   ArrowLeftIcon,
-  UploadIcon,
-  XIcon,
-  VideoIcon,
   SaveIcon,
   UserIcon,
   CalendarIcon,
@@ -84,12 +81,15 @@ export default function NewReportPage() {
     dueDate:   urlSessionDate || "",  // pre-fill from session date
   });
   const [allChildren, setAllChildren] = useState<ChildOption[]>([]);
-  const [pendingFiles, setPendingFiles] = useState<{ file: File; preview: string }[]>([]);
   const [savingAs, setSavingAs] = useState<"draft" | "completed" | null>(null);
-  const [uploadPercent, setUploadPercent] = useState<number | null>(null);
+  const [waitingUploads, setWaitingUploads] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
   const [loadingChildren, setLoadingChildren] = useState(true);
-  const fileInputRef = useRef<HTMLInputElement>(null);
+  // Media uploads start as soon as a file is picked, but they need a report to
+  // attach to — so the first pick creates a draft report on the server, and
+  // saving then updates that draft instead of creating a new one.
+  const [draftReportId, setDraftReportId] = useState<string | null>(null);
+  const draftReportPromise = useRef<Promise<string> | null>(null);
 
   // Auth guard – parent cannot create reports
   useEffect(() => {
@@ -168,28 +168,70 @@ export default function NewReportPage() {
     setForm((f) => ({ ...f, childId, childName: child?.name || "" }));
   };
 
-  const handleFilePick = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const files = Array.from(e.target.files || []);
-    e.target.value = "";
-    files.forEach((file) => {
-      if (file.type.startsWith("image/")) {
-        const reader = new FileReader();
-        reader.onload = (ev) => {
-          const preview = (ev.target?.result as string) ?? "";
-          setPendingFiles((prev) => [...prev, { file, preview }]);
-        };
-        reader.readAsDataURL(file);
-      } else {
-        setPendingFiles((prev) => [...prev, { file, preview: "" }]);
+  const buildPayload = (statusToSave: "draft" | "completed"): Record<string, unknown> => ({
+    title: form.title.trim(),
+    description: form.description.trim(),
+    content: form.content.trim(),
+    type: form.type,
+    status: statusToSave,
+    childId: form.childId,
+    childName: form.childName,
+    dueDate: form.dueDate || undefined,
+    // From schedule redirect — store session metadata
+    ...(urlSessionDate && { sessionDate: urlSessionDate }),
+    ...(urlSessionHour && { sessionHour: parseInt(urlSessionHour) }),
+  });
+
+  const createDraftReport = (): Promise<string> => {
+    draftReportPromise.current ??= (async () => {
+      const token = localStorage.getItem("token") || "";
+      const payload = buildPayload("draft");
+      if (!payload.title) {
+        payload.title = `Laporan ${form.childName || "Sesi"}${form.dueDate ? ` — ${formatDisplayDate(form.dueDate)}` : ""}`;
       }
+      const res = await fetch("/api/reports", {
+        method: "POST",
+        headers: { "Content-Type": "application/json", Authorization: `Bearer ${token}` },
+        body: JSON.stringify(payload),
+      });
+      const result = await res.json().catch(() => null);
+      if (!res.ok || !result?.success) {
+        throw new Error(result?.error || "Gagal menyiapkan draf laporan untuk upload.");
+      }
+      const id: string = result.data._id;
+      setDraftReportId(id);
+      // Point the local text draft at the server draft, so opening "new
+      // report" later doesn't restore it and create a second report.
+      draftHook.save({ ...form, status: "draft", editingId: id, savedAt: new Date().toISOString() });
+      return id;
+    })().catch((err) => {
+      draftReportPromise.current = null; // let the next upload retry
+      throw err;
     });
+    return draftReportPromise.current;
   };
 
-  const removePending = (index: number) => {
-    setPendingFiles((prev) => prev.filter((_, i) => i !== index));
-  };
+  const media = useReportMediaUploader({
+    getReportId: createDraftReport,
+    beforeAdd: () => (form.childId ? null : "Pilih pasien terlebih dahulu sebelum menambahkan media."),
+  });
 
-  const handleBack = () => {
+  const handleBack = async () => {
+    if (draftReportId) {
+      const discard = confirm(
+        "Media sudah diunggah ke draf laporan ini.\n\nOK = hapus draf beserta medianya\nBatal = simpan sebagai draf"
+      );
+      if (discard) {
+        await media.discardNew();
+        await fetch(`/api/reports/${draftReportId}`, {
+          method: "DELETE",
+          headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` },
+        }).catch(() => {});
+      }
+      draftHook.clear();
+      router.back();
+      return;
+    }
     const hasContent = form.title || form.content || form.description;
     if (hasContent) {
       if (!confirm("Teks sudah disimpan sebagai draf lokal. Keluar dari halaman ini?")) return;
@@ -210,22 +252,19 @@ export default function NewReportPage() {
       typeof window !== "undefined" ? localStorage.getItem("token") || "" : "";
 
     try {
-      const payload: Record<string, unknown> = {
-        title: form.title.trim(),
-        description: form.description.trim(),
-        content: form.content.trim(),
-        type: form.type,
-        status: statusToSave,
-        childId: form.childId,
-        childName: form.childName,
-        dueDate: form.dueDate || undefined,
-        // From schedule redirect — store session metadata
-        ...(urlSessionDate && { sessionDate: urlSessionDate }),
-        ...(urlSessionHour && { sessionHour: parseInt(urlSessionHour) }),
-      };
+      // Media was uploaded in the background while the form was being filled,
+      // so most of it is done by now. Wait for the rest before saving, so a
+      // "completed" report never reaches the parent with media still missing.
+      setWaitingUploads(true);
+      const { failed } = await media.waitForUploads();
+      setWaitingUploads(false);
+      if (failed > 0) {
+        throw new Error(`${failed} file gagal diunggah. Coba lagi atau hapus file tersebut sebelum menyimpan.`);
+      }
 
-      const res = await fetch("/api/reports", {
-        method: "POST",
+      const payload = buildPayload(statusToSave);
+      const res = await fetch(draftReportId ? `/api/reports/${draftReportId}` : "/api/reports", {
+        method: draftReportId ? "PUT" : "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
@@ -234,51 +273,20 @@ export default function NewReportPage() {
       });
       const result = await res.json();
       if (!res.ok || !result.success) {
-        throw new Error(result.error || "Gagal membuat laporan.");
-      }
-
-      const reportId: string = result.data._id;
-
-      // Upload pending media files — sequential (server processes one at a time
-      // anyway), but tracked via XHR progress so large videos show a real
-      // percentage instead of an indefinite spinner.
-      if (pendingFiles.length > 0) {
-        const totalBytes = pendingFiles.reduce((sum, { file }) => sum + file.size, 0);
-        let uploadedBytesSoFar = 0;
-        setUploadPercent(0);
-
-        for (const { file } of pendingFiles) {
-          const fd = new FormData();
-          fd.append("file", file);
-          try {
-            await uploadFileWithProgress(
-              `/api/reports/${reportId}/media`,
-              fd,
-              token || "",
-              (loaded) => {
-                const percent = totalBytes > 0
-                  ? Math.round(((uploadedBytesSoFar + loaded) / totalBytes) * 100)
-                  : 0;
-                setUploadPercent(percent);
-              }
-            );
-          } catch (uploadErr) {
-            console.warn("Media upload warning:", uploadErr);
-          }
-          uploadedBytesSoFar += file.size;
-        }
-        setUploadPercent(null);
+        throw new Error(result.error || "Gagal menyimpan laporan.");
       }
 
       draftHook.clear();
       router.push("/dashboard/reports");
     } catch (err: unknown) {
       setSaveError(err instanceof Error ? err.message : "Terjadi kesalahan.");
-      setUploadPercent(null);
     } finally {
+      setWaitingUploads(false);
       setSavingAs(null);
     }
-  }, [form, pendingFiles, draftHook, router]);
+  // buildPayload is recreated every render from `form` + URL params, both covered here
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [form, draftReportId, media, draftHook, router]);
 
   if (!permissions.hasPermission("reports:create")) return null;
 
@@ -347,8 +355,9 @@ export default function NewReportPage() {
           </div>
           <button
             onClick={() => router.replace("/dashboard/reports/new")}
-            className="text-xs text-teal-600 hover:text-teal-800 font-medium flex items-center gap-1 border border-teal-300 rounded px-2 py-1 hover:bg-teal-100 transition-colors flex-shrink-0"
-            title="Pilih pasien lain"
+            disabled={!!draftReportId}
+            className="text-xs text-teal-600 hover:text-teal-800 font-medium flex items-center gap-1 border border-teal-300 rounded px-2 py-1 hover:bg-teal-100 transition-colors flex-shrink-0 disabled:opacity-40 disabled:pointer-events-none"
+            title={draftReportId ? "Pasien tidak bisa diganti setelah media diunggah" : "Pilih pasien lain"}
           >
             <UserIcon className="h-3.5 w-3.5" />
             Ganti
@@ -367,8 +376,9 @@ export default function NewReportPage() {
               <select
                 value={form.childId}
                 onChange={(e) => handleChildChange(e.target.value)}
-                className="w-full border-2 border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500"
-                disabled={loadingChildren}
+                className="w-full border-2 border-gray-300 rounded-lg px-3 py-2.5 text-base focus:outline-none focus:ring-2 focus:ring-teal-500 focus:border-teal-500 disabled:bg-gray-50"
+                disabled={loadingChildren || !!draftReportId}
+                title={draftReportId ? "Pasien tidak bisa diganti setelah media diunggah" : undefined}
               >
                 <option value="">
                   {loadingChildren ? "Memuat data pasien..." : "Pilih pasien..."}
@@ -469,70 +479,8 @@ export default function NewReportPage() {
             />
           </div>
 
-          {/* Media */}
-          <div>
-            <label className="text-xs font-medium text-gray-700 mb-2 block">
-              Media (Foto / Video){" "}
-              {pendingFiles.length > 0 && (
-                <span className="text-gray-500">— {pendingFiles.length} file dipilih</span>
-              )}
-            </label>
-
-            {pendingFiles.length > 0 && (
-              <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 mb-3">
-                {pendingFiles.map(({ file, preview }, idx) => (
-                  <div
-                    key={idx}
-                    className="relative border border-dashed border-teal-300 rounded-lg overflow-hidden bg-teal-50"
-                  >
-                    {file.type.startsWith("image/") ? (
-                      <img
-                        src={preview}
-                        alt={file.name}
-                        className="w-full h-20 object-cover"
-                      />
-                    ) : (
-                      <div className="flex flex-col items-center justify-center h-20">
-                        <VideoIcon className="h-6 w-6 text-teal-500 mb-1" />
-                        <p className="text-[10px] text-teal-700">Video</p>
-                      </div>
-                    )}
-                    <div className="px-2 py-1">
-                      <p className="text-[10px] text-gray-600 truncate">{file.name}</p>
-                    </div>
-                    <button
-                      className="absolute top-1 right-1 bg-red-500 text-white rounded-full p-0.5 hover:bg-red-600"
-                      onClick={() => removePending(idx)}
-                      title="Hapus"
-                    >
-                      <XIcon className="h-3 w-3" />
-                    </button>
-                  </div>
-                ))}
-              </div>
-            )}
-
-            <input
-              ref={fileInputRef}
-              type="file"
-              multiple
-              accept="image/jpeg,image/png,image/webp,image/gif,video/mp4,video/webm,video/quicktime"
-              className="hidden"
-              onChange={handleFilePick}
-            />
-            <button
-              type="button"
-              onClick={() => fileInputRef.current?.click()}
-              className="w-full border-2 border-dashed border-gray-300 rounded-lg py-3 flex items-center justify-center gap-2 text-sm text-gray-500 hover:border-teal-400 hover:text-teal-600 hover:bg-teal-50 transition-colors"
-            >
-              <UploadIcon className="h-4 w-4" />
-              Pilih foto atau video (maks. 100 MB per file)
-            </button>
-
-            <p className="text-xs text-gray-400 mt-1">
-              Teks form disimpan otomatis. File yang dipilih perlu dipilih ulang jika halaman ditutup.
-            </p>
-          </div>
+          {/* Media — uploads start immediately on pick/drop */}
+          <ReportMediaField uploader={media} disabled={isSaving} />
 
           {saveError && (
             <div className="bg-red-50 border border-red-200 rounded p-3 text-sm text-red-700">
@@ -540,16 +488,16 @@ export default function NewReportPage() {
             </div>
           )}
 
-          {uploadPercent !== null && (
+          {waitingUploads && (
             <div>
               <div className="flex items-center justify-between text-xs text-gray-500 mb-1">
-                <span>Mengunggah media...</span>
-                <span>{uploadPercent}%</span>
+                <span>Menunggu upload media selesai...</span>
+                <span>{media.pendingPercent}%</span>
               </div>
               <div className="w-full h-2 bg-gray-100 rounded-full overflow-hidden">
                 <div
                   className="h-full bg-teal-500 transition-all duration-200"
-                  style={{ width: `${uploadPercent}%` }}
+                  style={{ width: `${media.pendingPercent}%` }}
                 />
               </div>
             </div>

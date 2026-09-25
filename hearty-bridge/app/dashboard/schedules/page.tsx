@@ -289,6 +289,7 @@ function SlotCard({
   reportMap,
   patientPhotoUrl,
   isTherapistOnLeave,
+  therapistLeaveType,
   therapistColor,
   onClick,
   onOpenReportModal,
@@ -302,6 +303,8 @@ function SlotCard({
   reportMap: Record<string, string>;
   patientPhotoUrl?: string | null;
   isTherapistOnLeave?: boolean;
+  /** Which status makes the therapist unavailable: Sakit/Izin or Inaktif. */
+  therapistLeaveType?: 'sakit_izin' | 'inactive';
   therapistColor?: string | null;
   onClick: () => void;
   onOpenReportModal: (slot: WeeklySlot, sessionDate: string) => void;
@@ -451,8 +454,11 @@ function SlotCard({
               {slot.therapistName.replace(/,.*/, "")}
             </p>
             {isTherapistOnLeave && (
-              <span className="flex-shrink-0 text-[9px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded leading-none">
-                CUTI
+              <span
+                className="flex-shrink-0 text-[9px] font-bold bg-red-500 text-white px-1.5 py-0.5 rounded leading-none"
+                title="Terapis sedang tidak bisa hadir — pindahkan jadwal ke terapis lain"
+              >
+                {therapistLeaveType === 'inactive' ? 'INAKTIF' : 'SAKIT/IZIN'}
               </span>
             )}
           </div>
@@ -1834,8 +1840,11 @@ export default function SchedulesPage() {
   const [editAssessorId, setEditAssessorId] = useState('');
   const [assessorSaving, setAssessorSaving] = useState(false);
 
-  // Leave set: "therapistId_dateStr" → true (therapist on leave that date)
-  const [leaveSet, setLeaveSet] = useState<Set<string>>(new Set());
+  // Leave map: "therapistId_dateStr" → status that makes the therapist unavailable
+  // that date. Sakit/Izin slots stay visible with a marker; Inaktif slots are
+  // hidden unless the admin opts to show them (to move them to someone else).
+  const [leaveMap, setLeaveMap] = useState<Map<string, 'sakit_izin' | 'inactive'>>(new Map());
+  const [showInactiveSlots, setShowInactiveSlots] = useState(false);
 
   // Grid search/filter — allTherapists is already fetched for the slot-creation
   // modal's dropdown; this reuses it as the filter's option list too.
@@ -1915,18 +1924,21 @@ export default function SchedulesPage() {
       });
       if (!res.ok) return;
       const result = await res.json();
-      const leaveDates = new Set<string>();
+      const leaveDates = new Map<string, 'sakit_izin' | 'inactive'>();
       const weekDatesArr = getWeekDates(weekStart);
       for (const lv of (result.leaves ?? []) as any[]) {
         const startStr = (lv.startDate as string).split('T')[0];
         const endStr   = lv.endDate ? (lv.endDate as string).split('T')[0] : null;
+        // Legacy 'cuti' = Sakit/Izin; Inaktif wins when both overlap a date.
+        const type = lv.type === 'inactive' ? 'inactive' : 'sakit_izin';
         for (const dateStr of weekDatesArr) {
           if (dateStr >= startStr && (endStr === null || dateStr <= endStr)) {
-            leaveDates.add(`${(lv.userId as string).toString()}_${dateStr}`);
+            const key = `${(lv.userId as string).toString()}_${dateStr}`;
+            if (leaveDates.get(key) !== 'inactive') leaveDates.set(key, type);
           }
         }
       }
-      setLeaveSet(leaveDates);
+      setLeaveMap(leaveDates);
     } catch {
       // silently fail
     }
@@ -1985,8 +1997,10 @@ export default function SchedulesPage() {
       }
       if (tRes.ok) {
         const tr = await tRes.json();
+        // Inaktif therapists (and disabled accounts) can't be picked for new
+        // slots; Sakit/Izin ones stay selectable since that's short-term.
         const rawTherapists: any[] = tr.therapists || [];
-        setAllTherapists(rawTherapists.map((t) => ({
+        setAllTherapists(rawTherapists.filter((t) => t.status !== 'inactive').map((t) => ({
           _id: t._id?.toString() ?? "",
           name: t.name,
           therapyType: t.therapyType ?? null,
@@ -2284,10 +2298,18 @@ export default function SchedulesPage() {
 
   // ---- Grid helpers ----
 
+  const canManageSchedule = permissions.hasPermission("schedules:manage_all");
+
+  const getSlotLeaveType = (s: WeeklySlot) => {
+    const dayIndex = DAYS.indexOf(s.day as Day);
+    return dayIndex >= 0 ? leaveMap.get(`${s.therapistId}_${weekDates[dayIndex]}`) : undefined;
+  };
+
   const getSlotsForCell = (day: string, hour: number) =>
     slots.filter((s) =>
       s.day === day &&
       s.hour === hour &&
+      (showInactiveSlots || getSlotLeaveType(s) !== 'inactive') &&
       (!therapistFilter || s.therapistId === therapistFilter) &&
       (!searchTerm.trim() || s.patientName.toLowerCase().includes(searchTerm.trim().toLowerCase()))
     );
@@ -2333,7 +2355,8 @@ export default function SchedulesPage() {
             weekStart={weekStart}
             reportMap={reportMap}
             patientPhotoUrl={patientPhotoMap[slot.patientId] ?? null}
-            isTherapistOnLeave={leaveSet.has(`${slot.therapistId}_${dateStr}`)}
+            isTherapistOnLeave={leaveMap.has(`${slot.therapistId}_${dateStr}`)}
+            therapistLeaveType={leaveMap.get(`${slot.therapistId}_${dateStr}`)}
             therapistColor={therapistColorMap[slot.therapistId] ?? null}
             onClick={() => {
               if (permissions.hasPermission("schedules:manage_all")) openEditSlot(slot);
@@ -2449,6 +2472,31 @@ export default function SchedulesPage() {
           </Button>
         )}
       </div>
+
+      {/* Therapist status warning — slots are never moved automatically, the
+          admin reassigns them. Inaktif slots are hidden unless shown here. */}
+      {canManageSchedule && (() => {
+        const sickCount = slots.filter((sl) => getSlotLeaveType(sl) === 'sakit_izin').length;
+        const inactiveCount = slots.filter((sl) => getSlotLeaveType(sl) === 'inactive').length;
+        if (sickCount === 0 && inactiveCount === 0) return null;
+        return (
+          <div className="flex flex-wrap items-center gap-x-3 gap-y-1 bg-amber-50 border border-amber-300 rounded-lg px-3 py-2 text-xs text-amber-800">
+            <span>
+              {sickCount > 0 && <>{sickCount} jadwal minggu ini milik terapis <b>Sakit/Izin</b>. </>}
+              {inactiveCount > 0 && <>{inactiveCount} jadwal milik terapis <b>Inaktif</b>{showInactiveSlots ? '' : ' disembunyikan'}. </>}
+              Pindahkan ke terapis lain.
+            </span>
+            {inactiveCount > 0 && (
+              <button
+                onClick={() => setShowInactiveSlots((v) => !v)}
+                className="font-semibold underline hover:text-amber-950"
+              >
+                {showInactiveSlots ? 'Sembunyikan' : 'Tampilkan'}
+              </button>
+            )}
+          </div>
+        );
+      })()}
 
       {/* Search anak + filter terapis */}
       {permissions.hasAnyPermission(["schedules:view_own", "schedules:manage_all"]) && (

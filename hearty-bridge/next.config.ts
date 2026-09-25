@@ -7,8 +7,9 @@ const nextConfig: NextConfig = {
   turbopack: {},
 
   // Prevent webpack from bundling native-binary packages —
-  // sharp (image), fluent-ffmpeg (video), and ffmpeg-static must run as-is in Node.js
-  serverExternalPackages: ['sharp', 'fluent-ffmpeg', 'ffmpeg-static'],
+  // sharp (image), fluent-ffmpeg (video), and ffmpeg-static must run as-is in Node.js;
+  // heic-convert loads a WASM HEIC decoder at runtime
+  serverExternalPackages: ['sharp', 'fluent-ffmpeg', 'ffmpeg-static', 'heic-convert'],
 
   images: {
     remotePatterns: [

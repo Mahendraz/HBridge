@@ -3,23 +3,9 @@ import { withAnyAuth, withAdminAuth } from '@/lib/middleware/auth';
 import { withErrorHandling, SuccessResponse, ErrorResponse } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
 import { Announcement } from '@/models';
-import { uploadToR2, getR2SignedUrl } from '@/lib/services/r2-storage';
-import { compressImage } from '@/lib/utils/compress';
+import { getR2SignedUrl } from '@/lib/services/r2-storage';
+import { storeAnnouncementFile } from '@/lib/services/announcement-media';
 import mongoose from 'mongoose';
-
-const ALLOWED_MIME_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/gif',
-  'application/pdf',
-]);
-
-const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB, matches the repo-wide media limit
-
-function sanitizeFileName(name: string): string {
-  return name.replace(/[^a-zA-Z0-9._-]/g, '_').substring(0, 100);
-}
 
 async function injectSignedUrls(announcements: any[]): Promise<any[]> {
   return Promise.all(
@@ -60,6 +46,7 @@ export const GET = withAnyAuth(
  * POST /api/announcements
  * Create a new announcement. admin/super_admin only (announcements:manage).
  * multipart/form-data: { title, content, file? }
+ * file: image (incl. HEIC), video (incl. iPhone .mov), or PDF.
  */
 export const POST = withAdminAuth(
   withErrorHandling(async (req: NextRequest, user: any) => {
@@ -76,37 +63,13 @@ export const POST = withAdminAuth(
     const attachments: any[] = [];
 
     if (file && file.size > 0) {
-      if (file.size > MAX_FILE_SIZE) {
-        return ErrorResponse.badRequest('File terlalu besar. Maksimal 100 MB');
+      const stored = await storeAnnouncementFile(file);
+      if (!stored.ok) {
+        return stored.status === 500
+          ? ErrorResponse.internalServerError(stored.error)
+          : ErrorResponse.badRequest(stored.error);
       }
-      if (!ALLOWED_MIME_TYPES.has(file.type)) {
-        return ErrorResponse.badRequest(`Tipe file tidak didukung: ${file.type}`);
-      }
-
-      const rawBuffer = Buffer.from(await file.arrayBuffer());
-      const isImage = file.type.startsWith('image/');
-
-      const compressed = isImage
-        ? await compressImage(rawBuffer, file.type)
-        : { buffer: rawBuffer, mimeType: file.type, ext: file.name.split('.').pop() ?? 'bin' };
-
-      const baseName = sanitizeFileName(file.name).replace(/\.[^.]+$/, '');
-      const destination = `announcements/${Date.now()}-${baseName}.${compressed.ext}`;
-
-      const key = await uploadToR2(compressed.buffer, destination, compressed.mimeType);
-      if (!key) {
-        return ErrorResponse.internalServerError('Upload ke storage gagal. Periksa kredensial R2.');
-      }
-
-      attachments.push({
-        fileName: file.name,
-        fileType: isImage ? 'image' : 'document',
-        gcsPath: destination,
-        url: destination, // raw key; signed URL generated fresh on every GET
-        mimeType: compressed.mimeType,
-        size: compressed.buffer.length,
-        uploadedAt: new Date(),
-      });
+      attachments.push(stored.attachment);
     }
 
     const announcement = await Announcement.create({

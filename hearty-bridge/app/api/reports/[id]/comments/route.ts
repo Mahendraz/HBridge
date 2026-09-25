@@ -2,7 +2,7 @@ import { NextRequest } from 'next/server';
 import { withAnyAuth } from '@/lib/middleware/auth';
 import { withErrorHandling, SuccessResponse, ErrorResponse } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
-import { Report, Child } from '@/models';
+import { Report, Child, User } from '@/models';
 import ReportComment from '@/models/ReportComment';
 import mongoose from 'mongoose';
 import { canAccessReport as canAccess } from '@/lib/utils/report-access';
@@ -16,7 +16,8 @@ function getReportId(req: NextRequest): string {
 
 /**
  * GET /api/reports/[id]/comments
- * Returns all active comments on the report, sorted oldest-first.
+ * Returns all active comments on the report, sorted newest-first (ADM-7).
+ * The report view re-sorts replies oldest-first within each thread.
  */
 export const GET = withAnyAuth(
   withErrorHandling(async (req: NextRequest, user: any) => {
@@ -30,7 +31,7 @@ export const GET = withAnyAuth(
     if (!(await canAccess(report, user))) return ErrorResponse.forbidden();
 
     const comments = await ReportComment.find({ reportId: new mongoose.Types.ObjectId(id), isActive: true })
-      .sort({ createdAt: 1 })
+      .sort({ createdAt: -1 })
       .lean();
 
     return SuccessResponse.ok({ comments });
@@ -89,6 +90,23 @@ export const POST = withAnyAuth(
           link,
         });
       }
+
+      // Admins follow up on parent comments too, and use the bell (newest
+      // first) to see which parent commented most recently.
+      const admins = await User.find({ role: { $in: ['admin', 'super_admin'] }, isActive: true })
+        .select('_id')
+        .lean();
+      await Promise.all(
+        admins.map((admin) =>
+          notify({
+            recipientId: admin._id,
+            type: 'new_comment',
+            title: `Komentar ortu di "${reportTitle}"`,
+            body: `${user.name} (${(report as any).childName || 'anak'}) mengomentari laporan.`,
+            link,
+          })
+        )
+      );
     } else {
       const child = await Child.findById((report as any).childId).select('parentId').lean();
       const parentId = (child as any)?.parentId;

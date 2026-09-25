@@ -15,6 +15,9 @@ export interface IUser extends Document {
     experience?: number;
     address?: string;
     color?: string;
+    // Therapist birth date — set by super_admin, drives the birthday reminder
+    // on the super_admin dashboard. Stored as UTC midnight of the date.
+    dateOfBirth?: Date;
     emergencyContact?: {
       name: string;
       phone: string;
@@ -106,6 +109,9 @@ const UserSchema = new Schema<IUser>({
       type: String,
       trim: true,
       maxlength: [7, 'Color must be a hex code like #14b8a6']
+    },
+    dateOfBirth: {
+      type: Date
     },
     emergencyContact: {
       name: String,

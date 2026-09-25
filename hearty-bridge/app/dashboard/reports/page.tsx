@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState, useEffect, Suspense } from "react";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { usePermissions, PermissionGuard, canActOnOwnRecord } from "@/lib/utils/permissions";
 import { useReportDraft } from "@/lib/hooks/useReportDraft";
@@ -17,6 +17,7 @@ import { ShimmerButton } from "@/components/magicui/shimmer-button";
 import { Input } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Lightbox, type LightboxItem } from "@/components/ui/lightbox";
 import {
   Dialog,
   DialogContent,
@@ -41,10 +42,8 @@ import {
   AlertCircleIcon,
   ClockIcon,
   ChevronRightIcon,
-  ChevronLeftIcon,
   XIcon,
   ZoomInIcon,
-  ExternalLinkIcon,
   MessageCircleIcon,
   CheckCircle2Icon,
   CornerDownRightIcon,
@@ -52,6 +51,7 @@ import {
   LayoutGridIcon,
   ListIcon,
   Loader2Icon,
+  PlayIcon,
 } from "lucide-react";
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -281,152 +281,6 @@ function PatientPickerDialog({
   );
 }
 
-// ─────────────────────────────────────────────────────────────────────────────
-// Lightbox – full-screen image viewer
-// ─────────────────────────────────────────────────────────────────────────────
-function Lightbox({
-  images,
-  startIndex,
-  onClose,
-}: {
-  images: ReportMediaFile[];
-  startIndex: number;
-  onClose: () => void;
-}) {
-  const [idx, setIdx] = React.useState(startIndex);
-  const current = images[idx];
-
-  // Keyboard navigation
-  React.useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-      if (e.key === "ArrowLeft" && idx > 0) setIdx((i) => i - 1);
-      if (e.key === "ArrowRight" && idx < images.length - 1) setIdx((i) => i + 1);
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [idx, images.length, onClose]);
-
-  // Lock body scroll while open
-  React.useEffect(() => {
-    document.body.style.overflow = "hidden";
-    return () => { document.body.style.overflow = ""; };
-  }, []);
-
-  if (!current) return null;
-
-  return (
-    // Backdrop — click outside image to close
-    <div
-      className="fixed inset-0 z-[9999] flex flex-col items-center justify-center bg-black/95 p-4 sm:p-6"
-      onClick={onClose}
-    >
-      {/* Top bar: counter + close */}
-      <div
-        className="absolute top-0 left-0 right-0 flex items-center justify-between px-4 py-3 sm:px-6"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <span className="text-white/60 text-sm tabular-nums select-none">
-          {images.length > 1 ? `${idx + 1} / ${images.length}` : ""}
-        </span>
-        <div className="flex items-center gap-3">
-          <a
-            href={current.url}
-            target="_blank"
-            rel="noreferrer"
-            className="text-white/60 hover:text-white transition-colors"
-            title="Buka di tab baru"
-          >
-            <ExternalLinkIcon className="h-5 w-5" />
-          </a>
-          <button
-            onClick={onClose}
-            className="text-white/60 hover:text-white transition-colors"
-            title="Tutup (Esc)"
-          >
-            <XIcon className="h-6 w-6" />
-          </button>
-        </div>
-      </div>
-
-      {/* Prev arrow */}
-      {idx > 0 && (
-        <button
-          className="absolute left-2 sm:left-5 top-1/2 -translate-y-1/2 z-10
-                     bg-white/10 hover:bg-white/25 active:bg-white/35
-                     text-white rounded-full p-2 sm:p-3 transition-colors"
-          onClick={(e) => { e.stopPropagation(); setIdx((i) => i - 1); }}
-          title="Sebelumnya (←)"
-        >
-          <ChevronLeftIcon className="h-5 w-5 sm:h-6 sm:w-6" />
-        </button>
-      )}
-
-      {/* Image card */}
-      <div
-        className="flex flex-col items-center gap-3 max-w-[92vw] max-h-[88vh]"
-        onClick={(e) => e.stopPropagation()}
-      >
-        <div className="relative rounded-xl overflow-hidden shadow-2xl ring-1 ring-white/10
-                        flex items-center justify-center
-                        bg-black/40 max-w-[92vw] max-h-[80vh]">
-          <img
-            key={current.gcsPath}
-            src={current.url}
-            alt={current.fileName}
-            className="block max-w-[92vw] max-h-[80vh] w-auto h-auto object-contain"
-            onError={(e) => {
-              (e.target as HTMLImageElement).style.opacity = "0.3";
-            }}
-          />
-        </div>
-
-        {/* Caption */}
-        <div className="flex items-center gap-2 text-center">
-          <p className="text-white/70 text-xs sm:text-sm truncate max-w-[80vw]">
-            {current.fileName}
-          </p>
-          {current.size > 0 && (
-            <span className="text-white/40 text-xs shrink-0">
-              ({(current.size / 1024).toFixed(0)} KB)
-            </span>
-          )}
-        </div>
-
-        {/* Dot strip (shows when multiple images) */}
-        {images.length > 1 && (
-          <div className="flex gap-1.5 mt-1">
-            {images.map((_, i) => (
-              <button
-                key={i}
-                onClick={() => setIdx(i)}
-                className={`h-1.5 rounded-full transition-all duration-200 ${
-                  i === idx
-                    ? "bg-white w-5"
-                    : "bg-white/35 hover:bg-white/60 w-1.5"
-                }`}
-              />
-            ))}
-          </div>
-        )}
-      </div>
-
-      {/* Next arrow */}
-      {idx < images.length - 1 && (
-        <button
-          className="absolute right-2 sm:right-5 top-1/2 -translate-y-1/2 z-10
-                     bg-white/10 hover:bg-white/25 active:bg-white/35
-                     text-white rounded-full p-2 sm:p-3 transition-colors"
-          onClick={(e) => { e.stopPropagation(); setIdx((i) => i + 1); }}
-          title="Berikutnya (→)"
-        >
-          <ChevronRightIcon className="h-5 w-5 sm:h-6 sm:w-6" />
-        </button>
-      )}
-    </div>
-  );
-}
-
 const EMOJIS = ['👍', '❤️', '🎉', '😮', '😢'];
 
 function relativeTime(iso: string): string {
@@ -438,6 +292,32 @@ function relativeTime(iso: string): string {
   if (h < 24) return `${h} jam lalu`;
   const d = Math.floor(h / 24);
   return `${d} hari lalu`;
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Deep link — notification links point at /dashboard/reports?reportId=…
+// (new comment / new report). Fetched directly rather than looked up in the
+// loaded list, which is paginated and may not contain it. Its own component
+// so useSearchParams sits inside a Suspense boundary.
+// ─────────────────────────────────────────────────────────────────────────────
+function ReportDeepLink({ onOpen }: { onOpen: (report: Report) => void }) {
+  const reportId = useSearchParams().get("reportId");
+
+  React.useEffect(() => {
+    if (!reportId) return;
+    let cancelled = false;
+    fetch(`/api/reports/${reportId}`, {
+      headers: { Authorization: `Bearer ${localStorage.getItem("token") || ""}` },
+    })
+      .then((r) => (r.ok ? r.json() : null))
+      .then((result) => {
+        if (!cancelled && result?.success && result.data) onOpen(result.data);
+      })
+      .catch(() => {});
+    return () => { cancelled = true; };
+  }, [reportId, onOpen]);
+
+  return null;
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -466,8 +346,16 @@ function ReportViewDialog({
   const token = typeof window !== 'undefined' ? localStorage.getItem('token') || '' : '';
   const report = initialReport;
 
-  // Only images go into the lightbox; videos keep their external link
-  const imageFiles = (report.mediaFiles ?? []).filter((m) => m.fileType === "image");
+  // Images and videos both open in the lightbox (videos play inline there)
+  const viewableFiles = (report.mediaFiles ?? []).filter((m) => m.fileType === "image" || m.fileType === "video");
+  const lightboxItems: LightboxItem[] = viewableFiles.map((m) => ({
+    key: m.gcsPath,
+    url: m.url,
+    fileName: m.fileName,
+    kind: m.fileType === "video" ? "video" : "image",
+    size: m.size,
+    processing: m.processingStatus === "processing",
+  }));
 
   React.useEffect(() => {
     // Mark as seen (fire-and-forget)
@@ -510,7 +398,9 @@ function ReportViewDialog({
       });
       const data = await res.json().catch(() => null);
       if (!res.ok) throw new Error(data?.error || 'Gagal mengirim komentar');
-      if (data?.comment) setComments((prev) => [...prev, data.comment]);
+      // Root comments are listed newest-first, so a new one goes on top;
+      // replies are ordered oldest-first within their thread by repliesFor().
+      if (data?.comment) setComments((prev) => [data.comment, ...prev]);
       if (parentCommentId) { setReplyingTo(null); setReplyText(''); }
       else setNewCommentText('');
     } catch (e) {
@@ -534,16 +424,20 @@ function ReportViewDialog({
 
   const canResolve = canActOnOwnRecord(user?.role ?? 'parent', user?._id ?? '', report.therapistId);
 
-  // Group: root comments + their replies
+  // Group: root comments (newest first, as returned by the API) + their
+  // replies (oldest first, so a thread still reads top-to-bottom)
   const rootComments = comments.filter((c) => !c.parentCommentId);
-  const repliesFor = (id: string) => comments.filter((c) => c.parentCommentId === id);
+  const repliesFor = (id: string) =>
+    comments
+      .filter((c) => c.parentCommentId === id)
+      .sort((a, b) => new Date(a.createdAt).getTime() - new Date(b.createdAt).getTime());
 
   return (
     <>
       {/* Lightbox rendered outside Dialog so it covers the entire viewport */}
       {lightboxIdx !== null && (
         <Lightbox
-          images={imageFiles}
+          items={lightboxItems}
           startIndex={lightboxIdx}
           onClose={() => setLightboxIdx(null)}
         />
@@ -622,7 +516,7 @@ function ReportViewDialog({
                 </p>
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {report.mediaFiles.map((m) => {
-                    const imgIdx = imageFiles.findIndex((img) => img.gcsPath === m.gcsPath);
+                    const viewIdx = viewableFiles.findIndex((v) => v.gcsPath === m.gcsPath);
                     const isImage = m.fileType === "image";
                     return (
                       <div key={m.gcsPath} className="group relative">
@@ -630,7 +524,7 @@ function ReportViewDialog({
                           // Clickable image thumbnail → opens lightbox
                           <button
                             type="button"
-                            onClick={() => setLightboxIdx(imgIdx)}
+                            onClick={() => setLightboxIdx(viewIdx)}
                             className="w-full text-left border rounded-lg overflow-hidden bg-gray-50
                                        hover:border-teal-400 focus-visible:outline-none
                                        focus-visible:ring-2 focus-visible:ring-teal-500
@@ -659,25 +553,26 @@ function ReportViewDialog({
                             </div>
                           </button>
                         ) : (
-                          // Video → open in new tab. Still playable (points at the
-                          // raw upload) while processingStatus is 'processing' —
-                          // compression just hasn't swapped it for the smaller
-                          // version yet.
-                          <a
-                            href={m.url}
-                            target="_blank"
-                            rel="noreferrer"
-                            className="border rounded-lg overflow-hidden bg-gray-50
-                                       hover:bg-gray-100 hover:border-gray-300 block transition-colors relative"
+                          // Video → plays in the lightbox. While processingStatus is
+                          // 'processing' it points at the raw upload, which may not
+                          // play outside Apple devices until the H.264 copy replaces it.
+                          <button
+                            type="button"
+                            onClick={() => setLightboxIdx(viewIdx)}
+                            className="w-full text-left border rounded-lg overflow-hidden bg-gray-50
+                                       hover:bg-gray-100 hover:border-teal-400 block transition-colors relative
+                                       focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500"
                           >
-                            <div className="flex items-center justify-center h-24 bg-gray-100">
-                              <VideoIcon className="h-8 w-8 text-gray-400" />
+                            <div className="flex items-center justify-center h-24 bg-gray-900/90">
+                              <div className="h-10 w-10 rounded-full bg-white/90 flex items-center justify-center shadow">
+                                <PlayIcon className="h-5 w-5 text-gray-800 ml-0.5" />
+                              </div>
                             </div>
                             {m.processingStatus === "processing" && (
                               <div
                                 className="absolute top-1 right-1 flex items-center gap-1 bg-black/60 text-white
                                            text-[9px] px-1.5 py-0.5 rounded-full"
-                                title="Video sedang diproses untuk mengurangi ukuran file — video asli sudah bisa dibuka"
+                                title="Video sedang dikonversi agar bisa diputar di semua perangkat"
                               >
                                 <Loader2Icon className="h-2.5 w-2.5 animate-spin" />
                                 Memproses
@@ -686,7 +581,7 @@ function ReportViewDialog({
                             <div className="px-2 py-1.5">
                               <p className="text-[10px] text-gray-600 truncate">{m.fileName}</p>
                             </div>
-                          </a>
+                          </button>
                         )}
                       </div>
                     );
@@ -1504,11 +1399,22 @@ export default function ReportsPage() {
         />
       )}
 
+      {/* Opens ?reportId=… from notification links */}
+      <Suspense fallback={null}>
+        <ReportDeepLink onOpen={setViewingReport} />
+      </Suspense>
+
       {/* Read-only view dialog */}
       {viewingReport && (
         <ReportViewDialog
           report={viewingReport}
-          onClose={() => setViewingReport(null)}
+          onClose={() => {
+            setViewingReport(null);
+            // Drop ?reportId so clicking the same notification again re-opens it
+            if (new URLSearchParams(window.location.search).has("reportId")) {
+              router.replace("/dashboard/reports");
+            }
+          }}
         />
       )}
     </div>

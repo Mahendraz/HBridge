@@ -29,6 +29,7 @@ import {
   PlusIcon,
   AlertCircleIcon,
   KeyRoundIcon,
+  CakeIcon,
 } from "lucide-react";
 import { THERAPIST_COLOR_PRESETS } from "@/lib/utils/therapist-colors";
 import { ResetPasswordDialog, type ResetPasswordTarget } from "@/components/admin/reset-password-dialog";
@@ -39,8 +40,12 @@ interface Therapist {
   email: string;
   phone?: string;
   specializations: string[];
-  status: 'active' | 'inactive' | 'on-leave';
-  currentLeave?: string | null;
+  // 'inactive' covers both an Inaktif status and a disabled login account —
+  // accountActive tells the two apart.
+  status: 'active' | 'inactive' | 'sick-leave';
+  currentLeave?: 'sakit_izin' | 'inactive' | null;
+  accountActive?: boolean;
+  dateOfBirth?: string | null;
   assignedPatients: number;
   maxPatients: number;
   color?: string | null;
@@ -50,13 +55,21 @@ interface LeaveRecord {
   _id: string;
   userId: string;
   userName: string;
-  type: 'cuti' | 'inactive';
+  type: 'sakit_izin' | 'inactive';
   startDate: string;
   endDate: string | null;
   reason: string;
   status: 'active' | 'cancelled';
   createdByName: string;
 }
+
+type StatusOption = 'active' | 'sakit_izin' | 'inactive';
+
+const STATUS_OPTIONS: { value: StatusOption; label: string; hint: string }[] = [
+  { value: 'active',     label: 'Aktif',      hint: 'Normal, tampil di jadwal.' },
+  { value: 'sakit_izin', label: 'Sakit/Izin', hint: 'Jangka pendek. Tetap tampil di jadwal dengan penanda tidak bisa hadir.' },
+  { value: 'inactive',   label: 'Inaktif',    hint: 'Jangka panjang. Hilang dari jadwal dan pilihan terapis.' },
+];
 
 export default function TherapistsPage() {
   const { user, isLoading: authLoading } = useAuth();
@@ -78,7 +91,8 @@ export default function TherapistsPage() {
   // Edit state
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTherapist, setEditingTherapist] = useState<Therapist | null>(null);
-  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '', specialization: '', color: '' as string });
+  const [editForm, setEditForm] = useState({ name: '', email: '', phone: '', specialization: '', color: '' as string, dateOfBirth: '' });
+  const canEditBirthDate = user?.role === 'super_admin';
   const [editError, setEditError] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
 
@@ -94,7 +108,7 @@ export default function TherapistsPage() {
   const [leaves, setLeaves] = useState<LeaveRecord[]>([]);
   const [leaveLoading, setLeaveLoading] = useState(false);
   const [leaveForm, setLeaveForm] = useState({
-    type: 'cuti' as 'cuti' | 'inactive',
+    type: 'sakit_izin' as StatusOption,
     startDate: '',
     endDate: '',
     reason: '',
@@ -102,6 +116,8 @@ export default function TherapistsPage() {
   const [leaveFormError, setLeaveFormError] = useState<string | null>(null);
   const [leaveSubmitting, setLeaveSubmitting] = useState(false);
   const [cancellingLeaveId, setCancellingLeaveId] = useState<string | null>(null);
+  // Returned by the leaves API when the therapist still has schedule slots in the period.
+  const [leaveWarning, setLeaveWarning] = useState<string | null>(null);
 
   useEffect(() => {
     if (user) fetchTherapists();
@@ -231,6 +247,7 @@ export default function TherapistsPage() {
       phone: therapist.phone || '',
       specialization: therapist.specializations.join(', '),
       color: therapist.color || '',
+      dateOfBirth: therapist.dateOfBirth ? therapist.dateOfBirth.substring(0, 10) : '',
     });
     setEditError(null);
     setShowEditModal(true);
@@ -254,6 +271,7 @@ export default function TherapistsPage() {
           phone: editForm.phone || undefined,
           specialization: editForm.specialization || undefined,
           color: editForm.color || null,
+          ...(canEditBirthDate && { dateOfBirth: editForm.dateOfBirth || null }),
         }),
       });
       const result = await response.json();
@@ -296,8 +314,9 @@ export default function TherapistsPage() {
   const openLeaveModal = async (therapist: Therapist) => {
     setLeaveModalTherapist(therapist);
     setLeaves([]);
-    setLeaveForm({ type: 'cuti', startDate: '', endDate: '', reason: '' });
+    setLeaveForm({ type: 'sakit_izin', startDate: '', endDate: '', reason: '' });
     setLeaveFormError(null);
+    setLeaveWarning(null);
     setLeaveLoading(true);
     try {
       const token = localStorage.getItem('token');
@@ -316,7 +335,12 @@ export default function TherapistsPage() {
   };
 
   const handleCreateLeave = async () => {
-    if (!leaveModalTherapist || !leaveForm.startDate) {
+    if (!leaveModalTherapist) return;
+    if (leaveForm.type === 'active') {
+      await handleSetActive();
+      return;
+    }
+    if (!leaveForm.startDate) {
       setLeaveFormError('Tanggal mulai wajib diisi.');
       return;
     }
@@ -341,11 +365,11 @@ export default function TherapistsPage() {
       });
       const result = await res.json();
       if (res.ok && result.success) {
-        setLeaveForm({ type: 'cuti', startDate: '', endDate: '', reason: '' });
         await openLeaveModal(leaveModalTherapist);
+        setLeaveWarning(result.warning?.message ?? null);
         fetchTherapists();
       } else {
-        setLeaveFormError(result.error || 'Gagal menyimpan cuti.');
+        setLeaveFormError(result.error || 'Gagal menyimpan status.');
       }
     } catch {
       setLeaveFormError('Terjadi kesalahan.');
@@ -371,6 +395,38 @@ export default function TherapistsPage() {
     }
   };
 
+  // "Aktif" = cancel every Sakit/Izin / Inaktif record that is in effect today.
+  const handleSetActive = async () => {
+    if (!leaveModalTherapist) return;
+    const today = new Date().toISOString().substring(0, 10);
+    const current = leaves.filter((lv) =>
+      lv.status === 'active' &&
+      lv.startDate.substring(0, 10) <= today &&
+      (!lv.endDate || lv.endDate.substring(0, 10) >= today)
+    );
+    if (current.length === 0) {
+      setLeaveFormError('Terapis ini sudah berstatus Aktif.');
+      return;
+    }
+    setLeaveFormError(null);
+    setLeaveSubmitting(true);
+    try {
+      const token = localStorage.getItem('token');
+      await Promise.all(current.map((lv) =>
+        fetch(`/api/therapist-leaves/${lv._id}`, {
+          method: 'DELETE',
+          headers: { Authorization: `Bearer ${token}` },
+        })
+      ));
+      await openLeaveModal(leaveModalTherapist);
+      fetchTherapists();
+    } catch {
+      setLeaveFormError('Terjadi kesalahan.');
+    } finally {
+      setLeaveSubmitting(false);
+    }
+  };
+
   const handleReactivateTherapist = async (therapist: Therapist) => {
     try {
       const token = localStorage.getItem('token');
@@ -385,21 +441,23 @@ export default function TherapistsPage() {
     }
   };
 
-  const getStatusBadge = (status: string) => {
-    switch (status) {
-      case 'active':   return 'bg-green-100 text-green-700 border-green-200';
-      case 'inactive': return 'bg-gray-100 text-gray-500 border-gray-200';
-      case 'on-leave': return 'bg-amber-100 text-amber-700 border-amber-200';
-      default:         return 'bg-gray-100 text-gray-500 border-gray-200';
+  const getStatusBadge = (therapist: Therapist) => {
+    switch (therapist.status) {
+      case 'active':     return 'bg-green-100 text-green-700 border-green-200';
+      case 'sick-leave': return 'bg-amber-100 text-amber-700 border-amber-200';
+      case 'inactive':   return therapist.accountActive === false
+        ? 'bg-gray-100 text-gray-500 border-gray-200'
+        : 'bg-red-100 text-red-700 border-red-200';
+      default:           return 'bg-gray-100 text-gray-500 border-gray-200';
     }
   };
 
-  const getStatusLabel = (status: string) => {
-    switch (status) {
-      case 'active':   return 'Aktif';
-      case 'inactive': return 'Tidak Aktif';
-      case 'on-leave': return 'Cuti';
-      default: return status;
+  const getStatusLabel = (therapist: Therapist) => {
+    switch (therapist.status) {
+      case 'active':     return 'Aktif';
+      case 'sick-leave': return 'Sakit/Izin';
+      case 'inactive':   return therapist.accountActive === false ? 'Akun Nonaktif' : 'Inaktif';
+      default: return therapist.status;
     }
   };
 
@@ -418,12 +476,12 @@ export default function TherapistsPage() {
     onManageLeave: (t: Therapist) => void;
     onResetPassword: (t: Therapist) => void;
   }) => (
-    <Card className={`hover:shadow-md transition-shadow ${therapist.status === 'inactive' && !therapist.currentLeave ? 'opacity-60' : ''}`}>
+    <Card className={`hover:shadow-md transition-shadow ${therapist.accountActive === false ? 'opacity-60' : ''}`}>
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between gap-2">
           <div className="flex items-center gap-3 min-w-0">
             <div className={`relative w-12 h-12 rounded-full flex items-center justify-center font-bold text-lg shrink-0 ${
-              therapist.status === 'on-leave' ? 'bg-amber-100 text-amber-700' :
+              therapist.status === 'sick-leave' ? 'bg-amber-100 text-amber-700' :
               therapist.status === 'inactive' ? 'bg-gray-100 text-gray-400' :
               'bg-teal-100 text-teal-700'
             }`}>
@@ -454,8 +512,8 @@ export default function TherapistsPage() {
               </div>
             </div>
           </div>
-          <span className={`shrink-0 mt-0.5 text-xs font-medium px-2 py-1 rounded-full border ${getStatusBadge(therapist.status)}`}>
-            {getStatusLabel(therapist.status)}
+          <span className={`shrink-0 mt-0.5 text-xs font-medium px-2 py-1 rounded-full border ${getStatusBadge(therapist)}`}>
+            {getStatusLabel(therapist)}
           </span>
         </div>
       </CardHeader>
@@ -472,6 +530,14 @@ export default function TherapistsPage() {
               <span>{therapist.phone}</span>
             </div>
           ) : null}
+          {therapist.dateOfBirth && (
+            <div className="flex items-center gap-2 text-gray-600">
+              <CakeIcon className="h-4 w-4 text-gray-400 shrink-0" />
+              <span>
+                {new Date(therapist.dateOfBirth).toLocaleDateString('id-ID', { day: 'numeric', month: 'long', year: 'numeric', timeZone: 'UTC' })}
+              </span>
+            </div>
+          )}
         </div>
 
         <div className="pt-3 border-t border-gray-100">
@@ -505,12 +571,12 @@ export default function TherapistsPage() {
                 size="sm"
                 className="text-amber-600 border-amber-200 hover:bg-amber-50"
                 onClick={() => onManageLeave(therapist)}
-                title="Kelola Cuti / Nonaktif"
+                title="Status terapis: Aktif / Sakit-Izin / Inaktif"
               >
                 <CalendarOffIcon className="h-4 w-4" />
               </Button>
             )}
-            {therapist.status === 'inactive' && !therapist.currentLeave ? (
+            {therapist.accountActive === false ? (
               <Button
                 variant="outline"
                 size="sm"
@@ -520,7 +586,7 @@ export default function TherapistsPage() {
               >
                 <PowerIcon className="h-4 w-4" />
               </Button>
-            ) : therapist.status === 'active' ? (
+            ) : therapist.status !== 'inactive' ? (
               <Button
                 variant="outline"
                 size="sm"
@@ -660,6 +726,19 @@ export default function TherapistsPage() {
               />
               <p className="text-xs text-gray-500 mt-1">Pisahkan dengan koma untuk beberapa spesialisasi.</p>
             </div>
+            {canEditBirthDate && (
+              <div>
+                <label className="text-sm font-medium text-gray-700">Tanggal Lahir</label>
+                <input
+                  type="date"
+                  value={editForm.dateOfBirth}
+                  max={new Date().toISOString().substring(0, 10)}
+                  onChange={(e) => setEditForm(f => ({ ...f, dateOfBirth: e.target.value }))}
+                  className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-teal-500"
+                />
+                <p className="text-xs text-gray-500 mt-1">Untuk pengingat ulang tahun di dashboard Super Admin.</p>
+              </div>
+            )}
             <div>
               <label className="text-sm font-medium text-gray-700">Warna Jadwal</label>
               <p className="text-xs text-gray-500 mt-0.5 mb-2">Aksen warna untuk membedakan terapis di halaman Jadwal.</p>
@@ -712,7 +791,7 @@ export default function TherapistsPage() {
       <Dialog open={!!confirmDeactivate} onOpenChange={(open) => !open && setConfirmDeactivate(null)}>
         <DialogContent size="sm">
           <DialogHeader>
-            <DialogTitle>Nonaktifkan Terapis</DialogTitle>
+            <DialogTitle>Nonaktifkan Akun Terapis</DialogTitle>
           </DialogHeader>
           <p className="text-sm text-gray-600 py-2">
             Nonaktifkan <span className="font-semibold">{confirmDeactivate?.name}</span>? Terapis tidak bisa login hingga diaktifkan kembali.
@@ -741,18 +820,25 @@ export default function TherapistsPage() {
           <DialogHeader>
             <DialogTitle className="flex items-center gap-2">
               <CalendarOffIcon className="h-5 w-5 text-amber-500" />
-              Cuti &amp; Nonaktif — {leaveModalTherapist?.name}
+              Status Terapis — {leaveModalTherapist?.name}
             </DialogTitle>
           </DialogHeader>
 
           <div className="space-y-5 py-1">
+            {leaveWarning && (
+              <div className="flex items-start gap-2 rounded-lg bg-amber-50 border border-amber-300 px-3 py-2 text-sm text-amber-800">
+                <AlertCircleIcon className="h-4 w-4 shrink-0 mt-0.5" />
+                <span>{leaveWarning}</span>
+              </div>
+            )}
+
             {/* Existing leaves */}
             <div>
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Riwayat Cuti</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Riwayat Status</p>
               {leaveLoading ? (
                 <p className="text-sm text-gray-400 text-center py-4">Memuat...</p>
               ) : leaves.length === 0 ? (
-                <p className="text-sm text-gray-400 text-center py-4">Belum ada riwayat cuti.</p>
+                <p className="text-sm text-gray-400 text-center py-4">Belum ada riwayat Sakit/Izin atau Inaktif.</p>
               ) : (
                 <div className="space-y-2 max-h-48 overflow-y-auto pr-1">
                   {leaves.map((lv) => {
@@ -769,14 +855,14 @@ export default function TherapistsPage() {
                         }`}
                       >
                         <div className="flex-shrink-0 mt-0.5">
-                          {lv.type === 'cuti'
+                          {lv.type === 'sakit_izin'
                             ? <UmbrellaIcon className="h-4 w-4 text-amber-500" />
                             : <BanIcon className="h-4 w-4 text-red-500" />}
                         </div>
                         <div className="flex-1 min-w-0">
                           <div className="flex items-center gap-2">
-                            <span className={`text-xs font-bold ${lv.type === 'cuti' ? 'text-amber-700' : 'text-red-700'}`}>
-                              {lv.type === 'cuti' ? 'Cuti' : 'Nonaktif'}
+                            <span className={`text-xs font-bold ${lv.type === 'sakit_izin' ? 'text-amber-700' : 'text-red-700'}`}>
+                              {lv.type === 'sakit_izin' ? 'Sakit/Izin' : 'Inaktif'}
                             </span>
                             {!isActive && (
                               <span className="text-[10px] text-gray-400 font-medium">Dibatalkan</span>
@@ -790,7 +876,7 @@ export default function TherapistsPage() {
                             onClick={() => handleCancelLeave(lv._id)}
                             disabled={cancellingLeaveId === lv._id}
                             className="flex-shrink-0 text-xs text-red-600 hover:text-red-800 font-medium disabled:opacity-50"
-                            title="Batalkan cuti"
+                            title="Batalkan status ini"
                           >
                             {cancellingLeaveId === lv._id ? '...' : <XIcon className="h-4 w-4" />}
                           </button>
@@ -804,7 +890,7 @@ export default function TherapistsPage() {
 
             {/* Add new leave form */}
             <div className="border-t border-gray-100 pt-4">
-              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Tambah Baru</p>
+              <p className="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-3">Ubah Status</p>
               {leaveFormError && (
                 <div className="flex items-center gap-2 rounded-lg bg-red-50 border border-red-200 px-3 py-2 text-sm text-red-700 mb-3">
                   <AlertCircleIcon className="h-4 w-4 shrink-0" />
@@ -812,26 +898,34 @@ export default function TherapistsPage() {
                 </div>
               )}
               <div className="space-y-3">
-                {/* Type */}
+                {/* Status */}
                 <div>
-                  <label className="text-sm font-medium text-gray-700">Tipe</label>
-                  <div className="flex gap-2 mt-1">
-                    {(['cuti', 'inactive'] as const).map((t) => (
+                  <div className="flex flex-wrap gap-2">
+                    {STATUS_OPTIONS.map((opt) => (
                       <button
-                        key={t}
-                        onClick={() => setLeaveForm(f => ({ ...f, type: t }))}
+                        key={opt.value}
+                        onClick={() => setLeaveForm(f => ({ ...f, type: opt.value }))}
                         className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg border text-sm font-medium transition-colors ${
-                          leaveForm.type === t
-                            ? t === 'cuti' ? 'bg-amber-100 border-amber-400 text-amber-800' : 'bg-red-100 border-red-400 text-red-800'
+                          leaveForm.type === opt.value
+                            ? opt.value === 'active' ? 'bg-green-100 border-green-400 text-green-800'
+                              : opt.value === 'sakit_izin' ? 'bg-amber-100 border-amber-400 text-amber-800'
+                              : 'bg-red-100 border-red-400 text-red-800'
                             : 'bg-white border-gray-200 text-gray-600 hover:bg-gray-50'
                         }`}
                       >
-                        {t === 'cuti' ? <UmbrellaIcon className="h-3.5 w-3.5" /> : <BanIcon className="h-3.5 w-3.5" />}
-                        {t === 'cuti' ? 'Cuti' : 'Nonaktif'}
+                        {opt.value === 'active' ? <PowerIcon className="h-3.5 w-3.5" />
+                          : opt.value === 'sakit_izin' ? <UmbrellaIcon className="h-3.5 w-3.5" />
+                          : <BanIcon className="h-3.5 w-3.5" />}
+                        {opt.label}
                       </button>
                     ))}
                   </div>
+                  <p className="text-xs text-gray-500 mt-1.5">
+                    {STATUS_OPTIONS.find((o) => o.value === leaveForm.type)?.hint}
+                    {leaveForm.type === 'active' && ' Status Sakit/Izin atau Inaktif yang sedang berlaku akan dibatalkan.'}
+                  </p>
                 </div>
+                {leaveForm.type !== 'active' && (<>
                 {/* Date range */}
                 <div className="grid grid-cols-2 gap-3">
                   <div>
@@ -861,10 +955,11 @@ export default function TherapistsPage() {
                     type="text"
                     value={leaveForm.reason}
                     onChange={(e) => setLeaveForm(f => ({ ...f, reason: e.target.value }))}
-                    placeholder="Alasan cuti / nonaktif (opsional)"
+                    placeholder="Alasan sakit / izin / inaktif (opsional)"
                     className="mt-1 w-full border border-gray-300 rounded-lg px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-amber-400"
                   />
                 </div>
+                </>)}
               </div>
             </div>
           </div>
@@ -876,10 +971,12 @@ export default function TherapistsPage() {
             <Button
               className="bg-amber-600 hover:bg-amber-700 text-white"
               onClick={handleCreateLeave}
-              disabled={leaveSubmitting || !leaveForm.startDate}
+              disabled={leaveSubmitting || (leaveForm.type !== 'active' && !leaveForm.startDate)}
             >
-              {leaveSubmitting ? 'Menyimpan...' : (
-                <><PlusIcon className="h-4 w-4 mr-1.5" />Simpan Cuti</>
+              {leaveSubmitting ? 'Menyimpan...' : leaveForm.type === 'active' ? (
+                <><PowerIcon className="h-4 w-4 mr-1.5" />Set Aktif</>
+              ) : (
+                <><PlusIcon className="h-4 w-4 mr-1.5" />Simpan Status</>
               )}
             </Button>
           </DialogFooter>

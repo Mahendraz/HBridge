@@ -1,22 +1,16 @@
 import { NextRequest, NextResponse, after } from 'next/server';
+import { randomUUID } from 'crypto';
 import { withAnyAuth } from '@/lib/middleware/auth';
 import { withErrorHandling } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
 import { Report } from '@/models';
+import type { IReportMediaFile } from '@/models/Report';
 import { uploadToR2, deleteFromR2 } from '@/lib/services/r2-storage';
-import { compressImage, compressVideo } from '@/lib/utils/compress';
+import { transcodeVideoInBackground } from '@/lib/services/video-transcode';
+import { compressImage } from '@/lib/utils/compress';
+import { REPORT_MEDIA_MIME_TYPES, resolveMimeType, mediaKind, getExtension } from '@/lib/utils/media-mime';
 import { canAccessReport } from '@/lib/utils/report-access';
 import mongoose from 'mongoose';
-
-const ALLOWED_MIME_TYPES = new Set([
-  'image/jpeg',
-  'image/png',
-  'image/webp',
-  'image/gif',
-  'video/mp4',
-  'video/webm',
-  'video/quicktime',
-]);
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
 
@@ -26,90 +20,21 @@ function getReportId(req: NextRequest): string {
   return parts[parts.length - 2] ?? '';
 }
 
-function detectFileType(mimeType: string): 'image' | 'video' | 'document' {
-  if (mimeType.startsWith('image/')) return 'image';
-  if (mimeType.startsWith('video/')) return 'video';
-  return 'document';
-}
-
 function sanitizeFileName(name: string): string {
   return name.replace(/[^a-zA-Z0-9._-]/g, '_').substring(0, 100);
 }
 
-/**
- * Runs after the upload response has already been sent (see after() in
- * POST below). Compresses the raw video, uploads the result under a new
- * key, and swaps the report's media entry over to it — identified by the
- * raw file's gcsPath, the same identity DELETE already uses. If ffmpeg is
- * unavailable or compression fails, compressVideo falls back to returning
- * the original buffer untouched (same reference), which is detected here
- * so nothing gets re-uploaded — the entry just flips to 'ready' in place.
- */
-async function compressVideoInBackground(
-  reportId: string,
-  rawDestination: string,
-  rawBuffer: Buffer,
-  mimeType: string,
-  baseName: string
-): Promise<void> {
-  try {
-    const compressed = await compressVideo(rawBuffer, mimeType);
-
-    if (compressed.buffer === rawBuffer) {
-      await connectToDatabase();
-      await Report.updateOne(
-        { _id: reportId, 'mediaFiles.gcsPath': rawDestination },
-        { $set: { 'mediaFiles.$.processingStatus': 'ready' } }
-      );
-      return;
-    }
-
-    const compressedDestination = `reports/${reportId}/${Date.now()}-${baseName}-c.${compressed.ext}`;
-    const compressedKey = await uploadToR2(compressed.buffer, compressedDestination, compressed.mimeType);
-
-    await connectToDatabase();
-
-    if (!compressedKey) {
-      console.error('[media/POST] background compression upload failed, keeping raw video:', rawDestination);
-      await Report.updateOne(
-        { _id: reportId, 'mediaFiles.gcsPath': rawDestination },
-        { $set: { 'mediaFiles.$.processingStatus': 'ready' } }
-      );
-      return;
-    }
-
-    await Report.updateOne(
-      { _id: reportId, 'mediaFiles.gcsPath': rawDestination },
-      {
-        $set: {
-          'mediaFiles.$.gcsPath': compressedDestination,
-          'mediaFiles.$.url': compressedDestination,
-          'mediaFiles.$.mimeType': compressed.mimeType,
-          'mediaFiles.$.size': compressed.buffer.length,
-          'mediaFiles.$.processingStatus': 'ready',
-        },
-      }
-    );
-
-    await deleteFromR2(rawDestination).catch(() => {});
-  } catch (err) {
-    console.error('[media/POST] background video processing failed:', err);
-    try {
-      await connectToDatabase();
-      await Report.updateOne(
-        { _id: reportId, 'mediaFiles.gcsPath': rawDestination },
-        { $set: { 'mediaFiles.$.processingStatus': 'ready' } }
-      );
-    } catch {
-      // best-effort — the entry stays 'processing' if even this fails
-    }
-  }
+// The report form generates the uploadId client-side so it can delete an
+// upload it cancelled while the request was still in flight.
+function sanitizeUploadId(value: FormDataEntryValue | null): string {
+  return typeof value === 'string' && /^[a-zA-Z0-9-]{8,64}$/.test(value) ? value : randomUUID();
 }
 
 /**
  * POST /api/reports/[id]/media
- * Upload a photo or video file to GCS and attach it to the report.
- * FormData: { file: File }
+ * Upload a photo or video file to R2 and attach it to the report.
+ * FormData: { file: File, uploadId?: string }
+ * Responds with the new media entry.
  */
 export const POST = withAnyAuth(
   withErrorHandling(async (req: NextRequest, user: any) => {
@@ -124,7 +49,7 @@ export const POST = withAnyAuth(
 
     await connectToDatabase();
 
-    const report = await Report.findOne({ _id: reportId, isActive: true });
+    const report = await Report.findOne({ _id: reportId, isActive: true }).select('childId therapistId').lean();
     if (!report) {
       return NextResponse.json({ success: false, error: 'Report not found' }, { status: 404 });
     }
@@ -135,6 +60,7 @@ export const POST = withAnyAuth(
 
     const formData = await req.formData();
     const file = formData.get('file') as File | null;
+    const uploadId = sanitizeUploadId(formData.get('uploadId'));
 
     if (!file) {
       return NextResponse.json({ success: false, error: 'No file provided' }, { status: 400 });
@@ -147,27 +73,30 @@ export const POST = withAnyAuth(
       );
     }
 
-    if (!ALLOWED_MIME_TYPES.has(file.type)) {
+    // iOS can send an empty type for camera files — fall back to the extension.
+    const mimeType = resolveMimeType(file.type, file.name);
+    if (!REPORT_MEDIA_MIME_TYPES.has(mimeType)) {
       return NextResponse.json(
-        { success: false, error: `Unsupported file type: ${file.type}` },
+        { success: false, error: `Format file tidak didukung: ${file.type || file.name}` },
         { status: 400 }
       );
     }
 
     const rawBuffer = Buffer.from(await file.arrayBuffer());
-    const fileType  = detectFileType(file.type);
+    const fileType  = mediaKind(mimeType);
     const baseName  = sanitizeFileName(file.name).replace(/\.[^.]+$/, '');
+    const keyPrefix = `reports/${reportId}/${Date.now()}-${baseName}`;
+
+    let entry: IReportMediaFile;
 
     // Video: upload the raw file and respond right away — ffmpeg transcoding
-    // (the actual slow part, previously awaited here and blocking the whole
-    // request for as long as it took) runs in the background afterward and
-    // swaps the media entry over to the compressed version in place. The raw
-    // file is immediately watchable in the meantime.
+    // to H.264 (the slow part, and what makes iPhone HEVC playable outside
+    // Apple devices) runs in the background afterward and swaps the media
+    // entry over to the MP4 in place.
     if (fileType === 'video') {
-      const rawExt = file.name.split('.').pop() ?? 'mp4';
-      const rawDestination = `reports/${reportId}/${Date.now()}-${baseName}.${rawExt}`;
+      const rawDestination = `${keyPrefix}.${getExtension(file.name) || 'mp4'}`;
 
-      const rawKey = await uploadToR2(rawBuffer, rawDestination, file.type);
+      const rawKey = await uploadToR2(rawBuffer, rawDestination, mimeType);
       if (!rawKey) {
         console.error('[media/POST] R2 upload returned null for key:', rawDestination);
         return NextResponse.json(
@@ -176,72 +105,94 @@ export const POST = withAnyAuth(
         );
       }
 
-      report.mediaFiles.push({
+      entry = {
         fileName: file.name,
         fileType: 'video',
         gcsPath: rawDestination,
         url: rawDestination,
-        mimeType: file.type,
+        mimeType,
         size: rawBuffer.length,
         uploadedAt: new Date(),
         processingStatus: 'processing',
-      });
-      await report.save();
-
-      const responseData = report.mediaFiles;
+        uploadId,
+      };
 
       // Scheduled via next/server's after() rather than a bare un-awaited
       // promise so it's guaranteed to run to completion even on a serverless
       // deploy target, not just this app's current long-running Node process.
-      after(() => compressVideoInBackground(reportId, rawDestination, rawBuffer, file.type, baseName));
-
-      return NextResponse.json({ success: true, data: responseData }, { status: 201 });
-    }
-
-    // Image/document — small and fast enough to compress synchronously.
-    let compressed: { buffer: Buffer; mimeType: string; ext: string };
-    if (file.type.startsWith('image/')) {
-      compressed = await compressImage(rawBuffer, file.type);
-    } else {
-      const ext = file.name.split('.').pop() ?? 'bin';
-      compressed = { buffer: rawBuffer, mimeType: file.type, ext };
-    }
-
-    const destination = `reports/${reportId}/${Date.now()}-${baseName}.${compressed.ext}`;
-
-    const key = await uploadToR2(compressed.buffer, destination, compressed.mimeType);
-
-    if (!key) {
-      console.error('[media/POST] R2 upload returned null for key:', destination);
-      return NextResponse.json(
-        { success: false, error: 'Upload to storage failed. Check R2 credentials and bucket name.' },
-        { status: 500 }
+      after(() =>
+        transcodeVideoInBackground({
+          rawKey: rawDestination,
+          rawBuffer,
+          mimeType,
+          keyPrefix,
+          swap: async (result) => {
+            await connectToDatabase();
+            const set = result
+              ? {
+                  'mediaFiles.$.gcsPath': result.key,
+                  'mediaFiles.$.url': result.key,
+                  'mediaFiles.$.mimeType': result.mimeType,
+                  'mediaFiles.$.size': result.size,
+                  'mediaFiles.$.processingStatus': 'ready',
+                }
+              : { 'mediaFiles.$.processingStatus': 'ready' };
+            const res = await Report.updateOne(
+              { _id: reportId, 'mediaFiles.gcsPath': rawDestination },
+              { $set: set }
+            );
+            return res.matchedCount > 0;
+          },
+        })
       );
+    } else {
+      // Image — small and fast enough to compress synchronously. HEIC is
+      // converted here; a HEIC that can't be decoded is rejected.
+      let compressed: { buffer: Buffer; mimeType: string; ext: string };
+      try {
+        compressed = await compressImage(rawBuffer, mimeType);
+      } catch (err) {
+        return NextResponse.json(
+          { success: false, error: err instanceof Error ? err.message : 'Gagal memproses gambar' },
+          { status: 400 }
+        );
+      }
+
+      const destination = `${keyPrefix}.${compressed.ext}`;
+      const key = await uploadToR2(compressed.buffer, destination, compressed.mimeType);
+      if (!key) {
+        console.error('[media/POST] R2 upload returned null for key:', destination);
+        return NextResponse.json(
+          { success: false, error: 'Upload to storage failed. Check R2 credentials and bucket name.' },
+          { status: 500 }
+        );
+      }
+
+      entry = {
+        fileName: file.name,
+        fileType,
+        gcsPath: destination,
+        url: destination, // raw key; signed URL is generated fresh on every GET
+        mimeType: compressed.mimeType,
+        size: compressed.buffer.length,
+        uploadedAt: new Date(),
+        processingStatus: 'ready',
+        uploadId,
+      };
     }
 
-    report.mediaFiles.push({
-      fileName: file.name,
-      fileType,
-      gcsPath: destination,
-      url: destination, // raw key; signed URL is generated fresh on every GET
-      mimeType: compressed.mimeType,
-      size: compressed.buffer.length,
-      uploadedAt: new Date(),
-      processingStatus: 'ready',
-    });
+    // Atomic $push rather than load-modify-save: the form uploads several
+    // files in parallel, and background transcodes update entries at the
+    // same time.
+    await Report.updateOne({ _id: reportId }, { $push: { mediaFiles: entry } });
 
-    await report.save();
-
-    return NextResponse.json({
-      success: true,
-      data: report.mediaFiles,
-    }, { status: 201 });
+    return NextResponse.json({ success: true, data: entry }, { status: 201 });
   })
 );
 
 /**
- * DELETE /api/reports/[id]/media?fileName=...
- * Remove a media file from GCS and from the report.
+ * DELETE /api/reports/[id]/media?uploadId=...   (or legacy ?fileName=<gcsPath>)
+ * Remove a media file from R2 and from the report.
  */
 export const DELETE = withAnyAuth(
   withErrorHandling(async (req: NextRequest, user: any) => {
@@ -254,14 +205,17 @@ export const DELETE = withAnyAuth(
       return NextResponse.json({ success: false, error: 'Invalid report ID' }, { status: 400 });
     }
 
-    const gcsPath = new URL(req.url).searchParams.get('fileName');
-    if (!gcsPath) {
-      return NextResponse.json({ success: false, error: 'fileName query param required' }, { status: 400 });
+    const params = new URL(req.url).searchParams;
+    const uploadId = params.get('uploadId');
+    const gcsPath = params.get('fileName');
+    if (!uploadId && !gcsPath) {
+      return NextResponse.json({ success: false, error: 'uploadId or fileName query param required' }, { status: 400 });
     }
+    const match = uploadId ? { uploadId } : { gcsPath: gcsPath! };
 
     await connectToDatabase();
 
-    const report = await Report.findOne({ _id: reportId, isActive: true });
+    const report = await Report.findOne({ _id: reportId, isActive: true }).select('childId therapistId').lean();
     if (!report) {
       return NextResponse.json({ success: false, error: 'Report not found' }, { status: 404 });
     }
@@ -270,12 +224,21 @@ export const DELETE = withAnyAuth(
       return NextResponse.json({ success: false, error: 'Access denied' }, { status: 403 });
     }
 
-    // Delete from R2 (best-effort, don't fail if already gone)
-    await deleteFromR2(gcsPath);
+    // Pull atomically and read the entry as it was at that instant, so the
+    // R2 key deleted is the current one even if a background transcode
+    // swapped it a moment ago.
+    const before = await Report.findOneAndUpdate(
+      { _id: reportId },
+      { $pull: { mediaFiles: match } },
+      { returnDocument: 'before' }
+    ).lean();
 
-    report.mediaFiles = report.mediaFiles.filter((m) => m.gcsPath !== gcsPath) as any;
-    await report.save();
+    const removed = (before?.mediaFiles ?? []).find((m) =>
+      uploadId ? m.uploadId === uploadId : m.gcsPath === gcsPath
+    );
+    // Best-effort, don't fail if already gone
+    if (removed) await deleteFromR2(removed.gcsPath);
 
-    return NextResponse.json({ success: true, data: report.mediaFiles });
+    return NextResponse.json({ success: true });
   })
 );

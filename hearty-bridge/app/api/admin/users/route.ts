@@ -10,6 +10,7 @@ import {
 } from '@/lib/utils/error-handler';
 import { z } from 'zod';
 import { assignTherapistColor } from '@/lib/utils/therapist-colors';
+import type { JWTPayload } from '@/lib/utils/jwt';
 
 const createUserSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -20,9 +21,11 @@ const createUserSchema = z.object({
   specialization: z.string().optional(),
   clinic: z.string().optional(),
   experience: z.number().optional(),
+  // Therapist birth date (YYYY-MM-DD) — only honored for super_admin.
+  dateOfBirth: z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal lahir harus YYYY-MM-DD').nullable().optional(),
 });
 
-export const POST = withAdminAuth(async (request: NextRequest) => {
+export const POST = withAdminAuth(async (request: NextRequest, user: JWTPayload) => {
   await connectToDatabase();
 
   const body = await request.json();
@@ -32,7 +35,7 @@ export const POST = withAdminAuth(async (request: NextRequest) => {
     return handleValidationError(result.error);
   }
 
-  const { name, email, password, role, phone, specialization, clinic, experience } = result.data;
+  const { name, email, password, role, phone, specialization, clinic, experience, dateOfBirth } = result.data;
 
   const existing = await User.findOne({ email: email.toLowerCase(), isActive: true });
   if (existing) {
@@ -58,6 +61,7 @@ export const POST = withAdminAuth(async (request: NextRequest) => {
       clinic: clinic?.trim(),
       experience,
       color: assignTherapistColor(usedColors),
+      ...(dateOfBirth && user.role === 'super_admin' && { dateOfBirth: new Date(dateOfBirth + 'T00:00:00Z') }),
     };
   }
 

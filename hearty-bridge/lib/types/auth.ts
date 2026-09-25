@@ -58,6 +58,7 @@ export interface User {
     specialization?: string; // for therapists
     clinic?: string; // for therapists
     experience?: number; // for therapists
+    dateOfBirth?: string; // for therapists, ISO date
   };
   mustChangePassword?: boolean;
   isActive: boolean;

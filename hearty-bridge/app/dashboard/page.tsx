@@ -91,6 +91,13 @@ interface BirthdayItem {
   photoUrl: string | null;
 }
 
+interface TherapistBirthdayItem {
+  therapistId: string;
+  name: string;
+  daysUntilBirthday: number;
+  turningAge: number;
+}
+
 interface DashboardData {
   role: string;
   // admin / super_admin
@@ -147,6 +154,7 @@ export default function UnifiedDashboard() {
   const [data, setData] = useState<DashboardData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [birthdays, setBirthdays] = useState<BirthdayItem[]>([]);
+  const [therapistBirthdays, setTherapistBirthdays] = useState<TherapistBirthdayItem[]>([]);
 
   useEffect(() => {
     if (user) {
@@ -184,6 +192,7 @@ export default function UnifiedDashboard() {
       if (!res.ok) return;
       const json = await res.json();
       setBirthdays(json.birthdays ?? []);
+      setTherapistBirthdays(json.therapistBirthdays ?? []);
     } catch {
       // silent fail — birthday widget is non-critical
     }
@@ -225,6 +234,12 @@ export default function UnifiedDashboard() {
       {/* Birthday Reminders */}
       {(role === "admin" || role === "super_admin" || role === "therapist") && birthdays.length > 0 && (
         <BirthdayReminderWidget birthdays={birthdays} />
+      )}
+
+      {/* Therapist birthdays (H-3 s/d hari-H) — super_admin only; the API
+          returns an empty list for every other role. */}
+      {role === "super_admin" && therapistBirthdays.length > 0 && (
+        <TherapistBirthdayWidget birthdays={therapistBirthdays} />
       )}
 
       {/* Stats Cards */}
@@ -319,6 +334,45 @@ function BirthdayReminderWidget({ birthdays }: { birthdays: BirthdayItem[] }) {
             <BirthdayCard key={b.childId} item={b} />
           ))}
         </div>
+      </div>
+    </div>
+  );
+}
+
+function TherapistBirthdayWidget({ birthdays }: { birthdays: TherapistBirthdayItem[] }) {
+  return (
+    <div className="rounded-2xl border border-amber-200 bg-amber-50 shadow-sm overflow-hidden">
+      <div className="p-4 flex items-center gap-3 border-b border-amber-100">
+        <div className="h-9 w-9 rounded-xl bg-amber-100 flex items-center justify-center flex-shrink-0">
+          <CakeIcon className="h-5 w-5 text-amber-600" />
+        </div>
+        <div>
+          <h2 className="text-sm font-semibold text-amber-900">Ulang tahun terapis</h2>
+          <p className="text-xs text-amber-700">{birthdays.length} terapis dalam 3 hari ke depan</p>
+        </div>
+      </div>
+      <div className="p-4 flex flex-wrap gap-2">
+        {birthdays.map((b) => {
+          const isToday = b.daysUntilBirthday === 0;
+          return (
+            <div
+              key={b.therapistId}
+              className={`flex items-center gap-3 px-4 py-3 rounded-xl border ${
+                isToday ? "bg-amber-100 border-amber-300 shadow-sm" : "bg-white border-amber-100"
+              }`}
+            >
+              <div className="w-9 h-9 rounded-full bg-amber-200 flex items-center justify-center flex-shrink-0">
+                <span className="text-sm font-bold text-amber-700">{b.name.charAt(0).toUpperCase()}</span>
+              </div>
+              <div className="min-w-0">
+                <p className="text-sm font-semibold text-gray-900 truncate">{b.name}</p>
+                <p className={`text-xs ${isToday ? "text-amber-800 font-medium" : "text-amber-600"}`}>
+                  {isToday ? "Hari ini 🎉" : `H-${b.daysUntilBirthday}`} · Ulang tahun ke-{b.turningAge}
+                </p>
+              </div>
+            </div>
+          );
+        })}
       </div>
     </div>
   );

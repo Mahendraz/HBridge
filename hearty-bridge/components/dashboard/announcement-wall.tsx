@@ -13,6 +13,8 @@ import {
   DialogFooter,
 } from "@/components/ui/dialog";
 import { BorderBeam } from "@/components/magicui/border-beam";
+import { Lightbox, type LightboxItem } from "@/components/ui/lightbox";
+import { ANNOUNCEMENT_ACCEPT } from "@/lib/utils/media-mime";
 import {
   MegaphoneIcon,
   PlusIcon,
@@ -21,13 +23,31 @@ import {
   PaperclipIcon,
   FileTextIcon,
   XIcon,
+  PlayIcon,
+  Loader2Icon,
 } from "lucide-react";
 
 interface AnnouncementAttachment {
   fileName: string;
-  fileType: "image" | "document";
+  fileType: "image" | "video" | "document";
+  gcsPath?: string;
   url: string;
   mimeType: string;
+  size?: number;
+  processingStatus?: "ready" | "processing";
+}
+
+function toLightboxItems(attachments: AnnouncementAttachment[]): LightboxItem[] {
+  return attachments
+    .filter((att) => att.fileType === "image" || att.fileType === "video")
+    .map((att, i) => ({
+      key: att.gcsPath ?? `${i}-${att.fileName}`,
+      url: att.url,
+      fileName: att.fileName,
+      kind: att.fileType === "video" ? "video" : "image",
+      size: att.size,
+      processing: att.processingStatus === "processing",
+    }));
 }
 
 interface AnnouncementData {
@@ -68,6 +88,7 @@ export function AnnouncementWall() {
   const [removeAttachment, setRemoveAttachment] = useState(false);
   const [saving, setSaving] = useState(false);
   const [saveError, setSaveError] = useState<string | null>(null);
+  const [lightbox, setLightbox] = useState<{ items: LightboxItem[]; index: number } | null>(null);
 
   const token = typeof window !== "undefined" ? localStorage.getItem("token") : null;
 
@@ -206,28 +227,63 @@ export function AnnouncementWall() {
                     <p className="text-sm text-gray-600 mt-1 whitespace-pre-wrap">{a.content}</p>
                     {a.attachments?.length > 0 && (
                       <div className="mt-3 flex flex-wrap gap-2">
-                        {a.attachments.map((att, i) =>
-                          att.fileType === "image" ? (
-                            // eslint-disable-next-line @next/next/no-img-element -- signed R2 URL, not a static/optimizable asset
-                            <img
+                        {a.attachments.map((att, i) => {
+                          if (att.fileType === "document") {
+                            return (
+                              <a
+                                key={i}
+                                href={att.url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 text-xs font-medium text-teal-600 hover:text-teal-800 bg-teal-50 border border-teal-200 rounded-lg px-2.5 py-1.5"
+                              >
+                                <FileTextIcon className="h-3.5 w-3.5" />
+                                {att.fileName}
+                              </a>
+                            );
+                          }
+                          const items = toLightboxItems(a.attachments);
+                          const index = items.findIndex((it) => it.url === att.url);
+                          const open = () => setLightbox({ items, index: Math.max(0, index) });
+                          return att.fileType === "image" ? (
+                            // Tap to enlarge (ORT-4)
+                            <button
                               key={i}
-                              src={att.url}
-                              alt={att.fileName}
-                              className="max-h-64 rounded-lg border border-gray-200 object-cover"
-                            />
-                          ) : (
-                            <a
-                              key={i}
-                              href={att.url}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                              className="inline-flex items-center gap-1.5 text-xs font-medium text-teal-600 hover:text-teal-800 bg-teal-50 border border-teal-200 rounded-lg px-2.5 py-1.5"
+                              type="button"
+                              onClick={open}
+                              className="rounded-lg overflow-hidden border border-gray-200 hover:border-teal-400 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 transition-colors"
+                              title="Klik untuk memperbesar"
                             >
-                              <FileTextIcon className="h-3.5 w-3.5" />
-                              {att.fileName}
-                            </a>
-                          )
-                        )}
+                              {/* eslint-disable-next-line @next/next/no-img-element -- signed R2 URL, not a static/optimizable asset */}
+                              <img
+                                src={att.url}
+                                alt={att.fileName}
+                                className="max-h-64 object-cover cursor-zoom-in"
+                              />
+                            </button>
+                          ) : (
+                            <button
+                              key={i}
+                              type="button"
+                              onClick={open}
+                              className="relative w-56 h-32 rounded-lg overflow-hidden border border-gray-200 bg-gray-900/90 hover:border-teal-400 flex items-center justify-center focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-teal-500 transition-colors"
+                              title="Putar video"
+                            >
+                              <span className="h-11 w-11 rounded-full bg-white/90 flex items-center justify-center shadow">
+                                <PlayIcon className="h-5 w-5 text-gray-800 ml-0.5" />
+                              </span>
+                              <span className="absolute bottom-1 left-2 right-2 text-[10px] text-white/80 truncate text-left">
+                                {att.fileName}
+                              </span>
+                              {att.processingStatus === "processing" && (
+                                <span className="absolute top-1 right-1 flex items-center gap-1 bg-black/60 text-white text-[9px] px-1.5 py-0.5 rounded-full">
+                                  <Loader2Icon className="h-2.5 w-2.5 animate-spin" />
+                                  Memproses
+                                </span>
+                              )}
+                            </button>
+                          );
+                        })}
                       </div>
                     )}
                     <p className="text-xs text-gray-400 mt-2">
@@ -317,12 +373,17 @@ export function AnnouncementWall() {
                   </button>
                 </div>
               ) : (
-                <input
-                  type="file"
-                  accept="image/*,application/pdf"
-                  onChange={(e) => setFile(e.target.files?.[0] ?? null)}
-                  className="w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
-                />
+                <>
+                  <input
+                    type="file"
+                    accept={ANNOUNCEMENT_ACCEPT}
+                    onChange={(e) => setFile(e.target.files?.[0] ?? null)}
+                    className="w-full text-sm text-gray-600 file:mr-3 file:py-1.5 file:px-3 file:rounded-lg file:border-0 file:text-sm file:font-medium file:bg-teal-50 file:text-teal-700 hover:file:bg-teal-100"
+                  />
+                  <p className="text-[11px] text-gray-400 mt-1">
+                    Foto (JPG, PNG, WEBP, GIF, HEIC iPhone), video (MP4, MOV iPhone), atau PDF. Maks. 100 MB.
+                  </p>
+                </>
               )}
             </div>
           </div>
@@ -331,11 +392,19 @@ export function AnnouncementWall() {
               Batal
             </Button>
             <Button onClick={handleSave} disabled={saving}>
-              {saving ? "Menyimpan..." : editingId ? "Simpan Perubahan" : "Terbitkan"}
+              {saving ? (file ? "Mengunggah..." : "Menyimpan...") : editingId ? "Simpan Perubahan" : "Terbitkan"}
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {lightbox && (
+        <Lightbox
+          items={lightbox.items}
+          startIndex={lightbox.index}
+          onClose={() => setLightbox(null)}
+        />
+      )}
     </div>
   );
 }

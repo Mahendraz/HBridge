@@ -3,6 +3,7 @@ import connectToDatabase from '@/lib/db/mongodb';
 import User from '@/models/User';
 import WeeklySchedule from '@/models/WeeklySchedule';
 import TherapistLeave from '@/models/TherapistLeave';
+import { normalizeLeaveType } from '@/lib/utils/therapist-leave';
 import { withAnyAuth } from '@/lib/middleware/auth';
 import {
   withErrorHandling,
@@ -111,7 +112,8 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
       patientsByTherapist.get(tid)!.add(String(slot.patientId));
     }
 
-    // Build leave map: therapistId → leave type ('cuti' | 'inactive') for today
+    // Build leave map: therapistId → leave type ('sakit_izin' | 'inactive') for today.
+    // 'inactive' wins if a therapist somehow has both active at once.
     const todayMidnight = new Date();
     todayMidnight.setHours(0, 0, 0, 0);
     const activeLeaves = await TherapistLeave.find({
@@ -121,7 +123,9 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
     }).select('userId type').lean().catch(() => []);
     const leaveMap = new Map<string, string>();
     for (const lv of activeLeaves as any[]) {
-      leaveMap.set(lv.userId.toString(), lv.type as string);
+      const uid = lv.userId.toString();
+      if (leaveMap.get(uid) === 'inactive') continue;
+      leaveMap.set(uid, normalizeLeaveType(lv.type));
     }
 
     const detectTherapyType = (specializations: string[]): 'OT' | 'TW' | null => {
@@ -141,11 +145,14 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
             : [];
 
         const leaveType = leaveMap.get(tid);
-        const status = leaveType === 'cuti'
-          ? 'on-leave'
+        // active | sick-leave (Sakit/Izin) | inactive (Inaktif leave, or login disabled — see accountActive)
+        const status = !therapist.isActive
+          ? 'inactive'
+          : leaveType === 'sakit_izin'
+          ? 'sick-leave'
           : leaveType === 'inactive'
           ? 'inactive'
-          : therapist.isActive ? 'active' : 'inactive';
+          : 'active';
 
         return {
           _id: therapist._id,
@@ -156,6 +163,10 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
           therapyType: detectTherapyType(specializations),
           status,
           currentLeave: leaveType ?? null,
+          accountActive: therapist.isActive !== false,
+          dateOfBirth: therapist.profile?.dateOfBirth
+            ? new Date(therapist.profile.dateOfBirth).toISOString()
+            : null,
           assignedPatients: assignedPatients,
           maxPatients: 20,
           rating: 4.8,

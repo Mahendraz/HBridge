@@ -211,7 +211,11 @@ R2_ENDPOINT
 R2_ACCESS_KEY_ID
 R2_SECRET_ACCESS_KEY
 R2_BUCKET_NAME
+FFMPEG_PATH            # optional — only if the bundled ffmpeg-static binary can't run (tried first, then `ffmpeg` on PATH)
 ```
+
+Video uploads (report media, announcements) are transcoded to H.264 MP4 by ffmpeg in the
+background; without a working ffmpeg, iPhone HEVC `.mov` files stay unplayable on Chrome/Android.
 
 ## Key Conventions
 

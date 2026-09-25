@@ -5,6 +5,7 @@ import connectToDatabase from '@/lib/db/mongodb';
 import TherapistLeave from '@/models/TherapistLeave';
 import mongoose from 'mongoose';
 import { z } from 'zod';
+import { normalizeLeaveType, getLeaveScheduleWarning } from '@/lib/utils/therapist-leave';
 
 function getLeaveId(req: NextRequest): string {
   const parts = new URL(req.url).pathname.split('/');
@@ -12,7 +13,7 @@ function getLeaveId(req: NextRequest): string {
 }
 
 const updateSchema = z.object({
-  type:      z.enum(['cuti', 'inactive']).optional(),
+  type:      z.enum(['sakit_izin', 'inactive', 'cuti']).transform(normalizeLeaveType).optional(),
   startDate: z.string().optional(),
   endDate:   z.string().nullable().optional(),
   reason:    z.string().max(500).optional(),
@@ -49,7 +50,18 @@ export const PATCH = withSuperAdminAuth(
 
     if (!leave) return ErrorResponse.notFound('Leave record tidak ditemukan');
 
-    return SuccessResponse.ok({ leave });
+    // Type/date changes can put more (or other) slots inside the period.
+    const periodChanged = 'type' in update || 'startDate' in update || 'endDate' in update;
+    const warning = periodChanged && leave.status === 'active' && leave.userRole === 'therapist'
+      ? await getLeaveScheduleWarning(
+          leave.userId.toString(),
+          normalizeLeaveType(leave.type),
+          new Date(leave.startDate),
+          leave.endDate ? new Date(leave.endDate) : null
+        )
+      : null;
+
+    return SuccessResponse.ok({ leave, warning });
   })
 );
 

@@ -2,12 +2,15 @@ import mongoose, { Schema, Document, Model } from 'mongoose';
 
 export interface IAnnouncementAttachment {
   fileName: string;
-  fileType: 'image' | 'document';
+  fileType: 'image' | 'video' | 'document';
   gcsPath: string;
   url: string;
   mimeType: string;
   size: number;
   uploadedAt: Date;
+  // Videos are transcoded to H.264 MP4 in the background after upload (same
+  // flow as report media); 'ready' for every other file type from the start.
+  processingStatus?: 'ready' | 'processing';
 }
 
 export interface IAnnouncement extends Document {
@@ -24,12 +27,13 @@ export interface IAnnouncement extends Document {
 const AnnouncementAttachmentSchema = new Schema<IAnnouncementAttachment>(
   {
     fileName:   { type: String, required: true, trim: true },
-    fileType:   { type: String, enum: ['image', 'document'], required: true },
+    fileType:   { type: String, enum: ['image', 'video', 'document'], required: true },
     gcsPath:    { type: String, required: true },
     url:        { type: String, required: true },
     mimeType:   { type: String, required: true },
     size:       { type: Number, required: true },
     uploadedAt: { type: Date, default: Date.now },
+    processingStatus: { type: String, enum: ['ready', 'processing'], default: 'ready' },
   },
   { _id: false }
 );

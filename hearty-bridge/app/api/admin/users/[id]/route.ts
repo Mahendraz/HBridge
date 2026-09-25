@@ -13,6 +13,7 @@ const updateUserSchema = z.object({
   isActive: z.boolean().optional(),
   color: z.union([z.string().regex(/^#[0-9A-Fa-f]{6}$/, 'Warna harus format hex, cth. #14b8a6'), z.null()]).optional(),
   address: z.string().max(500, 'Alamat maksimal 500 karakter').optional(),
+  dateOfBirth: z.union([z.string().regex(/^\d{4}-\d{2}-\d{2}$/, 'Format tanggal lahir harus YYYY-MM-DD'), z.null()]).optional(),
 });
 
 export const PATCH = withAdminAuth(async (request: NextRequest, user: any) => {
@@ -32,7 +33,7 @@ export const PATCH = withAdminAuth(async (request: NextRequest, user: any) => {
     return ErrorResponse.notFound('User');
   }
 
-  const { name, email, phone, specialization, isActive, color, address } = result.data;
+  const { name, email, phone, specialization, isActive, color, address, dateOfBirth } = result.data;
 
   if (name) targetUser.name = name.trim();
   if (email) {
@@ -59,6 +60,15 @@ export const PATCH = withAdminAuth(async (request: NextRequest, user: any) => {
   if (color !== undefined && targetUser.role === 'therapist') {
     if (!targetUser.profile) targetUser.profile = {};
     targetUser.profile.color = color ?? undefined;
+    targetUser.markModified('profile');
+  }
+  // Therapist birth date — super_admin only (drives their birthday reminder).
+  if (dateOfBirth !== undefined && targetUser.role === 'therapist') {
+    if (user.role !== 'super_admin') {
+      return ErrorResponse.forbidden('Hanya Super Admin yang dapat mengubah tanggal lahir terapis');
+    }
+    if (!targetUser.profile) targetUser.profile = {};
+    targetUser.profile.dateOfBirth = dateOfBirth ? new Date(dateOfBirth + 'T00:00:00Z') : undefined;
     targetUser.markModified('profile');
   }
   if (address !== undefined && targetUser.role === 'parent') {

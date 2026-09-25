@@ -12,6 +12,10 @@ export interface IReportMediaFile {
   // then runs in the background and swaps gcsPath/url/mimeType/size in place
   // when done. 'ready' for every other file type from the start.
   processingStatus: 'ready' | 'processing';
+  // Stable identity for uploads made from the report form. gcsPath changes
+  // when a video's transcoded copy replaces the raw file, so the form deletes
+  // by uploadId instead. Absent on entries uploaded before this existed.
+  uploadId?: string;
 }
 
 export interface IReportSeenBy {
@@ -62,6 +66,7 @@ const ReportMediaFileSchema = new Schema<IReportMediaFile>(
     size:       { type: Number, required: true },
     uploadedAt: { type: Date, default: Date.now },
     processingStatus: { type: String, enum: ['ready', 'processing'], default: 'ready' },
+    uploadId:   { type: String },
   },
   { _id: false }
 );

@@ -1,0 +1,30 @@
+Tambahan ortu:
+- Halaman dashboard sisa terapi, harus ada penjelasan terapi okupasi/wicara. Karena 1 anak, 2 program, ga keliatan sisanya siapa
+- ⁠jadwal hari ini dan mendatang harus ada detil nama terapinya (tw/ot) 
+- ⁠kalau ada yg kasbon/utang paket (udh jalan tp blm d bayar), sesi harus terhitung minus
+- ⁠foto di dashboard pengumuman ga bisa d buka
+- ⁠jadwal janji temu ortu (tampilan hp) gabisa scroll jam. Mentok sampai jam 16.00
+- ⁠sinkronkan sisa sesi dan riwayat / sisa paket atau sesi
+- ⁠bikinin riwayat pembelian (termasuk yg lunas masuk ke riwayat lgsg) jadi invoice hanya pop up paling atas yg blm lunas
+
+Tambahan Super Admin :
+- Cttan di pengumuman Format pngumumannya kalo bisa agak beragam, ada bbrpa fromat selain png dan jpg yg ga bisa masuk
+- Nambah pasien baru yang 2 sesi terapi, kalo bisa 2 2 nya otomatis
+- Ulang tahun terapis juga kalo bisa ada reminder di super admin
+- Kyknya bole di tambahin tiap anak bisa di cek riwayat pembayarannya, ada filter serch dari nama
+
+Terapis
+1. Upload video masih cukup membutuhkan waktu yang cukup lama, kalau video yang di-upload banyak.
+2. Video yang di-upload belum bisa dilihat.
+3. Video yang direkam langsung dari fitur di web bisa di-upload, kalau dari kamera HP dengan waktu yang sama gagal.
+
+Admin
+
+1. Perubahan Jadwal – Menambahkan opsi untuk mengubah jadwal tetap maupun tidak tetap.
+2. Edit Invoice – Menambahkan fitur edit invoice untuk semua jenis layanan/paket.
+3. Hapus Akun – Menambahkan opsi untuk menghapus akun.
+4. Status Terapis – Menambahkan status Aktif, Inaktif, dan On Hold.
+5. Perubahan Jadwal – Memungkinkan pemindahan jadwal ke minggu sebelumnya atau minggu berikutnya.
+6. Profil Anak – Menampilkan nama-nama terapis pada profil anak.
+7. List Komentar – Menampilkan komentar terbaru di bagian paling atas.
+8. Asesmen → Absensi – Mengubah menu “Asesmen Hearty Bridge” menjadi “Absensi”.

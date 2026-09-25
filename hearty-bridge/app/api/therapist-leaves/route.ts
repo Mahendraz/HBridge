@@ -6,10 +6,12 @@ import TherapistLeave from '@/models/TherapistLeave';
 import User from '@/models/User';
 import mongoose from 'mongoose';
 import { z } from 'zod';
+import { normalizeLeaveType, getLeaveScheduleWarning } from '@/lib/utils/therapist-leave';
 
 const createSchema = z.object({
   userId:    z.string().min(1),
-  type:      z.enum(['cuti', 'inactive']),
+  // 'cuti' is the legacy name of 'sakit_izin' — still accepted, stored as 'sakit_izin'.
+  type:      z.enum(['sakit_izin', 'inactive', 'cuti']).transform(normalizeLeaveType),
   startDate: z.string().min(1),
   endDate:   z.string().nullable().optional(),
   reason:    z.string().max(500).optional(),
@@ -59,9 +61,11 @@ export const GET = withAnyAuth(
       if (andClauses.length > 0) query.$and = andClauses;
     }
 
-    const leaves = await TherapistLeave.find(query)
+    const rawLeaves = await TherapistLeave.find(query)
       .sort({ startDate: -1 })
       .lean();
+    // Legacy 'cuti' records are reported as 'sakit_izin' so clients only see the two current types.
+    const leaves = rawLeaves.map((lv) => ({ ...lv, type: normalizeLeaveType(lv.type) }));
 
     return SuccessResponse.ok({ leaves });
   })
@@ -96,19 +100,27 @@ export const POST = withSuperAdminAuth(
       return ErrorResponse.notFound('Terapis atau Admin tidak ditemukan');
     }
 
+    const start = new Date(startDate + 'T00:00:00Z');
+    const end   = endDate ? new Date(endDate + 'T23:59:59Z') : null;
+
     const leave = await TherapistLeave.create({
       userId:       new mongoose.Types.ObjectId(userId),
       userName:     (targetUser as any).name as string,
       userRole:     (targetUser as any).role as 'therapist' | 'admin',
       type,
-      startDate:    new Date(startDate + 'T00:00:00Z'),
-      endDate:      endDate ? new Date(endDate + 'T23:59:59Z') : null,
+      startDate:    start,
+      endDate:      end,
       reason:       reason ?? '',
       status:       'active',
       createdBy:    new mongoose.Types.ObjectId(user.userId),
       createdByName: user.name || '',
     });
 
-    return SuccessResponse.created({ leave });
+    // Existing slots are not moved — the admin gets a warning to reassign them.
+    const warning = (targetUser as { role?: string }).role === 'therapist'
+      ? await getLeaveScheduleWarning(userId, type, start, end)
+      : null;
+
+    return SuccessResponse.created({ leave, warning });
   })
 );

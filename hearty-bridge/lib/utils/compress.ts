@@ -46,26 +46,76 @@ function verifyFfmpegRuns(ffmpegPath: string): Promise<void> {
   });
 }
 
+/**
+ * Candidates in priority order: an explicit FFMPEG_PATH, the bundled
+ * ffmpeg-static binary, then whatever `ffmpeg` is on PATH. The bundled binary
+ * is the one known to be broken on some Windows setups (see above), and when
+ * it was the only option every video — including iPhone HEVC .mov files that
+ * Chrome/Android can't play — silently stayed in its original format.
+ */
+async function resolveFfmpegPath(): Promise<string | null> {
+  const candidates: string[] = [];
+  if (process.env.FFMPEG_PATH) candidates.push(process.env.FFMPEG_PATH);
+  try {
+    const staticPath = (await import('ffmpeg-static')).default;
+    if (staticPath) candidates.push(staticPath);
+  } catch {
+    // package missing — fine, try the next candidate
+  }
+  candidates.push('ffmpeg');
+
+  for (const candidate of candidates) {
+    try {
+      await verifyFfmpegRuns(candidate);
+      return candidate;
+    } catch (err) {
+      console.warn(`[compress] ffmpeg candidate "${candidate}" failed to run:`, err instanceof Error ? err.message : err);
+    }
+  }
+  return null;
+}
+
+// Resolved once per process — probing spawns a child, no need to repeat it
+// for every upload.
+let ffmpegPathPromise: Promise<string | null> | null = null;
+
 async function loadFfmpeg() {
   try {
-    const [ffmpegMod, staticMod] = await Promise.all([
-      import('fluent-ffmpeg'),
-      import('ffmpeg-static'),
-    ]);
-    const ffmpeg = ffmpegMod.default;
-    const ffmpegPath = staticMod.default;
-    if (!ffmpegPath) return null;
-    await verifyFfmpegRuns(ffmpegPath);
+    ffmpegPathPromise ??= resolveFfmpegPath();
+    const ffmpegPath = await ffmpegPathPromise;
+    if (!ffmpegPath) {
+      console.warn('[compress] no working ffmpeg binary found, falling back to original');
+      return null;
+    }
+    const ffmpeg = (await import('fluent-ffmpeg')).default;
     ffmpeg.setFfmpegPath(ffmpegPath);
     return ffmpeg;
   } catch (err) {
-    console.warn('[compress] ffmpeg binary present but failed to run, falling back to original:', err instanceof Error ? err.message : err);
+    console.warn('[compress] ffmpeg failed to load, falling back to original:', err instanceof Error ? err.message : err);
+    return null;
+  }
+}
+
+/**
+ * HEIC/HEIF (iPhone photos) → JPEG. The prebuilt sharp binary ships libheif
+ * without an HEVC decoder (AVIF only), so heic-convert's WASM decoder does
+ * the decoding. Returns null when conversion fails.
+ */
+async function heicToJpeg(buffer: Buffer): Promise<Buffer | null> {
+  try {
+    const convert = (await import('heic-convert')).default;
+    const jpeg = await convert({ buffer, format: 'JPEG', quality: 0.9 });
+    return Buffer.from(jpeg);
+  } catch (err) {
+    console.warn('[compress] HEIC conversion failed:', err instanceof Error ? err.message : err);
     return null;
   }
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Image — convert to WebP, quality 82, max 2048px, strip private metadata
+// Image — convert to WebP, quality 82, max 2048px, strip private metadata.
+// HEIC is decoded to JPEG first; if that fails the upload is rejected by
+// throwing, since an unconverted HEIC can't be shown outside Apple devices.
 // ─────────────────────────────────────────────────────────────────────────────
 export async function compressImage(
   buffer: Buffer,
@@ -77,6 +127,13 @@ export async function compressImage(
     'image/webp': 'webp',
     'image/gif': 'gif',
   };
+
+  if (mimeType === 'image/heic' || mimeType === 'image/heif') {
+    const jpeg = await heicToJpeg(buffer);
+    if (!jpeg) throw new Error('Foto HEIC tidak bisa dikonversi. Coba ekspor sebagai JPG.');
+    buffer = jpeg;
+    mimeType = 'image/jpeg';
+  }
 
   const sharp = await loadSharp();
   if (!sharp) {
@@ -104,7 +161,8 @@ export async function compressImage(
 }
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Video — H.264 MP4, CRF 28, max 720p, AAC 128k, web-optimised moov atom
+// Video — H.264 MP4, CRF 28, max 720p, AAC 128k, web-optimised moov atom.
+// This is also what makes iPhone HEVC .mov files playable on Chrome/Android.
 // ─────────────────────────────────────────────────────────────────────────────
 export async function compressVideo(
   buffer: Buffer,
@@ -114,6 +172,7 @@ export async function compressVideo(
     'video/mp4': 'mp4',
     'video/webm': 'webm',
     'video/quicktime': 'mov',
+    'video/3gpp': '3gp',
   };
   const inExt = extMap[mimeType] ?? 'mp4';
 
@@ -131,6 +190,10 @@ export async function compressVideo(
 
     await new Promise<void>((resolve, reject) => {
       ffmpeg(inPath)
+        // First video + first audio track only — iPhone .mov files also carry
+        // metadata/timecode tracks that MP4 can't hold.
+        .outputOptions('-map', '0:v:0')
+        .outputOptions('-map', '0:a:0?')
         .outputOptions('-vf', "scale='if(gt(iw,1280),1280,iw)':-2")
         .outputOptions('-c:v', 'libx264')
         .outputOptions('-crf', '28')
