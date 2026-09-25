@@ -226,7 +226,11 @@ export function proxy(request: NextRequest) {
     "default-src 'self'",
     "script-src 'self' 'unsafe-inline' 'unsafe-eval'",
     "style-src 'self' 'unsafe-inline'",
-    "img-src 'self' data: https:",
+    // blob: = local previews of picked files before/while they upload
+    "img-src 'self' data: blob: https:",
+    // Report/announcement videos play inline from signed R2 URLs; without
+    // this, media falls back to default-src 'self' and the browser refuses them
+    "media-src 'self' blob: https://*.r2.cloudflarestorage.com",
     "font-src 'self' data:",
     "connect-src 'self'",
     "frame-ancestors 'none'"
