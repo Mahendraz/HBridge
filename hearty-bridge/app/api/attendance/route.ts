@@ -46,9 +46,14 @@ export const GET = withAnyAuth(
       });
     }
 
-    // Return all staff attendance for the given date
+    // Return all staff attendance for the given date. Where a colleague was
+    // when they checked in (GPS) is for admins only.
+    const isAdmin = user.role === 'admin' || user.role === 'super_admin';
     const [records, allStaff] = await Promise.all([
-      Attendance.find({ date: dateParam }).sort({ checkInAt: 1 }).lean(),
+      Attendance.find({ date: dateParam })
+        .select(isAdmin ? '' : '-checkInLocation')
+        .sort({ checkInAt: 1 })
+        .lean(),
       User.find({ role: { $in: ['admin', 'therapist'] }, isActive: true })
         .select('_id name role')
         .lean(),

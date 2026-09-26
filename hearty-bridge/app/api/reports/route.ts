@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAnyAuth } from '@/lib/middleware/auth';
 import { withErrorHandling } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
-import { Report, Child } from '@/models';
+import { Report, Child, User } from '@/models';
 import ReportComment from '@/models/ReportComment';
 import mongoose from 'mongoose';
 import { getR2SignedUrl } from '@/lib/services/r2-storage';
@@ -39,8 +39,9 @@ export const GET = withAnyAuth(
     await connectToDatabase();
 
     const url = new URL(req.url);
-    const page  = Math.max(1, parseInt(url.searchParams.get('page')  || '1'));
-    const limit = Math.min(100, parseInt(url.searchParams.get('limit') || '50'));
+    // `|| default` also catches NaN; limit=0 would mean "no limit" to Mongo.
+    const page  = Math.max(1, parseInt(url.searchParams.get('page')  || '1', 10) || 1);
+    const limit = Math.min(100, Math.max(1, parseInt(url.searchParams.get('limit') || '50', 10) || 50));
     const skip  = (page - 1) * limit;
     const sessionDateFrom = url.searchParams.get('sessionDateFrom');
     const sessionDateTo   = url.searchParams.get('sessionDateTo');
@@ -163,9 +164,7 @@ export const POST = withAnyAuth(
       type,
       status,
       childId,
-      childName,
       therapistId,
-      therapistName,
       dueDate,
       sessionDate,
       sessionHour,
@@ -177,6 +176,10 @@ export const POST = withAnyAuth(
         { success: false, error: 'title and childId are required' },
         { status: 400 }
       );
+    }
+
+    if (typeof childId !== 'string' || !mongoose.isValidObjectId(childId)) {
+      return NextResponse.json({ success: false, error: 'Invalid child ID' }, { status: 400 });
     }
 
     // Therapist can only create reports for children in their schedule
@@ -195,6 +198,27 @@ export const POST = withAnyAuth(
       }
     }
 
+    const child = await Child.findOne({ _id: childId, isActive: true }).select('name').lean();
+    if (!child) {
+      return NextResponse.json({ success: false, error: 'Child not found' }, { status: 404 });
+    }
+
+    // Authorship is the caller for therapists — a report can't be signed with
+    // a colleague's name. Admins may file one for a therapist, who must exist.
+    let authorId = user.userId as string;
+    let authorName = user.name || '';
+    if (user.role !== 'therapist' && therapistId) {
+      if (typeof therapistId !== 'string' || !mongoose.isValidObjectId(therapistId)) {
+        return NextResponse.json({ success: false, error: 'Invalid therapist ID' }, { status: 400 });
+      }
+      const therapist = await User.findOne({ _id: therapistId, role: 'therapist', isActive: true }).select('name').lean();
+      if (!therapist) {
+        return NextResponse.json({ success: false, error: 'Therapist not found' }, { status: 400 });
+      }
+      authorId = therapistId;
+      authorName = (therapist as any).name || '';
+    }
+
     const report = new Report({
       title: title.trim(),
       description: description?.trim() || '',
@@ -202,9 +226,9 @@ export const POST = withAnyAuth(
       type: (type === 'assessment' ? 'assessment' : type === 'hero_bridge' ? 'hero_bridge' : 'progress'),
       status: status || 'draft',
       childId: new mongoose.Types.ObjectId(childId),
-      childName: childName?.trim() || '',
-      therapistId: new mongoose.Types.ObjectId(therapistId || user.userId),
-      therapistName: therapistName?.trim() || user.name || '',
+      childName: (child as any).name || '',
+      therapistId: new mongoose.Types.ObjectId(authorId),
+      therapistName: authorName,
       dueDate: dueDate ? new Date(dueDate) : undefined,
       sessionDate: sessionDate ? new Date(sessionDate + 'T00:00:00.000Z') : undefined,
       sessionHour: sessionHour ?? undefined,

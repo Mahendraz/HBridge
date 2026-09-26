@@ -31,8 +31,8 @@ export const GET = withAnyAuth(
     if (!invoice) return ErrorResponse.notFound('Invoice');
 
     if (user.role === 'parent') {
-      if ((invoice as any).parentId?.toString() !== user.userId) return ErrorResponse.forbidden();
-    } else if (!['admin', 'super_admin', 'therapist'].includes(user.role)) {
+      if ((invoice as any).parentId?.toString() !== user.userId || (invoice as any).isVisibleToParent === false) return ErrorResponse.forbidden();
+    } else if (!['admin', 'super_admin'].includes(user.role)) {
       return ErrorResponse.forbidden();
     }
 

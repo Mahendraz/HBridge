@@ -11,6 +11,11 @@ import WeeklySchedule from '@/models/WeeklySchedule';
 import Assessment from '@/models/Assessment';
 import mongoose from 'mongoose';
 import { getSessionBalances, emptySessionBalance } from '@/lib/utils/session-balance';
+import { therapistHasChild } from '@/lib/utils/therapist-access';
+
+// Pricing and who sold the package are admin bookkeeping. Parents see the
+// price on the invoice once it is released to them; therapists never need it.
+const ADMIN_ONLY_TX_FIELDS = ['originalPrice', 'discountAmount', 'finalPrice', 'adminId', 'adminName'];
 
 function getChildId(req: NextRequest): string {
   const parts = new URL(req.url).pathname.split('/');
@@ -42,6 +47,10 @@ export const GET = withAnyAuth(
       if (!fullChild || (fullChild as any).parentId?.toString() !== user.userId) {
         return ErrorResponse.forbidden();
       }
+    }
+
+    if (user.role === 'therapist' && !(await therapistHasChild(user.userId, childId))) {
+      return ErrorResponse.forbidden();
     }
 
     const transactions = await TokenTransaction.find({ childId: new mongoose.Types.ObjectId(childId) })
@@ -94,7 +103,16 @@ export const GET = withAnyAuth(
     // remainingSessions = sessions not yet placed on the calendar (scheduling
     // eligibility, used by the schedule page). sessionBalance = sisa sesi as
     // shown to parent/admin, which can be negative for an unpaid package.
-    const transactionsWithRemaining = transactions.map((t: any) => {
+    const isAdmin = user.role === 'admin' || user.role === 'super_admin';
+    const visibleTransactions = isAdmin
+      ? transactions
+      : transactions.map((t: any) => {
+          const copy = { ...t };
+          for (const field of ADMIN_ONLY_TX_FIELDS) delete copy[field];
+          return copy;
+        });
+
+    const transactionsWithRemaining = visibleTransactions.map((t: any) => {
       if (t.type === 'topup') {
         const txIdStr = t._id.toString();
         if (t.therapyType === 'assessment') {

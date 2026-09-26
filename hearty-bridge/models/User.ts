@@ -28,6 +28,10 @@ export interface IUser extends Document {
   emailVerified?: boolean;
   lastLogin?: Date;
   mustChangePassword: boolean;
+  // Bumped whenever existing sessions must stop working (password change or
+  // reset). Every access token carries the version it was issued with as `tv`;
+  // withAuth rejects tokens whose `tv` no longer matches.
+  tokenVersion: number;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -134,6 +138,10 @@ const UserSchema = new Schema<IUser>({
     type: Boolean,
     default: false
   },
+  tokenVersion: {
+    type: Number,
+    default: 0
+  },
   isActive: {
     type: Boolean,
     default: true
@@ -170,6 +178,7 @@ UserSchema.methods.comparePassword = async function(candidatePassword: string): 
 UserSchema.methods.toSafeObject = function() {
   const userObject = this.toObject();
   delete userObject.password;
+  delete userObject.tokenVersion;
   return userObject;
 };
 

@@ -532,7 +532,15 @@ export const GET = withAnyAuth(
       });
     }
 
-    const combined = [...activeSlots, ...standaloneSlots];
+    let combined = [...activeSlots, ...standaloneSlots];
+
+    // Therapists see the whole clinic grid so they can coordinate, but the
+    // clinical fields of a colleague's patient stay with that colleague.
+    if (user.role === 'therapist') {
+      combined = combined.map((slot: any) =>
+        slot.therapistId?.toString() === user.userId ? slot : { ...slot, diagnosis: '', notes: '' }
+      );
+    }
 
     return NextResponse.json({ success: true, data: combined });
   })

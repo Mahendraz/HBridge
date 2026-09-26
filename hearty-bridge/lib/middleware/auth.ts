@@ -19,6 +19,9 @@ export type UnauthenticatedHandler = (
   request: NextRequest
 ) => Promise<NextResponse> | NextResponse;
 
+// Routes a user with mustChangePassword may still call.
+const PASSWORD_CHANGE_ALLOWED_PATHS = new Set(['/api/auth/me', '/api/auth/change-password']);
+
 // Interface for middleware options
 export interface AuthMiddlewareOptions {
   requireActive?: boolean;
@@ -50,24 +53,12 @@ export function withAuth(
         );
       }
 
-      // Check if user has any of the allowed roles
-      if (options.allowedRoles && !hasAnyRole(user, options.allowedRoles)) {
-        return NextResponse.json(
-          { 
-            success: false,
-            error: 'Insufficient permissions',
-            code: 'INSUFFICIENT_PERMISSIONS'
-          },
-          { status: 403 }
-        );
-      }
-
       // Optional database verification
       if (options.checkDatabase || options.requireActive) {
         await connectToDatabase();
-        
-        const dbUser = await User.findById(user.userId).select('isActive email role');
-        
+
+        const dbUser = await User.findById(user.userId).select('isActive email role tokenVersion mustChangePassword');
+
         if (!dbUser) {
           return NextResponse.json(
             { 
@@ -90,9 +81,49 @@ export function withAuth(
           );
         }
 
+        // A password change/reset bumps tokenVersion, which kills every token
+        // issued before it — including one that was stolen.
+        if ((user.tv ?? 0) !== (dbUser.tokenVersion ?? 0)) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'Session is no longer valid. Please log in again.',
+              code: 'TOKEN_REVOKED'
+            },
+            { status: 401 }
+          );
+        }
+
         // Update user data from database if checking
         user.email = dbUser.email;
         user.role = dbUser.role;
+
+        // Until a temporary password is replaced, the account may only read
+        // its own profile and change the password — enforced here, not just
+        // by the client-side AuthGuard redirect.
+        if (dbUser.mustChangePassword && !PASSWORD_CHANGE_ALLOWED_PATHS.has(request.nextUrl.pathname)) {
+          return NextResponse.json(
+            {
+              success: false,
+              error: 'Password change required',
+              code: 'PASSWORD_CHANGE_REQUIRED'
+            },
+            { status: 403 }
+          );
+        }
+      }
+
+      // Role gate runs on the role from the database when it was loaded, so a
+      // demoted user's still-valid token no longer carries the old role.
+      if (options.allowedRoles && !hasAnyRole(user, options.allowedRoles)) {
+        return NextResponse.json(
+          {
+            success: false,
+            error: 'Insufficient permissions',
+            code: 'INSUFFICIENT_PERMISSIONS'
+          },
+          { status: 403 }
+        );
       }
 
       // Call the actual handler
@@ -274,12 +305,58 @@ export interface IpRateLimitOptions {
 
 const ipRateLimitStore = new Map<string, { count: number; resetTime: number }>();
 
+// Number of reverse proxies in front of the app that append to
+// X-Forwarded-For (1 = a single nginx/Vercel/Cloudflare hop).
+const TRUSTED_PROXY_HOPS = Math.max(1, parseInt(process.env.TRUSTED_PROXY_HOPS || '1', 10) || 1);
+
 function getClientIp(request: NextRequest): string {
+  // The client can put anything at the front of X-Forwarded-For, so the
+  // leftmost entry can't be trusted. Each trusted proxy appends the address it
+  // saw, so the client's real IP is TRUSTED_PROXY_HOPS entries from the right.
   const forwardedFor = request.headers.get('x-forwarded-for');
-  if (forwardedFor) return forwardedFor.split(',')[0].trim();
+  if (forwardedFor) {
+    const hops = forwardedFor.split(',').map((ip) => ip.trim()).filter(Boolean);
+    const ip = hops[Math.max(0, hops.length - TRUSTED_PROXY_HOPS)];
+    if (ip) return ip;
+  }
   const realIp = request.headers.get('x-real-ip');
   if (realIp) return realIp;
   return 'unknown';
+}
+
+/**
+ * Failed-attempt counter keyed by something other than IP (e.g. the login
+ * email), so brute-forcing one account is capped even when the attacker
+ * rotates or spoofs IPs. In-memory: per server instance, like the limiters above.
+ */
+export function createFailureLimiter(options: { windowMs: number; maxFailures: number }) {
+  const store = new Map<string, { count: number; resetTime: number }>();
+
+  return {
+    /** Seconds until the key may try again, or 0 when not blocked. */
+    blockedFor(key: string): number {
+      const record = store.get(key);
+      if (!record) return 0;
+      const now = Date.now();
+      if (now > record.resetTime) {
+        store.delete(key);
+        return 0;
+      }
+      return record.count >= options.maxFailures ? Math.ceil((record.resetTime - now) / 1000) : 0;
+    },
+    recordFailure(key: string): void {
+      const now = Date.now();
+      const record = store.get(key);
+      if (!record || now > record.resetTime) {
+        store.set(key, { count: 1, resetTime: now + options.windowMs });
+      } else {
+        record.count++;
+      }
+    },
+    reset(key: string): void {
+      store.delete(key);
+    },
+  };
 }
 
 export function withIpRateLimit(options: IpRateLimitOptions) {

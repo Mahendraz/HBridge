@@ -72,7 +72,9 @@ export const PUT = withAnyAuth(
     }
 
     const body = await req.json();
-    const allowed = ['title', 'description', 'content', 'type', 'status', 'dueDate', 'tags', 'childName', 'therapistName'];
+    // childName / therapistName are derived from the Child and author records
+    // at creation, not editable free text (they drive the parent UI and PDF).
+    const allowed = ['title', 'description', 'content', 'type', 'status', 'dueDate', 'tags'];
     const wasCompleted = report.status === 'completed';
 
     for (const key of allowed) {

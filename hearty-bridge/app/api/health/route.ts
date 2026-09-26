@@ -4,12 +4,11 @@ import { createHealthCheck, withErrorHandling, SuccessResponse } from '@/lib/uti
 
 export const GET = withErrorHandling(async (request: NextRequest) => {
   // Basic health check
+  // Public, unauthenticated: report only whether each part is healthy — no
+  // version, environment, uptime, memory figures or env var names.
   const health = {
     status: 'healthy',
     service: 'hearty-bridge-api',
-    version: process.env.npm_package_version || '1.0.0',
-    environment: process.env.NODE_ENV || 'development',
-    uptime: process.uptime(),
     timestamp: new Date().toISOString(),
     checks: {
       database: 'unknown',
@@ -59,11 +58,13 @@ export const GET = withErrorHandling(async (request: NextRequest) => {
   const statusCode = health.status === 'healthy' ? 200 : 
                      health.status === 'degraded' ? 200 : 503;
 
+  if (missingEnvVars.length > 0) {
+    console.error('[health] missing env vars:', missingEnvVars.join(', '));
+  }
+
   return NextResponse.json({
     success: health.status !== 'unhealthy',
     ...health,
-    memory: memUsageMB,
-    missingEnvVars: missingEnvVars.length > 0 ? missingEnvVars : undefined
   }, { status: statusCode });
 });
 

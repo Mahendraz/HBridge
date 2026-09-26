@@ -15,17 +15,26 @@ import { AuthGuard } from "@/components/auth/auth-guard";
 import { BorderBeam } from "@/components/magicui/border-beam";
 import { ShimmerButton } from "@/components/magicui/shimmer-button";
 
+// Mirrors the server rules in /api/auth/change-password (commonValidations.password).
 const changePasswordSchema = z.object({
-  newPassword: z.string().min(8, "Password harus minimal 8 karakter"),
+  currentPassword: z.string().min(1, "Password saat ini wajib diisi"),
+  newPassword: z.string()
+    .min(8, "Password harus minimal 8 karakter")
+    .max(128, "Password maksimal 128 karakter")
+    .regex(/^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[@$!%*?&])/, "Password harus mengandung huruf kecil, huruf besar, angka, dan simbol (@$!%*?&)"),
   confirmPassword: z.string(),
 }).refine((data) => data.newPassword === data.confirmPassword, {
   message: "Password tidak cocok",
   path: ["confirmPassword"],
+}).refine((data) => data.newPassword !== data.currentPassword, {
+  message: "Password baru harus berbeda dari password saat ini",
+  path: ["newPassword"],
 });
 
 type ChangePasswordFormData = z.infer<typeof changePasswordSchema>;
 
 export default function ChangePasswordPage() {
+  const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -54,6 +63,7 @@ export default function ChangePasswordPage() {
           "Authorization": `Bearer ${token}`,
         },
         body: JSON.stringify({
+          currentPassword: data.currentPassword,
           newPassword: data.newPassword,
           confirmPassword: data.confirmPassword,
         }),
@@ -62,11 +72,15 @@ export default function ChangePasswordPage() {
       const result = await response.json();
 
       if (response.ok && result.success) {
+        // Changing the password revokes every earlier token, this one included;
+        // the server hands back a replacement for this session.
+        if (result.token) localStorage.setItem("token", result.token);
         // Re-fetch user from server to get updated mustChangePassword: false
         await refreshUser();
         router.replace("/dashboard");
       } else {
-        setError(result.error || result.message || "Gagal mengubah password");
+        const detail = Array.isArray(result.details) ? result.details[0]?.message : undefined;
+        setError(detail || result.error || result.message || "Gagal mengubah password");
       }
     } catch {
       setError("Terjadi kesalahan. Silakan coba lagi.");
@@ -125,6 +139,32 @@ export default function ChangePasswordPage() {
                     onDismiss={() => setError(null)}
                   />
                 )}
+
+                {/* Current Password */}
+                <div className="space-y-1">
+                  <label className="text-sm font-medium text-gray-700">Password Saat Ini</label>
+                  <div className="relative">
+                    <Input
+                      {...register("currentPassword")}
+                      type={showCurrentPassword ? "text" : "password"}
+                      placeholder="Password yang dipakai untuk login"
+                      error={errors.currentPassword?.message}
+                      autoComplete="current-password"
+                      className="focus-visible:ring-brand-coral"
+                    />
+                    <button
+                      type="button"
+                      className="absolute right-3 top-3 text-gray-400 hover:text-gray-600 transition-colors"
+                      onClick={() => setShowCurrentPassword(!showCurrentPassword)}
+                    >
+                      {showCurrentPassword ? (
+                        <EyeOffIcon className="h-5 w-5" />
+                      ) : (
+                        <EyeIcon className="h-5 w-5" />
+                      )}
+                    </button>
+                  </div>
+                </div>
 
                 {/* New Password */}
                 <div className="space-y-1">
@@ -190,7 +230,7 @@ export default function ChangePasswordPage() {
               </form>
 
               <p className="text-center text-xs text-gray-500">
-                Password baru Anda harus berbeda dari password sebelumnya dan minimal 8 karakter.
+                Password baru minimal 8 karakter, berbeda dari password sebelumnya, dan mengandung huruf kecil, huruf besar, angka, serta simbol (@$!%*?&).
               </p>
             </div>
           </div>

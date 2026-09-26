@@ -8,7 +8,7 @@ import type { IReportMediaFile } from '@/models/Report';
 import { uploadToR2, deleteFromR2 } from '@/lib/services/r2-storage';
 import { transcodeVideoInBackground } from '@/lib/services/video-transcode';
 import { compressImage } from '@/lib/utils/compress';
-import { REPORT_MEDIA_MIME_TYPES, resolveMimeType, mediaKind, getExtension } from '@/lib/utils/media-mime';
+import { REPORT_MEDIA_MIME_TYPES, resolveMimeType, mediaKind, storageExtension } from '@/lib/utils/media-mime';
 import { canAccessReport } from '@/lib/utils/report-access';
 import mongoose from 'mongoose';
 
@@ -94,7 +94,7 @@ export const POST = withAnyAuth(
     // Apple devices) runs in the background afterward and swaps the media
     // entry over to the MP4 in place.
     if (fileType === 'video') {
-      const rawDestination = `${keyPrefix}.${getExtension(file.name) || 'mp4'}`;
+      const rawDestination = `${keyPrefix}.${storageExtension(mimeType, file.name)}`;
 
       const rawKey = await uploadToR2(rawBuffer, rawDestination, mimeType);
       if (!rawKey) {

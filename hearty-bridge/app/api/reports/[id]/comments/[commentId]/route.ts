@@ -5,6 +5,7 @@ import connectToDatabase from '@/lib/db/mongodb';
 import { Report } from '@/models';
 import ReportComment from '@/models/ReportComment';
 import mongoose from 'mongoose';
+import { canAccessReport } from '@/lib/utils/report-access';
 
 function getReportId(req: NextRequest): string {
   const parts = new URL(req.url).pathname.split('/');
@@ -38,6 +39,9 @@ export const PATCH = withAnyAuth(
 
     if (!report)  return ErrorResponse.notFound('Report');
     if (!comment) return ErrorResponse.notFound('Comment');
+    // Being the author isn't enough once the report is out of reach (e.g. it
+    // went back to draft, which parents can't see).
+    if (!(await canAccessReport(report, user))) return ErrorResponse.forbidden();
 
     const body = await req.json();
     const update: Record<string, unknown> = {};
@@ -101,13 +105,18 @@ export const DELETE = withAnyAuth(
 
     await connectToDatabase();
 
-    const comment = await ReportComment.findOne({
-      _id: commentId,
-      reportId: new mongoose.Types.ObjectId(reportId),
-      isActive: true,
-    }).lean();
+    const [report, comment] = await Promise.all([
+      Report.findOne({ _id: reportId, isActive: true }).lean(),
+      ReportComment.findOne({
+        _id: commentId,
+        reportId: new mongoose.Types.ObjectId(reportId),
+        isActive: true,
+      }).lean(),
+    ]);
 
+    if (!report)  return ErrorResponse.notFound('Report');
     if (!comment) return ErrorResponse.notFound('Comment');
+    if (!(await canAccessReport(report, user))) return ErrorResponse.forbidden();
 
     const canDelete =
       user.role === 'admin' || user.role === 'super_admin' ||

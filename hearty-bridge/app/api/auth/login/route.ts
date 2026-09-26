@@ -3,7 +3,8 @@ import connectToDatabase from '@/lib/db/mongodb';
 import User from '@/models/User';
 import { generateAccessToken } from '@/lib/utils/jwt';
 import { loginSchema } from '@/lib/validation/auth';
-import { withIpRateLimit } from '@/lib/middleware/auth';
+import { withIpRateLimit, createFailureLimiter } from '@/lib/middleware/auth';
+import * as bcrypt from 'bcryptjs';
 import {
   withErrorHandling,
   ErrorResponse,
@@ -22,6 +23,14 @@ const loginRateLimit = withIpRateLimit({
   message: 'Terlalu banyak percobaan login. Coba lagi dalam beberapa menit.',
 });
 
+// Per-account cap on failed passwords, independent of the caller's IP, so
+// spreading guesses across many (or spoofed) IPs doesn't help.
+const accountFailures = createFailureLimiter({ windowMs: 15 * 60 * 1000, maxFailures: 10 });
+
+// bcrypt hash (cost 12) of a random string, compared against when the email
+// doesn't exist so that case takes as long as a wrong password.
+const DUMMY_PASSWORD_HASH = '$2b$12$kFf88OMkqyKJrr8uQCeHJeCUfbtxdB66iFmKX9V2sVf/UoDfOew6.';
+
 export const POST = withErrorHandling(loginRateLimit(async (request: NextRequest) => {
   // Log the request
   logRequest('POST', '/api/auth/login');
@@ -39,32 +48,38 @@ export const POST = withErrorHandling(loginRateLimit(async (request: NextRequest
 
   const { email, password, rememberMe } = validationResult.data;
 
-  // Find user by email
+  const retryAfter = accountFailures.blockedFor(email);
+  if (retryAfter > 0) {
+    return ErrorResponse.tooManyRequests(
+      'Terlalu banyak percobaan login untuk akun ini. Coba lagi dalam beberapa menit.',
+      ErrorCodes.RATE_LIMIT_EXCEEDED,
+      retryAfter
+    );
+  }
+
+  // Find user by email (active accounts only)
   const user = await User.findByEmail(email);
-  
-  if (!user) {
-    // Don't reveal whether user exists or not for security
+
+  // Same work and same answer whether the account is missing, deactivated or
+  // the password is wrong, so the response doesn't reveal which emails exist.
+  const isPasswordValid = user
+    ? await user.comparePassword(password)
+    : await bcrypt.compare(password, DUMMY_PASSWORD_HASH);
+
+  if (!user || !isPasswordValid) {
+    accountFailures.recordFailure(email);
     return ErrorResponse.unauthorized("Invalid email or password", ErrorCodes.INVALID_CREDENTIALS);
   }
 
-  // Check if user is active
-  if (!user.isActive) {
-    return ErrorResponse.unauthorized("Account has been deactivated. Please contact support.", ErrorCodes.ACCOUNT_DEACTIVATED);
-  }
-
-  // Verify password
-  const isPasswordValid = await user.comparePassword(password);
-  
-  if (!isPasswordValid) {
-    return ErrorResponse.unauthorized("Invalid email or password", ErrorCodes.INVALID_CREDENTIALS);
-  }
+  accountFailures.reset(email);
 
   // Generate JWT token
   const token = generateAccessToken({
     userId: user._id.toString(),
     email: user.email,
     role: user.role,
-    name: user.name
+    name: user.name,
+    tv: user.tokenVersion ?? 0
   });
 
   // Get safe user object (without password)

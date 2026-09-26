@@ -68,7 +68,11 @@ export function toPaymentHistoryRows(invoices: InvoiceLike[]): PaymentHistoryRow
 }
 
 export function paymentHistoryToCsv(rows: PaymentHistoryRow[]): string {
-  const escape = (v: string | number) => `"${String(v).replace(/"/g, '""')}"`;
+  // Text starting with = + - @ (or tab/CR) would be run as a formula by
+  // Excel/Sheets; a leading apostrophe makes it plain text. Numbers pass as is.
+  const neutralize = (v: string | number) =>
+    typeof v === 'string' && /^[=+\-@\t\r]/.test(v) ? `'${v}` : String(v);
+  const escape = (v: string | number) => `"${neutralize(v).replace(/"/g, '""')}"`;
   const header = PAYMENT_HISTORY_COLUMNS.map((c) => escape(c.label)).join(',');
   const lines = rows.map((r) => PAYMENT_HISTORY_COLUMNS.map((c) => escape(r[c.key])).join(','));
   // BOM so Excel opens the UTF-8 CSV with the right encoding.

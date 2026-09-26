@@ -1,6 +1,7 @@
 import { IChild } from '@/models/Child';
 import { IUser } from '@/models/User';
 import mongoose from 'mongoose';
+import { escapeRegex } from '@/lib/utils/financial-query';
 
 /**
  * True when a ref field was populated into a document. `typeof === 'object'`
@@ -214,7 +215,7 @@ export function buildChildSearchQuery(
 
   // Search functionality
   if (filters.search) {
-    query.name = { $regex: filters.search, $options: 'i' };
+    query.name = { $regex: escapeRegex(filters.search), $options: 'i' };
   }
 
   return query;

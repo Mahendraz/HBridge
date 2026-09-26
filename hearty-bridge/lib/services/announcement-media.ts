@@ -5,7 +5,7 @@ import type { IAnnouncementAttachment } from '@/models/Announcement';
 import { uploadToR2 } from '@/lib/services/r2-storage';
 import { transcodeVideoInBackground } from '@/lib/services/video-transcode';
 import { compressImage } from '@/lib/utils/compress';
-import { ANNOUNCEMENT_MIME_TYPES, resolveMimeType, mediaKind, getExtension } from '@/lib/utils/media-mime';
+import { ANNOUNCEMENT_MIME_TYPES, resolveMimeType, mediaKind, storageExtension } from '@/lib/utils/media-mime';
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB, matches the repo-wide media limit
 
@@ -41,7 +41,7 @@ export async function storeAnnouncementFile(file: File): Promise<StoreAttachment
   const keyPrefix = `announcements/${Date.now()}-${sanitizeFileName(file.name).replace(/\.[^.]+$/, '')}`;
 
   if (kind === 'video') {
-    const rawKey = `${keyPrefix}.${getExtension(file.name) || 'mp4'}`;
+    const rawKey = `${keyPrefix}.${storageExtension(mimeType, file.name)}`;
     if (!(await uploadToR2(rawBuffer, rawKey, mimeType))) {
       return { ok: false, error: 'Upload ke storage gagal. Periksa kredensial R2.', status: 500 };
     }
@@ -92,7 +92,7 @@ export async function storeAnnouncementFile(file: File): Promise<StoreAttachment
       return { ok: false, error: err instanceof Error ? err.message : 'Gagal memproses gambar', status: 400 };
     }
   } else {
-    stored = { buffer: rawBuffer, mimeType, ext: getExtension(file.name) || 'bin' };
+    stored = { buffer: rawBuffer, mimeType, ext: storageExtension(mimeType, file.name) };
   }
 
   const key = `${keyPrefix}.${stored.ext}`;

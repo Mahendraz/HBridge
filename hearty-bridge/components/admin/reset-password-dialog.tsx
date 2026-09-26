@@ -3,6 +3,7 @@
 import React, { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import { useAuth } from "@/lib/contexts/auth-context";
 import {
   Dialog,
   DialogContent,
@@ -43,6 +44,10 @@ function ResetPasswordBody({ target, onClose }: { target: ResetPasswordTarget; o
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [forceChange, setForceChange] = useState(true);
+  // The server always forces a change for resets done by an admin; only
+  // super_admin gets to switch it off.
+  const { user } = useAuth();
+  const canSkipForceChange = user?.role === "super_admin";
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [issued, setIssued] = useState<string | null>(null);
@@ -176,6 +181,7 @@ function ResetPasswordBody({ target, onClose }: { target: ResetPasswordTarget; o
             </Button>
           </div>
 
+          {canSkipForceChange && (
           <label className="flex items-start gap-2 text-sm text-gray-700 cursor-pointer">
             <input
               type="checkbox"
@@ -190,6 +196,7 @@ function ResetPasswordBody({ target, onClose }: { target: ResetPasswordTarget; o
               </span>
             </span>
           </label>
+          )}
 
           {error && (
             <div className="flex items-start gap-2 text-sm text-red-600 bg-red-50 border border-red-200 rounded-lg p-3">

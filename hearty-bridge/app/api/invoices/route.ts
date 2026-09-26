@@ -8,7 +8,9 @@ import Child from '@/models/Child';
 import BankAccountSettings from '@/models/BankAccountSettings';
 import mongoose from 'mongoose';
 
-const PACKAGE_PRICES: Record<string, number> = { gold: 50000, platinum: 100000, diamond: 200000 };
+// Prices of the original gold/platinum/diamond tiers, for top-ups created
+// before TokenTransaction recorded the sold price.
+const LEGACY_TIER_PRICES: Record<string, number> = { gold: 50000, platinum: 100000, diamond: 200000 };
 
 /**
  * GET /api/invoices
@@ -31,7 +33,7 @@ export const GET = withAnyAuth(
     if (user.role === 'parent') {
       query.parentId = new mongoose.Types.ObjectId(user.userId);
       query.isVisibleToParent = true;
-    } else if (user.role !== 'admin' && user.role !== 'therapist' && user.role !== 'super_admin') {
+    } else if (user.role !== 'admin' && user.role !== 'super_admin') {
       return ErrorResponse.forbidden();
     }
 
@@ -117,11 +119,26 @@ export const POST = withAdminAuth(
       return ErrorResponse.badRequest('Transaction is not a package topup');
     }
 
+    // One invoice per package top-up. Assigning a package already creates one
+    // (POST /api/children/[id]/tokens), so this route only fills a gap.
+    const existingInvoice = await Invoice.exists({
+      packageTransactionId: new mongoose.Types.ObjectId(packageTransactionId),
+      isActive: { $ne: false },
+    });
+    if (existingInvoice) {
+      return ErrorResponse.conflict('Paket ini sudah punya invoice');
+    }
+
     const packageType = (tx as any).packageType as string;
     // TokenTransaction.therapyType is null for combined OT+TW packages.
     const therapyType = ((tx as any).therapyType as string | null) ?? 'both';
     const sessions    = (tx as any).amount as number;
-    const amount      = PACKAGE_PRICES[packageType] ?? 0;
+    // Price as sold, recorded on the transaction when the package was assigned
+    // (packageType is the package's display name, not a price tier). Only
+    // top-ups from before prices were recorded fall back to the old tiers.
+    const discountAmount = (tx as any).discountAmount ?? 0;
+    const soldPrice = (tx as any).finalPrice || Math.max(0, ((tx as any).originalPrice ?? 0) - discountAmount);
+    const amount = soldPrice || (LEGACY_TIER_PRICES[packageType] ?? 0);
 
     const dueDate = dueDateStr
       ? new Date(dueDateStr + 'T00:00:00Z')
@@ -144,6 +161,7 @@ export const POST = withAdminAuth(
       packageType:          packageType,
       therapyType: therapyType as 'OT' | 'TW' | 'both' | 'assessment',
       sessions,
+      discountAmount,
       amount,
       dueDate,
       status: 'unpaid',

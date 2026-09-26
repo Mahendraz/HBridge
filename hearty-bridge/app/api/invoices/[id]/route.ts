@@ -33,10 +33,11 @@ export const GET = withAnyAuth(
     if (!invoice) return ErrorResponse.notFound('Invoice');
 
     if (user.role === 'parent') {
-      if ((invoice as any).parentId?.toString() !== user.userId) {
+      // Unreleased (draft) invoices stay hidden from parents, same as the list.
+      if ((invoice as any).parentId?.toString() !== user.userId || (invoice as any).isVisibleToParent === false) {
         return ErrorResponse.forbidden();
       }
-    } else if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'therapist') {
+    } else if (user.role !== 'admin' && user.role !== 'super_admin') {
       return ErrorResponse.forbidden();
     }
 

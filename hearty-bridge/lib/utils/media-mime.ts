@@ -78,6 +78,18 @@ export function resolveMimeType(type: string | undefined, fileName: string): str
   return EXT_TO_MIME[getExtension(fileName)] ?? aliased;
 }
 
+/**
+ * Extension to store an upload under, derived from its validated MIME type.
+ * The client's own extension is kept only when it names that same type, so a
+ * `clip.html` sent as video/mp4 is stored as `.mp4`, never `.html`.
+ */
+export function storageExtension(mimeType: string, fileName: string): string {
+  const ext = getExtension(fileName);
+  if (ext && EXT_TO_MIME[ext] === mimeType) return ext;
+  const canonical = Object.keys(EXT_TO_MIME).find((key) => EXT_TO_MIME[key] === mimeType);
+  return canonical ?? 'bin';
+}
+
 export function mediaKind(mimeType: string): 'image' | 'video' | 'document' {
   if (mimeType.startsWith('image/')) return 'image';
   if (mimeType.startsWith('video/')) return 'video';

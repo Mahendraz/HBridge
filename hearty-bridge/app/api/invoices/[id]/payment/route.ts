@@ -29,7 +29,7 @@ export const POST = withAnyAuth(
 
     const invoice = await Invoice.findOne({ _id: id, isActive: { $ne: false } }).lean();
     if (!invoice) return ErrorResponse.notFound('Invoice');
-    if ((invoice as any).parentId?.toString() !== user.userId) return ErrorResponse.forbidden();
+    if ((invoice as any).parentId?.toString() !== user.userId || (invoice as any).isVisibleToParent === false) return ErrorResponse.forbidden();
     if ((invoice as any).status === 'paid') return ErrorResponse.badRequest('Invoice sudah lunas');
 
     const formData = await req.formData();
@@ -68,7 +68,7 @@ export const POST = withAnyAuth(
 
 /**
  * GET /api/invoices/[id]/payment
- * Admin/therapist or matching parent: returns a 1-hour signed URL for the proof file.
+ * Admin or matching parent: returns a 1-hour signed URL for the proof file.
  */
 export const GET = withAnyAuth(
   withErrorHandling(async (req: NextRequest, user: any) => {
@@ -81,8 +81,8 @@ export const GET = withAnyAuth(
     if (!invoice) return ErrorResponse.notFound('Invoice');
 
     if (user.role === 'parent') {
-      if ((invoice as any).parentId?.toString() !== user.userId) return ErrorResponse.forbidden();
-    } else if (user.role !== 'admin' && user.role !== 'super_admin' && user.role !== 'therapist') {
+      if ((invoice as any).parentId?.toString() !== user.userId || (invoice as any).isVisibleToParent === false) return ErrorResponse.forbidden();
+    } else if (user.role !== 'admin' && user.role !== 'super_admin') {
       return ErrorResponse.forbidden();
     }
 

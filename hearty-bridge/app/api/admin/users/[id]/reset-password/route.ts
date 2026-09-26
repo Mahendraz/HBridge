@@ -62,11 +62,16 @@ export const POST = withAdminAuth(async (request: NextRequest, actor: JWTPayload
     );
   }
 
-  const { newPassword, mustChangePassword = true } = result.data;
+  // Only super_admin may skip the forced change. Otherwise an admin could set
+  // a password they know and keep using the account unnoticed.
+  const mustChangePassword = actor.role === 'super_admin' ? result.data.mustChangePassword ?? true : true;
+  const { newPassword } = result.data;
   const password = newPassword?.trim() || generateTempPassword();
 
   targetUser.password = password;
   targetUser.mustChangePassword = mustChangePassword;
+  // Sign the user out everywhere; the old password's sessions must not survive.
+  targetUser.tokenVersion = (targetUser.tokenVersion ?? 0) + 1;
   await targetUser.save();
 
   console.log(

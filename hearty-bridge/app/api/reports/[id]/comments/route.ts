@@ -63,6 +63,16 @@ export const POST = withAnyAuth(
         ? new mongoose.Types.ObjectId(body.parentCommentId)
         : null;
 
+    // A reply must hang off a comment of this same report.
+    if (parentCommentId) {
+      const parentExists = await ReportComment.exists({
+        _id: parentCommentId,
+        reportId: new mongoose.Types.ObjectId(id),
+        isActive: true,
+      });
+      if (!parentExists) return ErrorResponse.badRequest('Komentar yang dibalas tidak ditemukan');
+    }
+
     const comment = await ReportComment.create({
       reportId:   new mongoose.Types.ObjectId(id),
       childId:    (report as any).childId,

@@ -3,6 +3,8 @@ import { withAnyAuth } from '@/lib/middleware/auth';
 import { withErrorHandling, SuccessResponse, ErrorResponse } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
 import Assessment from '@/models/Assessment';
+import mongoose from 'mongoose';
+import { therapistHasChild } from '@/lib/utils/therapist-access';
 import { z } from 'zod';
 
 function getAssessmentId(req: NextRequest): string {
@@ -33,6 +35,9 @@ export const GET = withAnyAuth(
     await connectToDatabase();
 
     const id = getAssessmentId(req);
+    if (!mongoose.isValidObjectId(id)) {
+      return NextResponse.json(ErrorResponse.notFound('Asesmen'), { status: 404 });
+    }
     const assessment = await Assessment.findById(id)
       .populate('childId', 'name parentId')
       .populate('assessorId', 'name email')
@@ -46,6 +51,15 @@ export const GET = withAnyAuth(
     if (user.role === 'parent') {
       const child = assessment.childId as any;
       if (child?.parentId?.toString() !== user.userId) {
+        return NextResponse.json(ErrorResponse.forbidden(), { status: 403 });
+      }
+    }
+
+    // Therapists: the assessor, or a therapist treating the child.
+    if (user.role === 'therapist') {
+      const assessorId = (assessment.assessorId as any)?._id?.toString() ?? assessment.assessorId?.toString();
+      const childId = (assessment.childId as any)?._id?.toString() ?? '';
+      if (assessorId !== user.userId && !(await therapistHasChild(user.userId, childId))) {
         return NextResponse.json(ErrorResponse.forbidden(), { status: 403 });
       }
     }

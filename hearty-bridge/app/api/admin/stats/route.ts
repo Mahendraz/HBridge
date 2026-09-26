@@ -36,12 +36,16 @@ export const GET = withAnyAuth(async (request: NextRequest, user: any) => {
       Child.countDocuments({ isActive: false })
     ]);
 
-    // Get recent activity stats
-    const recentUsers = await User.find({ isActive: true })
-      .sort({ createdAt: -1 })
-      .limit(5)
-      .select('name email role createdAt')
-      .lean();
+    // Get recent activity stats — names and emails of new accounts are for
+    // admins; therapists only get the counts.
+    const isAdmin = user.role === 'admin' || user.role === 'super_admin';
+    const recentUsers = isAdmin
+      ? await User.find({ isActive: true })
+          .sort({ createdAt: -1 })
+          .limit(5)
+          .select('name email role createdAt')
+          .lean()
+      : [];
 
     // Calculate growth metrics (last 30 days vs previous 30 days)
     const thirtyDaysAgo = new Date();

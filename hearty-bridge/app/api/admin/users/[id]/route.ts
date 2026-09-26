@@ -34,6 +34,12 @@ export const PATCH = withAdminAuth(async (request: NextRequest, user: any) => {
     return ErrorResponse.notFound('User');
   }
 
+  // Staff accounts at the same level are managed by super_admin only, so one
+  // admin can't lock out, rename or re-email another.
+  if (targetUser.role === 'admin' && user.role !== 'super_admin' && targetUser._id.toString() !== user.userId) {
+    return ErrorResponse.forbidden('Hanya Super Admin yang dapat mengubah akun admin lain');
+  }
+
   const { name, email, phone, specialization, isActive, color, address, dateOfBirth } = result.data;
 
   if (name) targetUser.name = name.trim();
@@ -106,6 +112,10 @@ export const DELETE = withAdminAuth(async (request: NextRequest, user: any) => {
 
   if (targetUser._id.toString() === user.userId) {
     return ErrorResponse.badRequest('Tidak bisa menghapus akun sendiri');
+  }
+
+  if (targetUser.role === 'admin' && user.role !== 'super_admin') {
+    return ErrorResponse.forbidden('Hanya Super Admin yang dapat menonaktifkan akun admin');
   }
 
   // Parent account deletion (ADM-3): Super Admin only, takes the children

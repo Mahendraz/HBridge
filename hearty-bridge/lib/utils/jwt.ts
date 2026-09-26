@@ -8,6 +8,9 @@ export interface JWTPayload {
   email: string;
   role: UserRole;
   name: string;
+  // User.tokenVersion at issue time; tokens minted before this claim existed
+  // have none and count as version 0.
+  tv?: number;
   iat?: number;
   exp?: number;
 }

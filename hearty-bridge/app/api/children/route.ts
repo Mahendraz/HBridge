@@ -21,6 +21,7 @@ import Session from '@/models/Session';
 import Assessment from '@/models/Assessment';
 import mongoose from 'mongoose';
 import { getSessionBalances, getTherapistsByProgram } from '@/lib/utils/session-balance';
+import { escapeRegex } from '@/lib/utils/financial-query';
 
 /**
  * GET /api/children
@@ -60,13 +61,13 @@ export const GET = withAnyAuth(
     if (search && user.role !== 'parent') {
       const matchingParents = await User.find({
         role: 'parent',
-        name: { $regex: search, $options: 'i' },
+        name: { $regex: escapeRegex(search), $options: 'i' },
       }).select('_id').lean();
       const matchingParentIds = matchingParents.map((p: any) => p._id.toString());
 
       delete searchQuery.name;
       searchQuery.$or = [
-        { name: { $regex: search, $options: 'i' } },
+        { name: { $regex: escapeRegex(search), $options: 'i' } },
         ...(matchingParentIds.length > 0 ? [{ parentId: { $in: matchingParentIds } }] : []),
       ];
     }

@@ -6,6 +6,7 @@ import Assessment from '@/models/Assessment';
 import Child from '@/models/Child';
 import TokenTransaction from '@/models/TokenTransaction';
 import mongoose from 'mongoose';
+import { therapistChildIds } from '@/lib/utils/therapist-access';
 import { z } from 'zod';
 
 const createSchema = z.object({
@@ -35,7 +36,12 @@ export const GET = withAnyAuth(async (req: NextRequest, user: any) => {
       const childIds = children.map((c: any) => c._id);
       query.childId = { $in: childIds };
     } else {
-      if (childId) query.childId = childId;
+      if (childId) {
+        if (!mongoose.isValidObjectId(childId)) {
+          return NextResponse.json({ success: false, error: 'Invalid child ID' }, { status: 400 });
+        }
+        query.childId = childId;
+      }
     }
 
     if (status) query.status = status;
@@ -53,6 +59,22 @@ export const GET = withAnyAuth(async (req: NextRequest, user: any) => {
       .populate('scheduledBy', 'name')
       .sort({ date: 1, time: 1 })
       .lean();
+
+    // Therapists see the week's assessments to coordinate the schedule, but the
+    // findings (result, notes) only for ones they run or children they treat.
+    if (user.role === 'therapist') {
+      const ownChildIds = new Set(await therapistChildIds(user.userId));
+      const redacted = (assessments as any[]).map((a) => {
+        const assessorId = a.assessorId?._id?.toString() ?? a.assessorId?.toString();
+        const aChildId = a.childId?._id?.toString() ?? a.childId?.toString();
+        if (assessorId === user.userId || ownChildIds.has(aChildId)) return a;
+        const rest = { ...a };
+        delete rest.result;
+        delete rest.notes;
+        return rest;
+      });
+      return NextResponse.json({ success: true, assessments: redacted });
+    }
 
     return NextResponse.json({ success: true, assessments });
   } catch (err) {

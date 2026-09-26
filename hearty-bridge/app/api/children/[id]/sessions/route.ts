@@ -8,6 +8,7 @@ import TokenTransaction from '@/models/TokenTransaction';
 import WeeklySchedule from '@/models/WeeklySchedule';
 import mongoose from 'mongoose';
 import { getInactiveTherapistError } from '@/lib/utils/therapist-leave';
+import { therapistHasChild } from '@/lib/utils/therapist-access';
 
 const DAY_NAMES: Record<number, string> = {
   0: 'minggu', 1: 'senin', 2: 'selasa', 3: 'rabu', 4: 'kamis', 5: 'jumat', 6: 'sabtu',
@@ -38,8 +39,11 @@ export const GET = withAnyAuth(
         return ErrorResponse.notFound('Child not found', 'RESOURCE_NOT_FOUND');
       }
 
-      // Check access permissions (therapist can view all children)
+      // Parents: own children only. Therapists: their patients only.
       if (user.role === 'parent' && child.parentId.toString() !== user.userId) {
+        return ErrorResponse.forbidden('Access denied', 'INSUFFICIENT_PERMISSIONS');
+      }
+      if (user.role === 'therapist' && !(await therapistHasChild(user.userId, childId))) {
         return ErrorResponse.forbidden('Access denied', 'INSUFFICIENT_PERMISSIONS');
       }
 
@@ -161,13 +165,18 @@ export const POST = withAnyAuth(
 
     const body = await request.json();
 
-    const child = await Child.findById(childId);
+    const child = await Child.findOne({ _id: childId, isActive: true });
     if (!child) {
       return ErrorResponse.notFound('Child not found', 'RESOURCE_NOT_FOUND');
     }
 
-    if (user.role === 'therapist' && child.therapistId && child.therapistId.toString() !== user.userId) {
+    if (user.role === 'therapist' && !(await therapistHasChild(user.userId, childId))) {
       return ErrorResponse.forbidden('Access denied', 'INSUFFICIENT_PERMISSIONS');
+    }
+
+    if (body.therapistId !== undefined && body.therapistId !== null && body.therapistId !== '' &&
+        !mongoose.isValidObjectId(body.therapistId)) {
+      return ErrorResponse.badRequest('Invalid therapist ID', 'VALIDATION_ERROR');
     }
 
     // ── Package mode: schedule all N sessions at once ──
@@ -360,20 +369,24 @@ export const POST = withAnyAuth(
     }
 
     // ── Normal single session creation (therapist or admin) ──
+    // A therapist always books for themselves and only as 'scheduled':
+    // completing a session (and the token deduction that goes with it) runs
+    // through the admin-only PATCH /api/sessions/[id].
+    const isTherapist = user.role === 'therapist';
     const sessionData = {
       childId: new mongoose.Types.ObjectId(childId),
-      therapistId: body.therapistId
+      therapistId: !isTherapist && body.therapistId
         ? new mongoose.Types.ObjectId(body.therapistId)
-        : (child.therapistId || new mongoose.Types.ObjectId(user.userId)),
+        : (isTherapist ? new mongoose.Types.ObjectId(user.userId) : (child.therapistId || new mongoose.Types.ObjectId(user.userId))),
       date: new Date(body.date),
       time: body.time,
       duration: body.duration || 60,
       type: body.type || 'in-person',
-      status: body.status || 'scheduled',
-      goals: body.goals || [],
-      notes: body.notes,
-      location: body.location,
-      meetingUrl: body.meetingUrl,
+      status: isTherapist ? 'scheduled' : (body.status || 'scheduled'),
+      goals: Array.isArray(body.goals) ? body.goals.filter((g: unknown) => typeof g === 'string') : [],
+      notes: typeof body.notes === 'string' ? body.notes : undefined,
+      location: typeof body.location === 'string' ? body.location : undefined,
+      meetingUrl: typeof body.meetingUrl === 'string' ? body.meetingUrl : undefined,
     };
 
     const session = new Session(sessionData);

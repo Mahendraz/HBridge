@@ -17,6 +17,7 @@ import mongoose from 'mongoose';
 import { getR2SignedUrl } from '@/lib/services/r2-storage';
 import { deleteChildAccount } from '@/lib/utils/account-deletion';
 import { getSessionBalances, getTherapistsByProgram, emptySessionBalance } from '@/lib/utils/session-balance';
+import { therapistHasChild } from '@/lib/utils/therapist-access';
 
 /**
  * GET /api/children/[id]
@@ -70,8 +71,12 @@ export const GET = withAnyAuth(
         );
       }
 
-      // Check access permissions (admin and therapist can view all children)
-      if (user.role === 'parent' && !canAccessChild(user, child)) {
+      // Check access permissions: admins see every child, parents their own,
+      // therapists only their patients (medical info + parent contact inside).
+      if (
+        (user.role === 'parent' && !canAccessChild(user, child)) ||
+        (user.role === 'therapist' && !(await therapistHasChild(user.userId, child._id.toString())))
+      ) {
         return ErrorResponse.forbidden(
           'You do not have permission to view this child',
           'INSUFFICIENT_PERMISSIONS'
