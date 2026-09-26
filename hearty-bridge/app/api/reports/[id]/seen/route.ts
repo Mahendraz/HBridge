@@ -25,7 +25,7 @@ export const POST = withAnyAuth(
     await connectToDatabase();
 
     const report = await Report.findOne({ _id: id, isActive: true })
-      .select('childId therapistId')
+      .select('childId therapistId status')
       .lean();
     if (!report) return ErrorResponse.notFound('Report');
     if (!(await canAccessReport(report, user))) return ErrorResponse.forbidden();

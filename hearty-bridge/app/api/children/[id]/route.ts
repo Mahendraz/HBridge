@@ -164,8 +164,8 @@ export const PUT = withAnyAuth(
         );
       }
 
-      // Check modification permissions (admin can always modify)
-      if (user.role !== 'admin' && !canModifyChild(user, child)) {
+      // Check modification permissions (admin and super_admin can always modify)
+      if (user.role !== 'admin' && user.role !== 'super_admin' && !canModifyChild(user, child)) {
         return ErrorResponse.forbidden(
           'You do not have permission to modify this child',
           'INSUFFICIENT_PERMISSIONS'

@@ -94,7 +94,7 @@ interface ReportComment {
   reportId: string;
   authorId: string;
   authorName: string;
-  authorRole: 'parent' | 'therapist' | 'admin';
+  authorRole: 'parent' | 'therapist' | 'admin' | 'super_admin';
   text: string;
   parentCommentId: string | null;
   isResolved: boolean;
@@ -668,7 +668,7 @@ function ReportViewDialog({
                               {comment.authorName.charAt(0).toUpperCase()}
                             </div>
                             <span className="text-xs font-semibold text-gray-800">{comment.authorName}</span>
-                            <span className="text-[10px] text-gray-400 capitalize">{comment.authorRole}</span>
+                            <span className="text-[10px] text-gray-400 capitalize">{comment.authorRole.replace('_', ' ')}</span>
                             <span className="text-[10px] text-gray-400">{relativeTime(comment.createdAt)}</span>
                           </div>
                           {comment.isResolved && (
@@ -740,7 +740,7 @@ function ReportViewDialog({
                                 <div className="flex-1 bg-white border-l-2 border-teal-100 pl-3 py-1">
                                   <div className="flex items-center gap-1.5 mb-0.5">
                                     <span className="text-xs font-semibold text-gray-700">{reply.authorName}</span>
-                                    <span className="text-[10px] text-gray-400 capitalize">{reply.authorRole}</span>
+                                    <span className="text-[10px] text-gray-400 capitalize">{reply.authorRole.replace('_', ' ')}</span>
                                     <span className="text-[10px] text-gray-400">{relativeTime(reply.createdAt)}</span>
                                   </div>
                                   <p className="text-xs text-gray-700 whitespace-pre-wrap">{reply.text}</p>

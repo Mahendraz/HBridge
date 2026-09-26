@@ -6,7 +6,7 @@ export interface IReportComment extends Document {
   therapistId:    mongoose.Types.ObjectId;
   authorId:       mongoose.Types.ObjectId;
   authorName:     string;
-  authorRole:     'parent' | 'therapist' | 'admin';
+  authorRole:     'parent' | 'therapist' | 'admin' | 'super_admin';
   text:           string;
   parentCommentId?: mongoose.Types.ObjectId | null;
   isResolved:     boolean;
@@ -27,7 +27,7 @@ const ReportCommentSchema = new Schema<IReportComment>(
     therapistId: { type: Schema.Types.ObjectId, ref: 'User',         required: true },
     authorId:    { type: Schema.Types.ObjectId, ref: 'User',         required: true },
     authorName:  { type: String, required: true, trim: true },
-    authorRole:  { type: String, enum: ['parent', 'therapist', 'admin'], required: true },
+    authorRole:  { type: String, enum: ['parent', 'therapist', 'admin', 'super_admin'], required: true },
     text:        { type: String, required: true, trim: true, maxlength: 1000 },
     parentCommentId: { type: Schema.Types.ObjectId, ref: 'ReportComment', default: null, index: true },
     isResolved:  { type: Boolean, default: false },
