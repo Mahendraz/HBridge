@@ -2,7 +2,7 @@
 
 ## Important: Next.js Version Notice
 
-This project uses **Next.js 16.2.6** (App Router). APIs, conventions, and file structure
+This project uses **Next.js 16.3.6** (App Router). APIs, conventions, and file structure
 may differ from older versions. Before modifying any Next.js internals, read the relevant
 guide in `node_modules/next/dist/docs/`.
 
@@ -131,7 +131,7 @@ Pass as: `Authorization: Bearer <token>` header.
 
 ```bash
 npm run dev               # Start dev server on port 3000
-npm run build             # Production build
+npm run build             # Production build (webpack — Turbopack's PostCSS worker crashes on Hostinger)
 npm run lint              # ESLint
 npx tsc --noEmit          # TypeScript check (full project)
 npx tsc --noEmit --skipLibCheck <file>  # Check single file
@@ -214,6 +214,8 @@ R2_BUCKET_NAME
 FFMPEG_PATH            # optional — only if the bundled ffmpeg-static binary can't run (tried first, then `ffmpeg` on PATH)
 ```
 
+Deploy on Node.js 22+ (24 recommended, see `.nvmrc`); `.npmrc` sets `engine-strict` so an older Node fails `npm install` with a clear message instead of a cryptic build crash.
+
 Video uploads (report media, announcements) are transcoded to H.264 MP4 by ffmpeg in the
 background; without a working ffmpeg, iPhone HEVC `.mov` files stay unplayable on Chrome/Android.
 
@@ -224,7 +226,7 @@ background; without a working ffmpeg, iPhone HEVC `.mov` files stay unplayable o
 - Children must be 18 years or younger (enforced in `Child.pre('save')`)
 - File size limit for media: 100MB
 - Document access levels: `parent-only`, `therapist-only`, `shared`
-- Use `uuid` for generating unique IDs where MongoDB ObjectId is not appropriate
+- Use `crypto.randomUUID()` for unique IDs where MongoDB ObjectId is not appropriate (the `uuid` package was removed)
 
 ## Mock Data Fallback
 

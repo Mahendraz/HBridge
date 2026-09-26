@@ -10,6 +10,7 @@ import {
   ErrorCodes,
 } from '@/lib/utils/error-handler';
 import { generateTempPassword } from '@/lib/utils/generate-password';
+import { logActivity, roleLabel } from '@/lib/utils/audit-log';
 import { z } from 'zod';
 
 const resetPasswordSchema = z.object({
@@ -77,6 +78,16 @@ export const POST = withAdminAuth(async (request: NextRequest, actor: JWTPayload
   console.log(
     `[reset-password] ${actor.role} ${actor.email} mereset password ${targetUser.role} ${targetUser.email}`
   );
+
+  logActivity(request, {
+    category: 'account',
+    action: 'user.password_reset',
+    title: `Password ${roleLabel(targetUser.role).toLowerCase()} direset — ${targetUser.name}`,
+    description: `Oleh ${actor.name}${mustChangePassword ? ' · wajib ganti saat login' : ''}`,
+    actor,
+    target: { type: 'user', id: targetUser._id, name: targetUser.name },
+    metadata: { generated: !newPassword?.trim(), mustChangePassword },
+  });
 
   return SuccessResponse.ok(
     {

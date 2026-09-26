@@ -2158,5 +2158,11 @@
     "seen": 1790399311.9417913,
     "ast_hash": "cb092e6c287ce1d72d5a33bd4e158ab1",
     "semantic_hash": ""
+  },
+  "hearty-bridge/scripts/migrate-login-users.js": {
+    "mtime": 1790403102.0618863,
+    "seen": 1790403321.9885912,
+    "ast_hash": "d831de4b7840a0fb32f89f9deae489b6",
+    "semantic_hash": ""
   }
 }

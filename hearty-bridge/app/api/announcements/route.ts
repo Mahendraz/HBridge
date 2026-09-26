@@ -6,6 +6,7 @@ import { Announcement } from '@/models';
 import { getR2SignedUrl } from '@/lib/services/r2-storage';
 import { storeAnnouncementFile } from '@/lib/services/announcement-media';
 import mongoose from 'mongoose';
+import { logActivity } from '@/lib/utils/audit-log';
 
 async function injectSignedUrls(announcements: any[]): Promise<any[]> {
   return Promise.all(
@@ -79,6 +80,15 @@ export const POST = withAdminAuth(
       authorId: new mongoose.Types.ObjectId(user.userId),
       authorName: user.name || '',
       isActive: true,
+    });
+
+    logActivity(req, {
+      category: 'announcement',
+      action: 'announcement.created',
+      title: `Pengumuman dibuat — ${announcement.title}`,
+      description: `Oleh ${user.name}${attachments.length ? ' · dengan lampiran' : ''}`,
+      actor: user,
+      target: { type: 'announcement', id: announcement._id, name: announcement.title },
     });
 
     return SuccessResponse.created({ announcement }, 'Pengumuman berhasil dibuat');

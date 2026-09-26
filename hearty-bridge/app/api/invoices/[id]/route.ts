@@ -6,6 +6,8 @@ import Invoice from '@/models/Invoice';
 import BankAccountSettings from '@/models/BankAccountSettings';
 import mongoose from 'mongoose';
 import { notify } from '@/lib/utils/notify';
+import { logActivity } from '@/lib/utils/audit-log';
+import type { JWTPayload } from '@/lib/utils/jwt';
 import { applyInvoicePackageChange } from '@/lib/utils/invoice-package';
 import { withOptionalTransaction } from '@/lib/db/transaction';
 
@@ -67,7 +69,7 @@ export const GET = withAnyAuth(
  * which would fail on older documents that predate required-field additions.
  */
 export const PATCH = withAdminAuth(
-  withErrorHandling(async (req: NextRequest) => {
+  withErrorHandling(async (req: NextRequest, user: JWTPayload) => {
     const id = getInvoiceId(req);
     if (!mongoose.isValidObjectId(id)) {
       return ErrorResponse.badRequest('Invalid invoice ID');
@@ -176,6 +178,50 @@ export const PATCH = withAdminAuth(
       });
     }
 
+    const rupiah = `Rp ${new Intl.NumberFormat('id-ID').format(writeResult.amount ?? 0)}`;
+    const invoiceTarget = { type: 'invoice', id: objectId, name: writeResult.invoiceNumber as string };
+    if (status !== undefined && status !== existing.status) {
+      const paid = status === 'paid';
+      const wasPaid = existing.status === 'paid';
+      logActivity(req, {
+        category: 'finance',
+        action: paid ? 'invoice.paid' : wasPaid ? 'invoice.payment_cancelled' : 'invoice.status_changed',
+        title: paid
+          ? `Invoice lunas — ${writeResult.childName}`
+          : wasPaid
+            ? `Status lunas dibatalkan — ${writeResult.childName}`
+            : `Status invoice diubah — ${writeResult.childName}`,
+        description: `${writeResult.invoiceNumber} · ${rupiah} · ${existing.status} → ${status}`,
+        actor: user,
+        target: invoiceTarget,
+        metadata: { from: existing.status, to: status, amount: writeResult.amount },
+      });
+    }
+    if (isVisibleToParent !== undefined && isVisibleToParent !== (existing.isVisibleToParent ?? false)) {
+      logActivity(req, {
+        category: 'finance',
+        action: isVisibleToParent ? 'invoice.sent_to_parent' : 'invoice.hidden_from_parent',
+        title: `Invoice ${isVisibleToParent ? 'dikirim ke orang tua' : 'disembunyikan dari orang tua'} — ${writeResult.childName}`,
+        description: `${writeResult.invoiceNumber} · ${rupiah}`,
+        actor: user,
+        target: invoiceTarget,
+      });
+    }
+    if (editingContent) {
+      logActivity(req, {
+        category: 'finance',
+        action: 'invoice.updated',
+        title: `Invoice diperbarui — ${writeResult.childName}`,
+        description: `${writeResult.invoiceNumber} · ${writeResult.packageType ?? ''} · ${rupiah}`,
+        actor: user,
+        target: invoiceTarget,
+        metadata: {
+          fields: (['dueDate', 'notes', 'packageId'] as const).filter((k) => body[k] !== undefined),
+          ...(changingPackage && { packageChanged: true, previousAmount: existing.amount }),
+        },
+      });
+    }
+
     return SuccessResponse.ok({ invoice: writeResult });
   })
 );
@@ -187,7 +233,7 @@ export const PATCH = withAdminAuth(
  * silently vanishes from someone's records.
  */
 export const DELETE = withAdminAuth(
-  withErrorHandling(async (req: NextRequest) => {
+  withErrorHandling(async (req: NextRequest, user: JWTPayload) => {
     const id = getInvoiceId(req);
     if (!mongoose.isValidObjectId(id)) {
       return ErrorResponse.badRequest('Invalid invoice ID');
@@ -207,6 +253,16 @@ export const DELETE = withAdminAuth(
     }
 
     await db.collection('invoices').updateOne({ _id: objectId }, { $set: { isActive: false } });
+
+    logActivity(req, {
+      category: 'finance',
+      action: 'invoice.deleted',
+      title: `Invoice dihapus — ${existing.childName}`,
+      description: `${existing.invoiceNumber} · Rp ${new Intl.NumberFormat('id-ID').format(existing.amount ?? 0)}`,
+      actor: user,
+      target: { type: 'invoice', id: objectId, name: existing.invoiceNumber },
+      metadata: { status: existing.status, amount: existing.amount },
+    });
 
     return SuccessResponse.ok({});
   })

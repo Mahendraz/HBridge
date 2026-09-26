@@ -309,7 +309,7 @@ const ipRateLimitStore = new Map<string, { count: number; resetTime: number }>()
 // X-Forwarded-For (1 = a single nginx/Vercel/Cloudflare hop).
 const TRUSTED_PROXY_HOPS = Math.max(1, parseInt(process.env.TRUSTED_PROXY_HOPS || '1', 10) || 1);
 
-function getClientIp(request: NextRequest): string {
+export function getClientIp(request: NextRequest): string {
   // The client can put anything at the front of X-Forwarded-For, so the
   // leftmost entry can't be trusted. Each trusted proxy appends the address it
   // saw, so the client's real IP is TRUSTED_PROXY_HOPS entries from the right.

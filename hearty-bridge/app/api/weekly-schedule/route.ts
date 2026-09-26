@@ -14,6 +14,7 @@ import {
 } from '@/lib/utils/package-schedule';
 import mongoose from 'mongoose';
 import { getInactiveTherapistError } from '@/lib/utils/therapist-leave';
+import { logActivity } from '@/lib/utils/audit-log';
 
 /** Return the Monday (UTC) of the week containing the given date string, as a Date. */
 function getMondayOfWeek(dateStr?: string): Date {
@@ -567,7 +568,25 @@ export const POST = withAnyAuth(
 
     const body = await req.json();
     if (body.action === 'moveRecurring') {
-      return moveRecurringSeries(body);
+      const res = await moveRecurringSeries(body);
+      if (res.ok) {
+        const movedSession = await Session.findById(body.sessionId)
+          .populate<{ childId: { _id: mongoose.Types.ObjectId; name?: string } | null }>('childId', 'name')
+          .select('childId')
+          .lean();
+        const childName = movedSession?.childId?.name ?? '';
+        const moved = ((await res.clone().json()) as { data?: { moved?: number } }).data?.moved ?? 0;
+        logActivity(req, {
+          category: 'schedule',
+          action: 'schedule.slot_moved',
+          title: `Jadwal berulang dipindah — ${childName}`,
+          description: `${moved} sesi dipindah ke ${body.date} · ${body.time}`,
+          actor: user,
+          target: { type: 'child', id: movedSession?.childId?._id, name: childName },
+          metadata: { sessionId: body.sessionId, moved },
+        });
+      }
+      return res;
     }
     const { _id, effectiveFrom: effectiveFromStr, ...data } = body;
 
@@ -703,6 +722,18 @@ export const POST = withAnyAuth(
 
     // Re-fetch the slot so the response reflects all updates (packageId, totalSessions, etc.)
     const updatedSlot = await WeeklySchedule.findById((slot as any)._id).lean();
+
+    const logged = (updatedSlot ?? slot) as Partial<IWeeklySchedule> & { _id?: unknown } | null;
+    logActivity(req, {
+      category: 'schedule',
+      action: existing ? 'schedule.slot_updated' : 'schedule.slot_added',
+      title: `Slot jadwal ${existing ? 'diperbarui' : 'ditambahkan'} — ${logged?.patientName ?? ''}`,
+      description: `${logged?.day ?? '-'} ${String(logged?.hour ?? '').padStart(2, '0')}:00 · Terapis: ${logged?.therapistName || '—'}${logged?.therapyType ? ` · ${logged.therapyType}` : ''}`,
+      actor: user,
+      target: { type: 'child', id: logged?.patientId, name: logged?.patientName ?? '' },
+      metadata: { slotId: String(logged?._id ?? ''), effectiveFrom: effectiveFrom.toISOString().slice(0, 10) },
+    });
+
     return NextResponse.json({ success: true, data: updatedSlot ?? slot });
   })
 );
@@ -747,6 +778,16 @@ export const DELETE = withAnyAuth(
         new mongoose.Types.ObjectId((deleted as any).packageId)
       );
     }
+
+    logActivity(req, {
+      category: 'schedule',
+      action: 'schedule.slot_removed',
+      title: `Slot jadwal dihapus — ${deleted.patientName}`,
+      description: `${deleted.day} ${String(deleted.hour).padStart(2, '0')}:00 · Terapis: ${deleted.therapistName || '—'}`,
+      actor: user,
+      target: { type: 'child', id: deleted.patientId, name: deleted.patientName },
+      metadata: { slotId: String(deleted._id) },
+    });
 
     return NextResponse.json({ success: true });
   })

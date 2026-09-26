@@ -7,6 +7,7 @@ import TokenTransaction from '@/models/TokenTransaction';
 import Child from '@/models/Child';
 import BankAccountSettings from '@/models/BankAccountSettings';
 import mongoose from 'mongoose';
+import { logActivity } from '@/lib/utils/audit-log';
 
 // Prices of the original gold/platinum/diamond tiers, for top-ups created
 // before TokenTransaction recorded the sold price.
@@ -170,6 +171,16 @@ export const POST = withAdminAuth(
       notes: notes?.trim() || '',
       adminId:   new mongoose.Types.ObjectId(user.userId),
       adminName: user.name || '',
+    });
+
+    logActivity(req, {
+      category: 'finance',
+      action: 'invoice.created',
+      title: `Invoice dibuat — ${invoice.childName}`,
+      description: `${invoice.invoiceNumber} · ${packageType} · Rp ${new Intl.NumberFormat('id-ID').format(amount)}`,
+      actor: user,
+      target: { type: 'invoice', id: invoice._id, name: invoice.invoiceNumber },
+      metadata: { childId, amount, packageType },
     });
 
     return SuccessResponse.created({ invoice });

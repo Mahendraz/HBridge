@@ -6,6 +6,8 @@ import TherapistLeave from '@/models/TherapistLeave';
 import mongoose from 'mongoose';
 import { z } from 'zod';
 import { normalizeLeaveType, getLeaveScheduleWarning } from '@/lib/utils/therapist-leave';
+import { logActivity } from '@/lib/utils/audit-log';
+import type { JWTPayload } from '@/lib/utils/jwt';
 
 function getLeaveId(req: NextRequest): string {
   const parts = new URL(req.url).pathname.split('/');
@@ -24,7 +26,7 @@ const updateSchema = z.object({
  * Update dates, type, or reason. super_admin only.
  */
 export const PATCH = withSuperAdminAuth(
-  withErrorHandling(async (req: NextRequest) => {
+  withErrorHandling(async (req: NextRequest, user: JWTPayload) => {
     const id = getLeaveId(req);
     if (!mongoose.isValidObjectId(id)) return ErrorResponse.badRequest('ID tidak valid');
 
@@ -61,6 +63,17 @@ export const PATCH = withSuperAdminAuth(
         )
       : null;
 
+    const ymd = (d: Date | null | undefined) => (d ? new Date(d).toISOString().slice(0, 10) : 'tanpa batas');
+    logActivity(req, {
+      category: 'leave',
+      action: 'leave.updated',
+      title: `Data cuti/nonaktif diubah — ${leave.userName}`,
+      description: `${normalizeLeaveType(leave.type) === 'inactive' ? 'Nonaktif' : 'Sakit/izin'} · ${ymd(leave.startDate)} s/d ${ymd(leave.endDate)}`,
+      actor: user,
+      target: { type: 'user', id: leave.userId, name: leave.userName },
+      metadata: { leaveId: id, fields: Object.keys(update) },
+    });
+
     return SuccessResponse.ok({ leave, warning });
   })
 );
@@ -70,7 +83,7 @@ export const PATCH = withSuperAdminAuth(
  * Soft-cancel: sets status = 'cancelled'. super_admin only.
  */
 export const DELETE = withSuperAdminAuth(
-  withErrorHandling(async (req: NextRequest) => {
+  withErrorHandling(async (req: NextRequest, user: JWTPayload) => {
     const id = getLeaveId(req);
     if (!mongoose.isValidObjectId(id)) return ErrorResponse.badRequest('ID tidak valid');
 
@@ -83,6 +96,15 @@ export const DELETE = withSuperAdminAuth(
     ).lean();
 
     if (!leave) return ErrorResponse.notFound('Leave record tidak ditemukan');
+
+    logActivity(req, {
+      category: 'leave',
+      action: 'leave.cancelled',
+      title: `Cuti/nonaktif dibatalkan — ${leave.userName}`,
+      actor: user,
+      target: { type: 'user', id: leave.userId, name: leave.userName },
+      metadata: { leaveId: id },
+    });
 
     return SuccessResponse.ok({ leave });
   })

@@ -7,6 +7,7 @@ import ReportComment from '@/models/ReportComment';
 import mongoose from 'mongoose';
 import { getR2SignedUrl } from '@/lib/services/r2-storage';
 import { notify } from '@/lib/utils/notify';
+import { logActivity } from '@/lib/utils/audit-log';
 
 async function injectSignedUrls(reports: any[]): Promise<any[]> {
   return Promise.all(
@@ -252,6 +253,16 @@ export const POST = withAnyAuth(
         });
       }
     }
+
+    logActivity(req, {
+      category: 'report',
+      action: 'report.created',
+      title: `Laporan dibuat — ${report.childName}`,
+      description: `${report.title} · ${report.type}`,
+      actor: user,
+      target: { type: 'report', id: report._id, name: report.title },
+      metadata: { childId: report.childId.toString(), therapistName: report.therapistName, status: report.status },
+    });
 
     return NextResponse.json(
       { success: true, data: report },

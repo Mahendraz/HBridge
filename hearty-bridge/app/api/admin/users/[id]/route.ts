@@ -4,6 +4,7 @@ import User from '@/models/User';
 import { withAdminAuth } from '@/lib/middleware/auth';
 import { ErrorResponse, SuccessResponse } from '@/lib/utils/error-handler';
 import { deleteParentAccount } from '@/lib/utils/account-deletion';
+import { logActivity, roleLabel } from '@/lib/utils/audit-log';
 import { z } from 'zod';
 
 const updateUserSchema = z.object({
@@ -41,6 +42,7 @@ export const PATCH = withAdminAuth(async (request: NextRequest, user: any) => {
   }
 
   const { name, email, phone, specialization, isActive, color, address, dateOfBirth } = result.data;
+  const wasActive = targetUser.isActive;
 
   if (name) targetUser.name = name.trim();
   if (email) {
@@ -96,6 +98,31 @@ export const PATCH = withAdminAuth(async (request: NextRequest, user: any) => {
 
   await targetUser.save();
 
+  const activeChanged = isActive !== undefined && isActive !== wasActive;
+  const changedFields = Object.keys(result.data).filter((k) => k !== 'isActive');
+  const label = roleLabel(targetUser.role);
+  if (activeChanged) {
+    logActivity(request, {
+      category: 'account',
+      action: isActive ? 'user.reactivated' : 'user.deactivated',
+      title: `${label} ${isActive ? 'diaktifkan kembali' : 'dinonaktifkan'} — ${targetUser.name}`,
+      description: `Oleh ${user.name}`,
+      actor: user,
+      target: { type: 'user', id: targetUser._id, name: targetUser.name },
+    });
+  }
+  if (changedFields.length > 0) {
+    logActivity(request, {
+      category: 'account',
+      action: 'user.updated',
+      title: `Data ${label.toLowerCase()} diperbarui — ${targetUser.name}`,
+      description: `Field: ${changedFields.join(', ')}`,
+      actor: user,
+      target: { type: 'user', id: targetUser._id, name: targetUser.name },
+      metadata: { fields: changedFields },
+    });
+  }
+
   return SuccessResponse.ok({ user: targetUser.toSafeObject() }, 'Berhasil diperbarui');
 });
 
@@ -125,11 +152,29 @@ export const DELETE = withAdminAuth(async (request: NextRequest, user: any) => {
       return ErrorResponse.forbidden('Hapus akun orang tua harus lewat persetujuan Super Admin');
     }
     const { childrenDeleted } = await deleteParentAccount(id);
+    logActivity(request, {
+      category: 'account',
+      action: 'user.deleted',
+      title: `Akun orang tua dihapus — ${targetUser.name}`,
+      description: `${childrenDeleted} data anak ikut dihapus`,
+      actor: user,
+      target: { type: 'user', id: targetUser._id, name: targetUser.name },
+      metadata: { role: targetUser.role, childrenDeleted },
+    });
     return SuccessResponse.ok({ childrenDeleted }, 'Akun orang tua dihapus');
   }
 
   targetUser.isActive = false;
   await targetUser.save();
+
+  logActivity(request, {
+    category: 'account',
+    action: 'user.deactivated',
+    title: `${roleLabel(targetUser.role)} dinonaktifkan — ${targetUser.name}`,
+    description: `Oleh ${user.name}`,
+    actor: user,
+    target: { type: 'user', id: targetUser._id, name: targetUser.name },
+  });
 
   return SuccessResponse.ok({}, 'Terapis dinonaktifkan');
 });

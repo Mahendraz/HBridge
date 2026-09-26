@@ -11,6 +11,7 @@ import {
 import { z } from 'zod';
 import { assignTherapistColor } from '@/lib/utils/therapist-colors';
 import type { JWTPayload } from '@/lib/utils/jwt';
+import { logActivity, roleLabel } from '@/lib/utils/audit-log';
 
 const createUserSchema = z.object({
   name: z.string().min(2, 'Name must be at least 2 characters'),
@@ -69,6 +70,16 @@ export const POST = withAdminAuth(async (request: NextRequest, user: JWTPayload)
   await newUser.save();
 
   const safeUser = newUser.toSafeObject();
+
+  logActivity(request, {
+    category: 'account',
+    action: 'user.created',
+    title: `${roleLabel(role)} baru terdaftar`,
+    description: newUser.name,
+    actor: user,
+    target: { type: 'user', id: newUser._id, name: newUser.name },
+    metadata: { role, email: newUser.email },
+  });
 
   return SuccessResponse.created({ user: safeUser }, 'User created successfully');
 });

@@ -6,6 +6,7 @@ import DeletionRequest from '@/models/DeletionRequest';
 import User from '@/models/User';
 import { findDeletionTarget } from '@/lib/utils/account-deletion';
 import { notify } from '@/lib/utils/notify';
+import { logActivity } from '@/lib/utils/audit-log';
 import type { JWTPayload } from '@/lib/utils/jwt';
 import mongoose from 'mongoose';
 import { z } from 'zod';
@@ -80,6 +81,16 @@ export const POST = withAdminAuth(
         })
       )
     );
+
+    logActivity(req, {
+      category: 'deletion',
+      action: 'deletion.requested',
+      title: `Permintaan hapus akun ${label} — ${target.name}`,
+      description: `Diajukan oleh ${user.name}${reason?.trim() ? ` · Alasan: ${reason.trim()}` : ''}`,
+      actor: user,
+      target: { type: targetType === 'parent' ? 'user' : 'child', id: targetId, name: target.name },
+      metadata: { requestId: request._id.toString(), targetType },
+    });
 
     return SuccessResponse.created({ request }, 'Permintaan hapus akun dikirim ke Super Admin');
   })

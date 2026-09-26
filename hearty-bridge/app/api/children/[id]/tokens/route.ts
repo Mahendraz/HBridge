@@ -12,6 +12,7 @@ import Assessment from '@/models/Assessment';
 import mongoose from 'mongoose';
 import { getSessionBalances, emptySessionBalance } from '@/lib/utils/session-balance';
 import { therapistHasChild } from '@/lib/utils/therapist-access';
+import { logActivity } from '@/lib/utils/audit-log';
 
 // Pricing and who sold the package are admin bookkeeping. Parents see the
 // price on the invoice once it is released to them; therapists never need it.
@@ -193,6 +194,16 @@ export const POST = withAdminAuth(
         balanceAfter: child.tokenBalance,
         note: (body.note as string | undefined)?.trim() || 'Pengurangan manual',
       });
+      logActivity(req, {
+        category: 'child',
+        action: 'child.tokens_deducted',
+        title: `Sesi dikurangi manual — ${child.name}`,
+        description: `${parsedAmount} sesi · Saldo ${balanceBefore} → ${child.tokenBalance} · ${tx.note}`,
+        actor: user,
+        target: { type: 'child', id: child._id, name: child.name },
+        metadata: { amount: parsedAmount, balanceBefore, balanceAfter: child.tokenBalance },
+      });
+
       return SuccessResponse.created({ data: { transaction: tx, newBalance: child.tokenBalance } });
     }
 
@@ -280,6 +291,16 @@ export const POST = withAdminAuth(
       notes:                '',
       adminId:              new mongoose.Types.ObjectId(user.userId),
       adminName:            user.name || '',
+    });
+
+    logActivity(req, {
+      category: 'child',
+      action: 'child.tokens_added',
+      title: `Paket sesi ditambahkan — ${child.name}`,
+      description: `${packageName} · ${amount} sesi · Saldo ${balanceBefore} → ${balanceAfter} · Invoice ${invoiceNumber}`,
+      actor: user,
+      target: { type: 'child', id: child._id, name: child.name },
+      metadata: { packageId, packageName, amount, balanceBefore, balanceAfter, invoiceNumber },
     });
 
     return SuccessResponse.created({

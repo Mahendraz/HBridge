@@ -7,6 +7,8 @@ import Child from '@/models/Child';
 import TokenTransaction from '@/models/TokenTransaction';
 import mongoose from 'mongoose';
 import { getInactiveTherapistError } from '@/lib/utils/therapist-leave';
+import User from '@/models/User';
+import { logActivity, type LogActivityInput } from '@/lib/utils/audit-log';
 
 function getSessionId(req: NextRequest): string {
   const parts = new URL(req.url).pathname.split('/');
@@ -90,6 +92,9 @@ export const PATCH = withAdminAuth(
     }
 
     const wasAlreadyCompleted = session.status === 'completed';
+    const prevStatus = session.status;
+    const prevDate = session.date ? new Date(session.date) : null;
+    const prevTime = session.time;
 
     // Resolve the target date/time (falling back to the session's current
     // values when only one of the two is being changed) and check for a
@@ -185,6 +190,54 @@ export const PATCH = withAdminAuth(
           balanceBefore,
           balanceAfter: child.tokenBalance,
           note: `Sesi${programLabel} ${sessionLabel} selesai`.replace(/\s+/g, ' ').trim(),
+        });
+      }
+    }
+
+    const rescheduled =
+      (parsedDate !== undefined && parsedDate.getTime() !== prevDate?.getTime()) ||
+      (time !== undefined && time !== prevTime);
+    const statusChanged = status !== undefined && status !== prevStatus;
+
+    if (rescheduled || statusChanged) {
+      const [childDoc, therapistDoc] = await Promise.all([
+        Child.findById(session.childId).select('name').lean<{ name?: string }>(),
+        User.findById(session.therapistId).select('name').lean<{ name?: string }>(),
+      ]);
+      const childName = childDoc?.name ?? '';
+      const ymd = (d: Date | null | undefined) => (d ? new Date(d).toISOString().slice(0, 10) : '-');
+      const sessionLabel = session.sessionNumber && session.totalSessions
+        ? ` · Pertemuan ${session.sessionNumber}/${session.totalSessions}`
+        : '';
+      const detail = `Terapis: ${therapistDoc?.name || '—'} · ${ymd(session.date)} ${session.time ?? ''}${sessionLabel}`;
+      const target = { type: 'session', id: session._id as mongoose.Types.ObjectId, name: childName };
+      const meta = { childId: String(session.childId), therapistId: String(session.therapistId) };
+
+      if (rescheduled) {
+        logActivity(req, {
+          category: 'schedule',
+          action: 'session.rescheduled',
+          title: `Sesi dijadwal ulang — ${childName}`,
+          description: `${ymd(prevDate)} ${prevTime ?? ''} → ${ymd(session.date)} ${session.time ?? ''} · Terapis: ${therapistDoc?.name || '—'}`,
+          actor: user,
+          target,
+          metadata: { ...meta, from: { date: ymd(prevDate), time: prevTime }, to: { date: ymd(session.date), time: session.time } },
+        });
+      }
+
+      if (statusChanged) {
+        const byStatus: Record<string, Pick<LogActivityInput, 'category' | 'action' | 'title'>> = {
+          completed: { category: 'child_attendance', action: 'session.attended', title: `Anak hadir — ${childName}` },
+          'no-show': { category: 'child_attendance', action: 'session.no_show', title: `Anak tidak hadir — ${childName}` },
+          cancelled: { category: 'schedule', action: 'session.cancelled', title: `Sesi dibatalkan — ${childName}` },
+          scheduled: { category: 'schedule', action: 'session.status_reset', title: `Status sesi dikembalikan ke terjadwal — ${childName}` },
+        };
+        logActivity(req, {
+          ...byStatus[status],
+          description: detail,
+          actor: user,
+          target,
+          metadata: { ...meta, fromStatus: prevStatus, toStatus: status },
         });
       }
     }

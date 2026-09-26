@@ -26,6 +26,7 @@ import {
   DollarSignIcon,
   TrendingUpIcon,
   LandmarkIcon,
+  HistoryIcon,
 } from "lucide-react";
 import { useAuth } from "@/lib/contexts/auth-context";
 import { UserRole } from "@/lib/types/auth";
@@ -55,6 +56,7 @@ const iconMap = {
   DollarSignIcon,
   TrendingUpIcon,
   LandmarkIcon,
+  HistoryIcon,
 };
 
 interface DashboardSidebarProps {

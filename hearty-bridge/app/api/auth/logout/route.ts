@@ -6,6 +6,7 @@ import {
   SuccessResponse, 
   logRequest 
 } from '@/lib/utils/error-handler';
+import { logActivity } from '@/lib/utils/audit-log';
 
 export const POST = withErrorHandling(async (request: NextRequest) => {
   // Get current user from token (optional - for logging purposes)
@@ -26,6 +27,16 @@ export const POST = withErrorHandling(async (request: NextRequest) => {
 
   // Clear authentication cookies
   clearAuthCookies(response);
+
+  if (currentUser) {
+    logActivity(request, {
+      category: 'auth',
+      action: 'auth.logout',
+      title: `Logout — ${currentUser.name}`,
+      actor: currentUser,
+      target: { type: 'user', id: currentUser.userId, name: currentUser.name },
+    });
+  }
 
   return response;
 });

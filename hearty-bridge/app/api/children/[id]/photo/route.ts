@@ -5,6 +5,8 @@ import connectToDatabase from '@/lib/db/mongodb';
 import Child from '@/models/Child';
 import mongoose from 'mongoose';
 import { uploadToR2, deleteFromR2, getR2SignedUrl } from '@/lib/services/r2-storage';
+import { logActivity } from '@/lib/utils/audit-log';
+import type { JWTPayload } from '@/lib/utils/jwt';
 
 const ALLOWED = ['image/jpeg', 'image/png', 'image/jpg', 'image/webp'];
 const MAX_SIZE = 5 * 1024 * 1024; // 5 MB
@@ -21,7 +23,7 @@ function getChildId(req: NextRequest): string {
  * Uploads to R2, stores signed URL on child.photoUrl.
  */
 export const POST = withAdminAuth(
-  withErrorHandling(async (req: NextRequest) => {
+  withErrorHandling(async (req: NextRequest, user: JWTPayload) => {
     const childId = getChildId(req);
     if (!childId || !mongoose.isValidObjectId(childId)) {
       return ErrorResponse.badRequest('Invalid child ID');
@@ -77,6 +79,15 @@ export const POST = withAdminAuth(
     }
 
     const signedUrl = await getR2SignedUrl(savedKey, 3600);
+
+    logActivity(req, {
+      category: 'child',
+      action: 'child.photo_updated',
+      title: `Foto anak diperbarui — ${child.name}`,
+      actor: user,
+      target: { type: 'child', id: child._id, name: child.name },
+    });
+
     return SuccessResponse.ok({ photoUrl: signedUrl ?? savedKey });
   })
 );
@@ -86,7 +97,7 @@ export const POST = withAdminAuth(
  * Admin only. Removes the photo from R2 and clears photoUrl.
  */
 export const DELETE = withAdminAuth(
-  withErrorHandling(async (req: NextRequest) => {
+  withErrorHandling(async (req: NextRequest, user: JWTPayload) => {
     const childId = getChildId(req);
     if (!childId || !mongoose.isValidObjectId(childId)) {
       return ErrorResponse.badRequest('Invalid child ID');
@@ -108,6 +119,14 @@ export const DELETE = withAdminAuth(
       { _id: new mongoose.Types.ObjectId(childId) },
       { $set: { photoUrl: null } }
     );
+
+    logActivity(req, {
+      category: 'child',
+      action: 'child.photo_removed',
+      title: `Foto anak dihapus — ${child.name}`,
+      actor: user,
+      target: { type: 'child', id: child._id, name: child.name },
+    });
 
     return SuccessResponse.ok({ message: 'Foto dihapus' });
   })

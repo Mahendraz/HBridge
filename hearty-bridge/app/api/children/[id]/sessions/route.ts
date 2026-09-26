@@ -9,6 +9,7 @@ import WeeklySchedule from '@/models/WeeklySchedule';
 import mongoose from 'mongoose';
 import { getInactiveTherapistError } from '@/lib/utils/therapist-leave';
 import { therapistHasChild } from '@/lib/utils/therapist-access';
+import { logActivity } from '@/lib/utils/audit-log';
 
 const DAY_NAMES: Record<number, string> = {
   0: 'minggu', 1: 'senin', 2: 'selasa', 3: 'rabu', 4: 'kamis', 5: 'jumat', 6: 'sabtu',
@@ -298,6 +299,16 @@ export const POST = withAnyAuth(
       child.tokenExpiry = lastSessionDate;
       await child.save();
 
+      logActivity(request, {
+        category: 'schedule',
+        action: 'session.package_scheduled',
+        title: `${totalSessions} sesi paket dijadwalkan — ${child.name}`,
+        description: `${packageTx.packageType ?? 'Paket'} · ${date} s/d ${lastSessionDate.toISOString().slice(0, 10)} · jam ${String(hour).padStart(2, '0')}:00`,
+        actor: user,
+        target: { type: 'child', id: child._id, name: child.name },
+        metadata: { packageId: String(packageTx._id), sessionsCreated: totalSessions, therapistId: String(therapistId) },
+      });
+
       return SuccessResponse.created(
         {
           sessionsCreated: totalSessions,
@@ -365,6 +376,16 @@ export const POST = withAnyAuth(
         isActive: true,
       });
 
+      logActivity(request, {
+        category: 'schedule',
+        action: 'session.created',
+        title: `Sesi susulan ditambahkan — ${child.name}`,
+        description: `${body.date} · ${body.time}`,
+        actor: user,
+        target: { type: 'session', id: extraSession._id, name: child.name },
+        metadata: { childId, sessionCategory: 'extra' },
+      });
+
       return SuccessResponse.created({ session: extraSession }, 'Sesi susulan berhasil ditambahkan');
     }
 
@@ -391,6 +412,16 @@ export const POST = withAnyAuth(
 
     const session = new Session(sessionData);
     await session.save();
+
+    logActivity(request, {
+      category: 'schedule',
+      action: 'session.created',
+      title: `Sesi dijadwalkan — ${child.name}`,
+      description: `${isNaN(sessionData.date.getTime()) ? '-' : sessionData.date.toISOString().slice(0, 10)} · ${body.time ?? '-'}`,
+      actor: user,
+      target: { type: 'session', id: session._id, name: child.name },
+      metadata: { childId },
+    });
 
     return SuccessResponse.created({ session }, 'Session created successfully');
   })

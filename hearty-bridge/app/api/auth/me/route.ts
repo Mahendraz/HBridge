@@ -11,6 +11,7 @@ import {
   logRequest,
   ErrorCodes
 } from '@/lib/utils/error-handler';
+import { logActivity } from '@/lib/utils/audit-log';
 
 export const GET = withAnyAuth(withErrorHandling(async (request: NextRequest, currentUser) => {
   // Log the request
@@ -118,6 +119,19 @@ export const PUT = withAnyAuth(withErrorHandling(async (request: NextRequest, cu
 
   if (!updatedUser) {
     return ErrorResponse.internalServerError("Failed to update user profile");
+  }
+
+  const changedFields = Object.keys(updates);
+  if (changedFields.length > 0) {
+    logActivity(request, {
+      category: 'account',
+      action: 'user.profile_updated',
+      title: `Profil diperbarui — ${updatedUser.name}`,
+      description: `Field: ${changedFields.join(', ')}`,
+      actor: currentUser,
+      target: { type: 'user', id: updatedUser._id, name: updatedUser.name },
+      metadata: { fields: changedFields },
+    });
   }
 
   return SuccessResponse.ok({

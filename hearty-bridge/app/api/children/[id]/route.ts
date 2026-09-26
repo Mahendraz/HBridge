@@ -18,6 +18,7 @@ import { getR2SignedUrl } from '@/lib/services/r2-storage';
 import { deleteChildAccount } from '@/lib/utils/account-deletion';
 import { getSessionBalances, getTherapistsByProgram, emptySessionBalance } from '@/lib/utils/session-balance';
 import { therapistHasChild } from '@/lib/utils/therapist-access';
+import { logActivity } from '@/lib/utils/audit-log';
 
 /**
  * GET /api/children/[id]
@@ -243,6 +244,15 @@ export const PUT = withAnyAuth(
       const activityLog = generateChildActivityLog('updated', updatedChild, user);
       console.log(activityLog);
 
+      logActivity(request, {
+        category: 'child',
+        action: 'child.updated',
+        title: `Data anak diperbarui — ${updatedChild.name}`,
+        description: `Field: ${Object.keys(updateData).join(', ')}`,
+        actor: user,
+        target: { type: 'child', id: updatedChild._id, name: updatedChild.name },
+      });
+
       // Format response
       const formattedChild = formatChildForResponse(updatedChild, true);
 
@@ -321,6 +331,14 @@ export const DELETE = withAnyAuth(
       // Generate activity log
       const activityLog = generateChildActivityLog('deleted', child, user);
       console.log(activityLog);
+
+      logActivity(request, {
+        category: 'child',
+        action: 'child.deleted',
+        title: `Data anak dihapus — ${child.name}`,
+        actor: user,
+        target: { type: 'child', id: child._id, name: child.name },
+      });
 
       return SuccessResponse.ok(
         { 

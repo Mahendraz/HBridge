@@ -7,6 +7,7 @@ import Child from '@/models/Child';
 import TokenTransaction from '@/models/TokenTransaction';
 import mongoose from 'mongoose';
 import { therapistChildIds } from '@/lib/utils/therapist-access';
+import { logActivity } from '@/lib/utils/audit-log';
 import { z } from 'zod';
 
 const createSchema = z.object({
@@ -140,6 +141,18 @@ export const POST = withAdminAuth(
       { path: 'childId', select: 'name' },
       { path: 'assessorId', select: 'name email' },
     ]);
+
+    const childName = (populated.childId as unknown as { name?: string } | null)?.name ?? '';
+    const assessorName = (populated.assessorId as unknown as { name?: string } | null)?.name;
+    logActivity(req, {
+      category: 'assessment',
+      action: 'assessment.created',
+      title: `Asesmen dijadwalkan — ${childName}`,
+      description: `${date} ${time}${assessorName ? ` · Asesor: ${assessorName}` : ''}`,
+      actor: user,
+      target: { type: 'assessment', id: assessment._id, name: childName },
+      metadata: { childId, date, time, type: type ?? 'in-person' },
+    });
 
     return SuccessResponse.created({ assessment: populated });
   })

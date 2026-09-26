@@ -7,6 +7,7 @@ import User from '@/models/User';
 import mongoose from 'mongoose';
 import { z } from 'zod';
 import { normalizeLeaveType, getLeaveScheduleWarning } from '@/lib/utils/therapist-leave';
+import { logActivity } from '@/lib/utils/audit-log';
 
 const createSchema = z.object({
   userId:    z.string().min(1),
@@ -120,6 +121,16 @@ export const POST = withSuperAdminAuth(
     const warning = (targetUser as { role?: string }).role === 'therapist'
       ? await getLeaveScheduleWarning(userId, type, start, end)
       : null;
+
+    logActivity(req, {
+      category: 'leave',
+      action: 'leave.created',
+      title: `${type === 'inactive' ? 'Status nonaktif' : 'Sakit/izin'} dicatat — ${leave.userName}`,
+      description: `${startDate} s/d ${endDate ?? 'tanpa batas'}${reason ? ` · ${reason.slice(0, 100)}` : ''}`,
+      actor: user,
+      target: { type: 'user', id: leave.userId, name: leave.userName },
+      metadata: { leaveId: String(leave._id), type },
+    });
 
     return SuccessResponse.created({ leave, warning });
   })

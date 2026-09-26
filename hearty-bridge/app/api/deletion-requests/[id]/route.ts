@@ -5,6 +5,7 @@ import connectToDatabase from '@/lib/db/mongodb';
 import DeletionRequest from '@/models/DeletionRequest';
 import { deleteChildAccount, deleteParentAccount } from '@/lib/utils/account-deletion';
 import { notify } from '@/lib/utils/notify';
+import { logActivity } from '@/lib/utils/audit-log';
 import type { JWTPayload } from '@/lib/utils/jwt';
 import mongoose from 'mongoose';
 import { z } from 'zod';
@@ -72,6 +73,27 @@ export const PATCH = withSuperAdminAuth(
           : `Permintaan hapus akun ${label} ${request.targetName} ditolak`,
       body: note?.trim() ? `Catatan Super Admin: ${note.trim()}` : '',
       link: '/dashboard/patients',
+    });
+
+    logActivity(req, {
+      category: 'deletion',
+      action: action === 'approve' ? 'deletion.approved' : 'deletion.rejected',
+      title:
+        action === 'approve'
+          ? `Hapus akun ${label} disetujui — ${request.targetName}`
+          : `Hapus akun ${label} ditolak — ${request.targetName}`,
+      description: [
+        `Diajukan oleh ${request.requestedByName}`,
+        action === 'approve' && request.targetType === 'parent' ? `${childrenDeleted} data anak ikut dihapus` : '',
+        note?.trim() ? `Catatan: ${note.trim()}` : '',
+      ].filter(Boolean).join(' · '),
+      actor: user,
+      target: {
+        type: request.targetType === 'parent' ? 'user' : 'child',
+        id: request.targetId,
+        name: request.targetName,
+      },
+      metadata: { requestId: request._id.toString(), targetType: request.targetType, childrenDeleted },
     });
 
     return SuccessResponse.ok(

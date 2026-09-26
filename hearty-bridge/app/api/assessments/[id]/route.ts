@@ -5,6 +5,7 @@ import connectToDatabase from '@/lib/db/mongodb';
 import Assessment from '@/models/Assessment';
 import mongoose from 'mongoose';
 import { therapistHasChild } from '@/lib/utils/therapist-access';
+import { logActivity } from '@/lib/utils/audit-log';
 import { z } from 'zod';
 
 function getAssessmentId(req: NextRequest): string {
@@ -104,6 +105,7 @@ export const PATCH = withAnyAuth(
       }
     }
 
+    const previousStatus = assessment.status;
     if (status !== undefined) assessment.status = status;
     if (notes !== undefined) assessment.notes = notes;
     if (assessorId !== undefined) assessment.assessorId = assessorId as any;
@@ -121,6 +123,52 @@ export const PATCH = withAnyAuth(
       { path: 'childId', select: 'name' },
       { path: 'assessorId', select: 'name email' },
     ]);
+
+    const childName = (populated.childId as unknown as { name?: string } | null)?.name ?? '';
+    const dateLabel = `${assessment.date.toISOString().slice(0, 10)} ${assessment.time}`;
+    const target = { type: 'assessment', id: assessment._id, name: childName };
+    const statusChanged = assessment.status !== previousStatus;
+    const attendanceLogged =
+      statusChanged && (assessment.status === 'completed' || assessment.status === 'no-show');
+
+    if (attendanceLogged) {
+      const attended = assessment.status === 'completed';
+      logActivity(req, {
+        category: 'child_attendance',
+        action: attended ? 'assessment.attended' : 'assessment.no_show',
+        title: `Anak ${attended ? 'hadir' : 'tidak hadir'} (asesmen) — ${childName}`,
+        description: dateLabel,
+        actor: user,
+        target,
+        metadata: { from: previousStatus, to: assessment.status },
+      });
+    }
+
+    if (result !== undefined || notes !== undefined || assessorId !== undefined || (statusChanged && !attendanceLogged)) {
+      const action = result !== undefined
+        ? 'assessment.result_recorded'
+        : statusChanged && !attendanceLogged
+          ? (assessment.status === 'cancelled' ? 'assessment.cancelled' : 'assessment.status_changed')
+          : 'assessment.updated';
+      const titles: Record<string, string> = {
+        'assessment.result_recorded': 'Hasil asesmen diisi',
+        'assessment.cancelled':       'Asesmen dibatalkan',
+        'assessment.status_changed':  'Status asesmen diubah',
+        'assessment.updated':         'Asesmen diperbarui',
+      };
+      logActivity(req, {
+        category: 'assessment',
+        action,
+        title: `${titles[action]} — ${childName}`,
+        description: statusChanged ? `${dateLabel} · ${previousStatus} → ${assessment.status}` : dateLabel,
+        actor: user,
+        target,
+        metadata: {
+          fields: Object.keys(parsed.data),
+          ...(statusChanged && { from: previousStatus, to: assessment.status }),
+        },
+      });
+    }
 
     return NextResponse.json(SuccessResponse.ok({ assessment: populated }));
   })
@@ -142,6 +190,17 @@ export const DELETE = withAnyAuth(
 
     assessment.isActive = false;
     await assessment.save();
+
+    await assessment.populate({ path: 'childId', select: 'name' });
+    const childName = (assessment.childId as unknown as { name?: string } | null)?.name ?? '';
+    logActivity(req, {
+      category: 'assessment',
+      action: 'assessment.deleted',
+      title: `Asesmen dihapus — ${childName}`,
+      description: `${assessment.date.toISOString().slice(0, 10)} ${assessment.time} · ${assessment.status}`,
+      actor: user,
+      target: { type: 'assessment', id: assessment._id, name: childName },
+    });
 
     return NextResponse.json(SuccessResponse.ok({ message: 'Asesmen dihapus' }));
   })

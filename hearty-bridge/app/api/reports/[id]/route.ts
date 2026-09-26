@@ -7,6 +7,7 @@ import mongoose from 'mongoose';
 import { getR2SignedUrl, deleteFromR2 } from '@/lib/services/r2-storage';
 import { canAccessReport } from '@/lib/utils/report-access';
 import { notify } from '@/lib/utils/notify';
+import { logActivity } from '@/lib/utils/audit-log';
 
 function getReportId(req: NextRequest): string {
   return new URL(req.url).pathname.split('/').at(-1) ?? '';
@@ -75,7 +76,8 @@ export const PUT = withAnyAuth(
     // childName / therapistName are derived from the Child and author records
     // at creation, not editable free text (they drive the parent UI and PDF).
     const allowed = ['title', 'description', 'content', 'type', 'status', 'dueDate', 'tags'];
-    const wasCompleted = report.status === 'completed';
+    const previousStatus = report.status;
+    const wasCompleted = previousStatus === 'completed';
 
     for (const key of allowed) {
       if (body[key] !== undefined) {
@@ -106,6 +108,25 @@ export const PUT = withAnyAuth(
         });
       }
     }
+
+    const statusChanged = report.status !== previousStatus;
+    logActivity(req, {
+      category: 'report',
+      action: statusChanged ? 'report.status_changed' : 'report.updated',
+      title: statusChanged
+        ? `Status laporan diubah — ${report.childName}`
+        : `Laporan diperbarui — ${report.childName}`,
+      description: statusChanged
+        ? `${report.title} · ${previousStatus} → ${report.status}`
+        : `${report.title} · ${report.type}`,
+      actor: user,
+      target: { type: 'report', id: report._id, name: report.title },
+      metadata: {
+        childId: report.childId.toString(),
+        fields: Object.keys(body).filter((k) => allowed.includes(k)),
+        ...(statusChanged && { from: previousStatus, to: report.status }),
+      },
+    });
 
     return NextResponse.json({ success: true, data: report });
   })
@@ -147,6 +168,16 @@ export const DELETE = withAnyAuth(
 
     report.isActive = false;
     await report.save();
+
+    logActivity(req, {
+      category: 'report',
+      action: 'report.deleted',
+      title: `Laporan dihapus — ${report.childName}`,
+      description: `${report.title} · ${report.type}`,
+      actor: user,
+      target: { type: 'report', id: report._id, name: report.title },
+      metadata: { childId: report.childId.toString() },
+    });
 
     return NextResponse.json({ success: true, message: 'Report deleted' });
   })

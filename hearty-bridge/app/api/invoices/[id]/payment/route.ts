@@ -5,6 +5,7 @@ import connectToDatabase from '@/lib/db/mongodb';
 import Invoice from '@/models/Invoice';
 import mongoose from 'mongoose';
 import { uploadToR2, getR2SignedUrl } from '@/lib/services/r2-storage';
+import { logActivity } from '@/lib/utils/audit-log';
 
 function getInvoiceId(req: NextRequest): string {
   const parts = new URL(req.url).pathname.split('/');
@@ -61,6 +62,17 @@ export const POST = withAnyAuth(
       { _id: new mongoose.Types.ObjectId(id) },
       { $set: { paymentProofKey: uploadedKey, paymentMessage: message, paymentSubmittedAt: new Date() } }
     );
+
+    const inv = invoice as unknown as { childName: string; invoiceNumber: string; amount?: number };
+    logActivity(req, {
+      category: 'finance',
+      action: 'invoice.payment_proof_submitted',
+      title: `Bukti pembayaran dikirim — ${inv.childName}`,
+      description: `${inv.invoiceNumber} · Rp ${new Intl.NumberFormat('id-ID').format(inv.amount ?? 0)}`,
+      actor: user,
+      target: { type: 'invoice', id, name: inv.invoiceNumber },
+      metadata: { fileType: file.type },
+    });
 
     return SuccessResponse.ok({ message: 'Bukti pembayaran berhasil dikirim' });
   })

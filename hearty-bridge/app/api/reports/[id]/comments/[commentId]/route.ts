@@ -6,6 +6,7 @@ import { Report } from '@/models';
 import ReportComment from '@/models/ReportComment';
 import mongoose from 'mongoose';
 import { canAccessReport } from '@/lib/utils/report-access';
+import { logActivity } from '@/lib/utils/audit-log';
 
 function getReportId(req: NextRequest): string {
   const parts = new URL(req.url).pathname.split('/');
@@ -87,6 +88,30 @@ export const PATCH = withAnyAuth(
       { returnDocument: 'after' }
     );
 
+    const { childName = 'laporan', title: reportTitle = 'laporan' } = report as { childName?: string; title?: string };
+    if ('isResolved' in update) {
+      logActivity(req, {
+        category: 'report',
+        action: update.isResolved ? 'report.comment_resolved' : 'report.comment_reopened',
+        title: `Komentar ${update.isResolved ? 'ditandai selesai' : 'dibuka lagi'} — ${childName}`,
+        description: reportTitle,
+        actor: user,
+        target: { type: 'report', id: reportId, name: reportTitle },
+        metadata: { commentId },
+      });
+    }
+    if ('text' in update) {
+      logActivity(req, {
+        category: 'report',
+        action: 'report.comment_edited',
+        title: `Komentar diedit — ${childName}`,
+        description: reportTitle,
+        actor: user,
+        target: { type: 'report', id: reportId, name: reportTitle },
+        metadata: { commentId },
+      });
+    }
+
     return SuccessResponse.ok({ comment: updated });
   })
 );
@@ -130,6 +155,17 @@ export const DELETE = withAnyAuth(
       { _id: new mongoose.Types.ObjectId(commentId) },
       { $set: { isActive: false } }
     );
+
+    const { childName = 'laporan', title: reportTitle = 'laporan' } = report as { childName?: string; title?: string };
+    logActivity(req, {
+      category: 'report',
+      action: 'report.comment_deleted',
+      title: `Komentar dihapus — ${childName}`,
+      description: reportTitle,
+      actor: user,
+      target: { type: 'report', id: reportId, name: reportTitle },
+      metadata: { commentId, authorName: (comment as { authorName?: string }).authorName || '' },
+    });
 
     return SuccessResponse.ok({ message: 'Komentar dihapus' });
   })

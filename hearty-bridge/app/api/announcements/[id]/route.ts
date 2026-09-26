@@ -6,6 +6,8 @@ import { Announcement, type IAnnouncementAttachment } from '@/models';
 import { deleteFromR2 } from '@/lib/services/r2-storage';
 import { storeAnnouncementFile } from '@/lib/services/announcement-media';
 import mongoose from 'mongoose';
+import { logActivity } from '@/lib/utils/audit-log';
+import type { JWTPayload } from '@/lib/utils/jwt';
 
 function getAnnouncementId(req: NextRequest): string {
   return new URL(req.url).pathname.split('/').at(-1) ?? '';
@@ -18,7 +20,7 @@ function getAnnouncementId(req: NextRequest): string {
  * multipart/form-data: { title?, content?, file?, removeAttachment? }
  */
 export const PUT = withAdminAuth(
-  withErrorHandling(async (req: NextRequest) => {
+  withErrorHandling(async (req: NextRequest, user: JWTPayload) => {
     const id = getAnnouncementId(req);
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return ErrorResponse.badRequest('Invalid announcement ID');
@@ -62,6 +64,15 @@ export const PUT = withAdminAuth(
 
     await announcement.save();
 
+    logActivity(req, {
+      category: 'announcement',
+      action: 'announcement.updated',
+      title: `Pengumuman diperbarui — ${announcement.title}`,
+      description: `Oleh ${user.name}`,
+      actor: user,
+      target: { type: 'announcement', id: announcement._id, name: announcement.title },
+    });
+
     return SuccessResponse.ok({ announcement }, 'Pengumuman berhasil diperbarui');
   })
 );
@@ -71,7 +82,7 @@ export const PUT = withAdminAuth(
  * Soft-delete (isActive = false) + best-effort R2 cleanup. admin/super_admin only.
  */
 export const DELETE = withAdminAuth(
-  withErrorHandling(async (req: NextRequest) => {
+  withErrorHandling(async (req: NextRequest, user: JWTPayload) => {
     const id = getAnnouncementId(req);
     if (!mongoose.Types.ObjectId.isValid(id)) {
       return ErrorResponse.badRequest('Invalid announcement ID');
@@ -90,6 +101,15 @@ export const DELETE = withAdminAuth(
 
     announcement.isActive = false;
     await announcement.save();
+
+    logActivity(req, {
+      category: 'announcement',
+      action: 'announcement.deleted',
+      title: `Pengumuman dihapus — ${announcement.title}`,
+      description: `Oleh ${user.name}`,
+      actor: user,
+      target: { type: 'announcement', id: announcement._id, name: announcement.title },
+    });
 
     return SuccessResponse.ok({ success: true }, 'Pengumuman berhasil dihapus');
   })

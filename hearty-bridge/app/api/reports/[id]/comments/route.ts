@@ -7,6 +7,7 @@ import ReportComment from '@/models/ReportComment';
 import mongoose from 'mongoose';
 import { canAccessReport as canAccess } from '@/lib/utils/report-access';
 import { notify } from '@/lib/utils/notify';
+import { logActivity } from '@/lib/utils/audit-log';
 
 function getReportId(req: NextRequest): string {
   const parts = new URL(req.url).pathname.split('/');
@@ -130,6 +131,16 @@ export const POST = withAnyAuth(
         });
       }
     }
+
+    logActivity(req, {
+      category: 'report',
+      action: parentCommentId ? 'report.comment_replied' : 'report.comment_added',
+      title: `${parentCommentId ? 'Balasan komentar' : 'Komentar baru'} — ${(report as { childName?: string }).childName || 'laporan'}`,
+      description: reportTitle,
+      actor: user,
+      target: { type: 'report', id, name: reportTitle },
+      metadata: { commentId: comment._id.toString(), ...(parentCommentId && { parentCommentId: parentCommentId.toString() }) },
+    });
 
     return SuccessResponse.ok({ comment });
   })

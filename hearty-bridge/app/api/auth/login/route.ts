@@ -13,6 +13,7 @@ import {
   logRequest,
   ErrorCodes
 } from '@/lib/utils/error-handler';
+import { logActivity } from '@/lib/utils/audit-log';
 
 // 10 attempts per 15 minutes, per IP — blocks credential-stuffing/brute-force
 // without meaningfully affecting a real user who mistypes their password a
@@ -68,6 +69,17 @@ export const POST = withErrorHandling(loginRateLimit(async (request: NextRequest
 
   if (!user || !isPasswordValid) {
     accountFailures.recordFailure(email);
+    logActivity(request, {
+      category: 'auth',
+      action: 'auth.login_failed',
+      title: user ? `Login gagal — ${user.name}` : 'Login gagal — akun tidak dikenal',
+      description: `Email: ${email}`,
+      actor: user
+        ? { id: user._id, name: user.name, role: user.role }
+        : { name: email, role: 'system' },
+      target: user ? { type: 'user', id: user._id, name: user.name } : undefined,
+      metadata: { reason: user ? 'wrong_password' : 'unknown_or_inactive_account' },
+    });
     return ErrorResponse.unauthorized("Invalid email or password", ErrorCodes.INVALID_CREDENTIALS);
   }
 
@@ -108,6 +120,15 @@ export const POST = withErrorHandling(loginRateLimit(async (request: NextRequest
     sameSite: 'strict',
     maxAge,
     path: '/'
+  });
+
+  logActivity(request, {
+    category: 'auth',
+    action: 'auth.login',
+    title: `Login — ${user.name}`,
+    description: user.email,
+    actor: { id: user._id, name: user.name, role: user.role },
+    target: { type: 'user', id: user._id, name: user.name },
   });
 
   // Log successful login

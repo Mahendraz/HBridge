@@ -5,6 +5,7 @@ import connectToDatabase from '@/lib/db/mongodb';
 import Package from '@/models/Package';
 import mongoose from 'mongoose';
 import { z } from 'zod';
+import { logActivity } from '@/lib/utils/audit-log';
 
 function getPackageId(req: NextRequest): string {
   const parts = new URL(req.url).pathname.split('/');
@@ -69,6 +70,24 @@ export const PUT = withSuperAdminAuth(
 
     if (!pkg) return ErrorResponse.notFound('Package');
 
+    type PackageSummary = { name: string; therapyType: string; sessions: number; price?: number; isActive: boolean };
+    const p = pkg as unknown as PackageSummary;
+    const prev = existing as unknown as PackageSummary;
+    const toggled = result.data.isActive !== undefined && result.data.isActive !== prev.isActive;
+    const action = toggled ? (p.isActive ? 'package.activated' : 'package.deactivated') : 'package.updated';
+    logActivity(req, {
+      category: 'finance',
+      action,
+      title: `Paket ${toggled ? (p.isActive ? 'diaktifkan' : 'dinonaktifkan') : 'diperbarui'} — ${p.name}`,
+      description: `${p.therapyType} · ${p.sessions} sesi · Rp ${new Intl.NumberFormat('id-ID').format(p.price ?? 0)}`,
+      actor: user,
+      target: { type: 'package', id, name: p.name },
+      metadata: {
+        fields: Object.keys(result.data),
+        ...(result.data.price !== undefined && result.data.price !== prev.price && { previousPrice: prev.price }),
+      },
+    });
+
     return SuccessResponse.ok({ package: pkg });
   })
 );
@@ -90,6 +109,16 @@ export const DELETE = withSuperAdminAuth(
     ).lean();
 
     if (!pkg) return ErrorResponse.notFound('Package');
+
+    const deleted = pkg as unknown as { name: string; therapyType: string; sessions: number };
+    logActivity(req, {
+      category: 'finance',
+      action: 'package.deleted',
+      title: `Paket dihapus — ${deleted.name}`,
+      description: `${deleted.therapyType} · ${deleted.sessions} sesi`,
+      actor: user,
+      target: { type: 'package', id, name: deleted.name },
+    });
 
     return SuccessResponse.ok({ message: 'Package deactivated' });
   })

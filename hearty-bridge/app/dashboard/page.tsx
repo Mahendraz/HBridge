@@ -15,7 +15,6 @@ import {
   BarChart3Icon,
   DollarSignIcon,
   AlertCircleIcon,
-  CheckCircleIcon,
   UserPlusIcon,
   ReceiptIcon,
   CakeIcon,
@@ -27,6 +26,8 @@ import { usePermissions } from "@/lib/utils/permissions";
 import type { UserRole } from "@/lib/types/auth";
 import { AnnouncementWall } from "@/components/dashboard/announcement-wall";
 import { UnpaidInvoicePopup, type UnpaidInvoiceSummary } from "@/components/dashboard/unpaid-invoice-popup";
+import { CategoryIcon, formatLogTime } from "@/components/activity-log/category-meta";
+import type { AuditLogItem } from "@/lib/audit-log-categories";
 
 // ── Types ─────────────────────────────────────────────────────────────────────
 
@@ -48,15 +49,6 @@ interface ScheduleSlot {
   sessionNumber?: number;
   totalSessions: number;
   therapistName?: string; // present in admin/super_admin weekly view
-}
-
-interface ActivityItem {
-  id: string;
-  type: "session_completed" | "report_created" | "user_registered" | "invoice_paid";
-  title: string;
-  description: string;
-  actor: string;
-  timestamp: string;
 }
 
 interface ChildInfo {
@@ -108,7 +100,7 @@ interface DashboardData {
   therapyThisWeek?: { completed: number; planned: number };
   todaySchedule?: TodaySlot[];
   financialSummary?: { totalRevenue: number; pendingInvoices: number };
-  recentActivity?: ActivityItem[];
+  recentActivity?: AuditLogItem[];
   // therapist (reuses todaySchedule — parentPhone/therapistName will be undefined)
   sessionToday?: { completed: number; planned: number };
   sessionThisWeek?: { completed: number; planned: number };
@@ -648,7 +640,7 @@ function AdminMainContent({ data, role }: { data: DashboardData; role: string })
       </div>
 
       {/* Recent Activity — super_admin only */}
-      {permissions.hasPermission("dashboard:activity") && data.recentActivity && data.recentActivity.length > 0 && (
+      {permissions.hasPermission("dashboard:activity") && data.recentActivity && (
         <RecentActivityWidget activities={data.recentActivity} />
       )}
     </div>
@@ -657,36 +649,41 @@ function AdminMainContent({ data, role }: { data: DashboardData; role: string })
 
 // ── Recent Activity Widget (super_admin only) ─────────────────────────────────
 
-function RecentActivityWidget({ activities }: { activities: ActivityItem[] }) {
-  const iconMap: Record<string, React.ReactNode> = {
-    session_completed: <CheckCircleIcon className="h-4 w-4 text-teal-500" />,
-    report_created:    <FileTextIcon    className="h-4 w-4 text-green-500" />,
-    user_registered:   <UserCheckIcon   className="h-4 w-4 text-blue-500" />,
-    invoice_paid:      <ReceiptIcon     className="h-4 w-4 text-emerald-500" />,
-  };
-
+function RecentActivityWidget({ activities }: { activities: AuditLogItem[] }) {
   return (
     <div className="relative rounded-2xl border border-gray-200 bg-white shadow-sm overflow-hidden">
       <BorderBeam size={120} duration={11} colorFrom="#14b8a6" colorTo="#8b5cf6" />
-      <div className="p-4 sm:p-6 border-b border-gray-100">
-        <h2 className="text-base font-semibold text-gray-900">Aktivitas Terbaru</h2>
-        <p className="text-sm text-gray-500 mt-0.5">Semua aktivitas sistem terkini</p>
+      <div className="p-4 sm:p-6 border-b border-gray-100 flex items-start justify-between gap-3">
+        <div className="min-w-0">
+          <h2 className="text-base font-semibold text-gray-900">Aktivitas Terbaru</h2>
+          <p className="text-sm text-gray-500 mt-0.5">Semua aktivitas sistem terkini</p>
+        </div>
+        <Link
+          href="/dashboard/super-admin/activity-logs"
+          className="flex-shrink-0 text-sm font-medium text-teal-600 hover:text-teal-700"
+        >
+          Lihat semua
+        </Link>
       </div>
       <div className="p-4 sm:p-6">
-        <div className="space-y-2">
-          {activities.map(a => (
-            <div key={a.id} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50/50 hover:bg-gray-50 transition-colors">
-              <div className="flex-shrink-0 mt-0.5">{iconMap[a.type] ?? null}</div>
-              <div className="flex-1 min-w-0">
-                <p className="text-sm font-medium text-gray-900 truncate">{a.title}</p>
-                <p className="text-xs text-gray-500 truncate">{a.description}</p>
-                <p className="text-xs text-gray-400 mt-0.5">
-                  {new Date(a.timestamp).toLocaleDateString("id-ID", { day: "2-digit", month: "short", year: "numeric", hour: "2-digit", minute: "2-digit" })}
-                </p>
+        {activities.length === 0 ? (
+          <p className="text-sm text-gray-500 text-center py-6">Belum ada aktivitas tercatat.</p>
+        ) : (
+          <div className="space-y-2">
+            {activities.map(a => (
+              <div key={a.id} className="flex items-start gap-3 p-3 rounded-xl bg-gray-50/50 hover:bg-gray-50 transition-colors">
+                <CategoryIcon category={a.category} />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-gray-900 truncate">{a.title}</p>
+                  {a.description && <p className="text-xs text-gray-500 truncate">{a.description}</p>}
+                  <p className="text-xs text-gray-400 mt-0.5">
+                    {a.actor.name && <>{a.actor.name} · </>}{formatLogTime(a.createdAt)}
+                  </p>
+                </div>
               </div>
-            </div>
-          ))}
-        </div>
+            ))}
+          </div>
+        )}
       </div>
     </div>
   );

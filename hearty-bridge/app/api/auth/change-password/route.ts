@@ -11,6 +11,7 @@ import {
   ErrorCodes,
 } from '@/lib/utils/error-handler';
 import { z } from 'zod';
+import { logActivity } from '@/lib/utils/audit-log';
 
 const changePasswordSchema = z.object({
   currentPassword: z.string().min(1, 'Password saat ini wajib diisi'),
@@ -60,6 +61,15 @@ export const POST = withAnyAuth(async (request: NextRequest, user: JWTPayload) =
     role: dbUser.role,
     name: dbUser.name,
     tv: dbUser.tokenVersion,
+  });
+
+  logActivity(request, {
+    category: 'account',
+    action: 'user.password_changed',
+    title: `Password diganti — ${dbUser.name}`,
+    description: 'Diganti sendiri oleh pemilik akun',
+    actor: user,
+    target: { type: 'user', id: dbUser._id, name: dbUser.name },
   });
 
   const response = SuccessResponse.ok({ success: true, token }, 'Password changed successfully');

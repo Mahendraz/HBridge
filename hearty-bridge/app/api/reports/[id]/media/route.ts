@@ -10,6 +10,7 @@ import { transcodeVideoInBackground } from '@/lib/services/video-transcode';
 import { compressImage } from '@/lib/utils/compress';
 import { REPORT_MEDIA_MIME_TYPES, resolveMimeType, mediaKind, storageExtension } from '@/lib/utils/media-mime';
 import { canAccessReport } from '@/lib/utils/report-access';
+import { logActivity } from '@/lib/utils/audit-log';
 import mongoose from 'mongoose';
 
 const MAX_FILE_SIZE = 100 * 1024 * 1024; // 100 MB
@@ -49,7 +50,7 @@ export const POST = withAnyAuth(
 
     await connectToDatabase();
 
-    const report = await Report.findOne({ _id: reportId, isActive: true }).select('childId therapistId status').lean();
+    const report = await Report.findOne({ _id: reportId, isActive: true }).select('childId therapistId status title childName').lean();
     if (!report) {
       return NextResponse.json({ success: false, error: 'Report not found' }, { status: 404 });
     }
@@ -186,6 +187,16 @@ export const POST = withAnyAuth(
     // same time.
     await Report.updateOne({ _id: reportId }, { $push: { mediaFiles: entry } });
 
+    logActivity(req, {
+      category: 'report',
+      action: 'report.media_uploaded',
+      title: `Media laporan diunggah — ${report.childName}`,
+      description: `${report.title} · 1 ${entry.fileType === 'video' ? 'video' : 'foto'}`,
+      actor: user,
+      target: { type: 'report', id: reportId, name: report.title },
+      metadata: { fileType: entry.fileType, mimeType: entry.mimeType, size: entry.size },
+    });
+
     return NextResponse.json({ success: true, data: entry }, { status: 201 });
   })
 );
@@ -215,7 +226,7 @@ export const DELETE = withAnyAuth(
 
     await connectToDatabase();
 
-    const report = await Report.findOne({ _id: reportId, isActive: true }).select('childId therapistId status').lean();
+    const report = await Report.findOne({ _id: reportId, isActive: true }).select('childId therapistId status title childName').lean();
     if (!report) {
       return NextResponse.json({ success: false, error: 'Report not found' }, { status: 404 });
     }
@@ -237,7 +248,19 @@ export const DELETE = withAnyAuth(
       uploadId ? m.uploadId === uploadId : m.gcsPath === gcsPath
     );
     // Best-effort, don't fail if already gone
-    if (removed) await deleteFromR2(removed.gcsPath);
+    if (removed) {
+      await deleteFromR2(removed.gcsPath);
+
+      logActivity(req, {
+        category: 'report',
+        action: 'report.media_deleted',
+        title: `Media laporan dihapus — ${report.childName}`,
+        description: `${report.title} · 1 ${removed.fileType === 'video' ? 'video' : 'foto'}`,
+        actor: user,
+        target: { type: 'report', id: reportId, name: report.title },
+        metadata: { fileType: removed.fileType },
+      });
+    }
 
     return NextResponse.json({ success: true });
   })

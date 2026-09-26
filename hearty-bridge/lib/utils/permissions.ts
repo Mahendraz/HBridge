@@ -643,6 +643,12 @@ export class PermissionChecker {
           icon: "TrendingUpIcon",
           permissions: ["reports:system_analytics"]
         },
+        {
+          name: "Log Aktivitas",
+          href: "/dashboard/super-admin/activity-logs",
+          icon: "HistoryIcon",
+          permissions: ["dashboard:activity"]
+        },
       ],
 
       admin: [

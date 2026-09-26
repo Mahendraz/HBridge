@@ -4,6 +4,7 @@ import { withErrorHandling, ErrorResponse } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
 import Attendance from '@/models/Attendance';
 import mongoose from 'mongoose';
+import { logActivity } from '@/lib/utils/audit-log';
 
 /** Haversine formula — returns distance in metres between two GPS points */
 function haversineMeters(
@@ -107,6 +108,18 @@ export const POST = withAnyAuth(
       checkInLocation: { lat, lng },
       isWithinLocation,
       status,
+    });
+
+    logActivity(req, {
+      category: 'staff_attendance',
+      action: 'attendance.checkin',
+      title: `Check-in ${status === 'on-time' ? 'Tepat waktu' : 'Terlambat'} — ${user.name || ''}`,
+      description: isWithinLocation
+        ? `Di lokasi kantor · ${Math.round(distanceMeters)} m`
+        : `Di luar lokasi kantor · ${Math.round(distanceMeters)} m dari kantor`,
+      actor: user,
+      target: { type: 'attendance', id: record._id, name: user.name || '' },
+      metadata: { date: dateStr, status, isWithinLocation },
     });
 
     return NextResponse.json(

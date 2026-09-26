@@ -17,6 +17,7 @@ import User from '@/models/User';
 import WeeklySchedule from '@/models/WeeklySchedule';
 import TokenTransaction from '@/models/TokenTransaction';
 import { getR2SignedUrl } from '@/lib/services/r2-storage';
+import { logActivity } from '@/lib/utils/audit-log';
 import Session from '@/models/Session';
 import Assessment from '@/models/Assessment';
 import mongoose from 'mongoose';
@@ -428,6 +429,14 @@ export const POST = withAnyAuth(
       // Generate activity log
       const activityLog = generateChildActivityLog('created', child, user);
       console.log(activityLog);
+
+      logActivity(request, {
+        category: 'child',
+        action: 'child.created',
+        title: `Data anak ditambahkan — ${child.name}`,
+        actor: user,
+        target: { type: 'child', id: child._id, name: child.name },
+      });
 
       // Format response
       const formattedChild = formatChildrenForResponse([child], true)[0];

@@ -5,6 +5,7 @@ import connectToDatabase from '@/lib/db/mongodb';
 import Package from '@/models/Package';
 import mongoose from 'mongoose';
 import { z } from 'zod';
+import { logActivity } from '@/lib/utils/audit-log';
 
 const packageSchema = z.object({
   name: z.string().min(1).max(100).trim(),
@@ -64,6 +65,16 @@ export const POST = withSuperAdminAuth(
       description: description || '',
       isActive: true,
       createdBy: new mongoose.Types.ObjectId(user.userId),
+    });
+
+    logActivity(req, {
+      category: 'finance',
+      action: 'package.created',
+      title: `Paket dibuat — ${name}`,
+      description: `${therapyType} · ${sessions} sesi · Rp ${new Intl.NumberFormat('id-ID').format(price)}`,
+      actor: user,
+      target: { type: 'package', id: pkg._id, name },
+      metadata: { therapyType, sessions, price },
     });
 
     return SuccessResponse.created({ package: pkg });

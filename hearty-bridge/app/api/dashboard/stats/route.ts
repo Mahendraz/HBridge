@@ -2,7 +2,8 @@ import { NextRequest, NextResponse } from 'next/server';
 import { withAnyAuth } from '@/lib/middleware/auth';
 import { withErrorHandling, SuccessResponse, ErrorResponse } from '@/lib/utils/error-handler';
 import connectToDatabase from '@/lib/db/mongodb';
-import { User, Child, Report, Invoice } from '@/models';
+import { Child, Report, Invoice, AuditLog } from '@/models';
+import { toAuditLogItem, AUDIT_LOG_ITEM_FIELDS } from '@/lib/utils/audit-log';
 import Session from '@/models/Session';
 import WeeklySchedule from '@/models/WeeklySchedule';
 import TokenTransaction from '@/models/TokenTransaction';
@@ -218,10 +219,7 @@ async function superAdminStats(_user: JWTPayload): Promise<NextResponse> {
     todaySchedule,
     totalRevenueAgg,
     pendingInvoices,
-    recentSessions,
-    recentReports,
-    recentUsers,
-    recentInvoices,
+    recentLogs,
   ] = await Promise.all([
     Child.countDocuments({ isActive: true }),
     Session.countDocuments({ date: { $gte: startOfToday, $lte: endOfToday }, isActive: true, status: { $ne: 'cancelled' } }),
@@ -231,65 +229,15 @@ async function superAdminStats(_user: JWTPayload): Promise<NextResponse> {
     buildTodayAppointments(),
     Invoice.aggregate([{ $match: { status: 'paid', isActive: { $ne: false } } }, { $group: { _id: null, total: { $sum: '$amount' } } }]),
     Invoice.countDocuments({ status: 'unpaid', isActive: { $ne: false } }),
-    Session.find({ status: 'completed' })
-      .sort({ updatedAt: -1 }).limit(10)
-      .populate('childId', 'name')
-      .populate('therapistId', 'name')
-      .select('childId therapistId type sessionNumber totalSessions updatedAt')
-      .lean(),
-    Report.find({ isActive: true })
-      .sort({ createdAt: -1 }).limit(10)
-      .select('title childName therapistName type status createdAt')
-      .lean(),
-    User.find({ isActive: true })
-      .sort({ createdAt: -1 }).limit(10)
-      .select('name role createdAt')
-      .lean(),
-    Invoice.find({ status: 'paid', isActive: { $ne: false } })
-      .sort({ paidAt: -1 }).limit(10)
-      .select('childName amount paidAt packageType')
+    AuditLog.find()
+      .sort({ createdAt: -1, _id: -1 }).limit(15)
+      .select(AUDIT_LOG_ITEM_FIELDS)
       .lean(),
   ]);
 
   const totalRevenue = ((totalRevenueAgg as any[])[0]?.total ?? 0) as number;
 
-  const recentActivity = [
-    ...(recentSessions as any[]).map(s => ({
-      id:          String(s._id),
-      type:        'session_completed' as const,
-      title:       `Sesi selesai — ${s.childId?.name ?? ''}`,
-      description: `Terapis: ${s.therapistId?.name ?? '—'} · Pertemuan ${s.sessionNumber ?? '?'}/${s.totalSessions ?? '?'} · ${s.type ?? ''}`,
-      actor:       s.therapistId?.name ?? '—',
-      timestamp:   s.updatedAt,
-    })),
-    ...(recentReports as any[]).map(r => ({
-      id:          String(r._id),
-      type:        'report_created' as const,
-      title:       `Laporan dibuat — ${r.childName}`,
-      description: `${r.title} · ${r.type} · ${r.status}`,
-      actor:       r.therapistName ?? '—',
-      timestamp:   r.createdAt,
-    })),
-    ...(recentUsers as any[]).map(u => ({
-      id:          String(u._id),
-      type:        'user_registered' as const,
-      title:       `${u.role === 'therapist' ? 'Terapis' : u.role === 'parent' ? 'Orang tua' : 'Admin'} baru terdaftar`,
-      description: u.name,
-      actor:       u.name,
-      timestamp:   u.createdAt,
-    })),
-    ...(recentInvoices as any[]).map(i => ({
-      id:          String(i._id),
-      type:        'invoice_paid' as const,
-      title:       `Invoice lunas — ${i.childName}`,
-      description: `${i.packageType} · Rp ${new Intl.NumberFormat('id-ID').format(i.amount)}`,
-      actor:       '—',
-      timestamp:   i.paidAt,
-    })),
-  ]
-    .filter(a => a.timestamp)
-    .sort((a, b) => new Date(b.timestamp as string).getTime() - new Date(a.timestamp as string).getTime())
-    .slice(0, 20);
+  const recentActivity = recentLogs.map(toAuditLogItem);
 
   return SuccessResponse.ok({
     data: {

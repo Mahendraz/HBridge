@@ -5,6 +5,7 @@ import connectToDatabase from '@/lib/db/mongodb';
 import BankAccountSettings from '@/models/BankAccountSettings';
 import mongoose from 'mongoose';
 import { z } from 'zod';
+import { logActivity } from '@/lib/utils/audit-log';
 
 const bankAccountSchema = z.object({
   bankName: z.string().min(1).max(100).trim(),
@@ -65,6 +66,21 @@ export const PUT = withSuperAdminAuth(
       },
       { upsert: true, new: true }
     );
+
+    const banks = [...new Set(accounts.map((acc) => acc.bankName))];
+    logActivity(req, {
+      category: 'finance',
+      action: 'bank_account.updated',
+      title: 'Rekening bank diperbarui',
+      description: `${accounts.length} rekening${banks.length ? ` · ${banks.join(', ')}` : ''}`,
+      actor: user,
+      target: { type: 'bank_account_settings', id: settings._id, name: 'Rekening Bank' },
+      metadata: {
+        count: accounts.length,
+        activeCount: accounts.filter((acc) => acc.isActive).length,
+        banks,
+      },
+    });
 
     return SuccessResponse.ok({ accounts: settings.accounts });
   })

@@ -29,14 +29,9 @@ async function loadSharp() {
 /**
  * A present-but-broken ffmpeg binary (seen in the wild on some Windows
  * setups: a valid-looking PE file that still fails with `spawn EFTYPE`) is
- * worse than a missing one — fluent-ffmpeg doesn't reliably turn a
- * spawn-level failure into its own catchable 'error' event, so it can
- * surface as a raw uncaughtException from deep inside child_process instead
- * of rejecting the promise compressVideo() awaits. Probing with a cheap
- * `-version` spawn here means a broken binary is caught in this function's
- * own try/catch (a controlled, local failure) — before compressVideo ever
- * reaches the real transcode, where the same failure would otherwise be
- * far more likely to crash the process instead of just falling back.
+ * worse than a missing one. Probing with a cheap `-version` spawn picks the
+ * first candidate that actually runs, so compressVideo() only ever transcodes
+ * with a binary known to work and otherwise falls back to the original file.
  */
 function verifyFfmpegRuns(ffmpegPath: string): Promise<void> {
   return new Promise((resolve, reject) => {
@@ -79,21 +74,36 @@ async function resolveFfmpegPath(): Promise<string | null> {
 // for every upload.
 let ffmpegPathPromise: Promise<string | null> | null = null;
 
-async function loadFfmpeg() {
+async function loadFfmpegPath(): Promise<string | null> {
   try {
     ffmpegPathPromise ??= resolveFfmpegPath();
     const ffmpegPath = await ffmpegPathPromise;
     if (!ffmpegPath) {
       console.warn('[compress] no working ffmpeg binary found, falling back to original');
-      return null;
     }
-    const ffmpeg = (await import('fluent-ffmpeg')).default;
-    ffmpeg.setFfmpegPath(ffmpegPath);
-    return ffmpeg;
+    return ffmpegPath;
   } catch (err) {
     console.warn('[compress] ffmpeg failed to load, falling back to original:', err instanceof Error ? err.message : err);
     return null;
   }
+}
+
+/**
+ * Runs ffmpeg with the given arguments. Rejects with the tail of stderr when
+ * it exits non-zero, since that's where ffmpeg explains what went wrong.
+ */
+function runFfmpeg(ffmpegPath: string, args: string[]): Promise<void> {
+  return new Promise((resolve, reject) => {
+    const child = spawn(ffmpegPath, args);
+    let stderr = '';
+    child.stderr.on('data', (chunk: Buffer) => {
+      stderr = (stderr + chunk.toString()).slice(-2000);
+    });
+    child.on('error', reject);
+    child.on('close', (code) =>
+      code === 0 ? resolve() : reject(new Error(`ffmpeg exited with code ${code}: ${stderr.trim()}`))
+    );
+  });
 }
 
 /**
@@ -176,8 +186,8 @@ export async function compressVideo(
   };
   const inExt = extMap[mimeType] ?? 'mp4';
 
-  const ffmpeg = await loadFfmpeg();
-  if (!ffmpeg) {
+  const ffmpegPath = await loadFfmpegPath();
+  if (!ffmpegPath) {
     console.warn('[compress] ffmpeg not available, uploading original video');
     return { buffer, mimeType, ext: inExt };
   }
@@ -188,25 +198,23 @@ export async function compressVideo(
   try {
     await writeFile(inPath, buffer);
 
-    await new Promise<void>((resolve, reject) => {
-      ffmpeg(inPath)
-        // First video + first audio track only — iPhone .mov files also carry
-        // metadata/timecode tracks that MP4 can't hold.
-        .outputOptions('-map', '0:v:0')
-        .outputOptions('-map', '0:a:0?')
-        .outputOptions('-vf', "scale='if(gt(iw,1280),1280,iw)':-2")
-        .outputOptions('-c:v', 'libx264')
-        .outputOptions('-crf', '28')
-        .outputOptions('-preset', 'fast')
-        .outputOptions('-pix_fmt', 'yuv420p')
-        .outputOptions('-c:a', 'aac')
-        .outputOptions('-b:a', '128k')
-        .outputOptions('-movflags', '+faststart')
-        .output(outPath)
-        .on('end', () => resolve())
-        .on('error', (err) => reject(err))
-        .run();
-    });
+    await runFfmpeg(ffmpegPath, [
+      '-hide_banner',
+      '-i', inPath,
+      // First video + first audio track only — iPhone .mov files also carry
+      // metadata/timecode tracks that MP4 can't hold.
+      '-map', '0:v:0',
+      '-map', '0:a:0?',
+      '-vf', "scale='if(gt(iw,1280),1280,iw)':-2",
+      '-c:v', 'libx264',
+      '-crf', '28',
+      '-preset', 'fast',
+      '-pix_fmt', 'yuv420p',
+      '-c:a', 'aac',
+      '-b:a', '128k',
+      '-movflags', '+faststart',
+      '-y', outPath,
+    ]);
 
     const compressed = await readFile(outPath);
     return { buffer: compressed, mimeType: 'video/mp4', ext: 'mp4' };
